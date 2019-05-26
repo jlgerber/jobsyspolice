@@ -3,11 +3,10 @@ use std::str::FromStr;
 use petgraph;
 use petgraph::visit::IntoNodeReferences;
 use petgraph::visit::{Bfs, IntoNeighbors};
-use petgraph::graph::DefaultIx;
-use std::path::Path;
 
-fn build_graph() -> petgraph::Graph<Node, f32> {
-let mut graph = petgraph::Graph::<Node, f32>::new();
+
+fn build_graph() -> JGraph {
+let mut graph = JGraph::new();
 
     let root = graph.add_node(Node::new_root());
     let dd = Node::new(Valid::Name("dd".to_owned()), NodeType::Directory);
@@ -84,46 +83,12 @@ let mut graph = petgraph::Graph::<Node, f32>::new();
     graph
 }
 
-fn is_valid(
-    mut path: std::path::Iter,
-    graph: &petgraph::Graph<Node, f32>,
-    parent: petgraph::graph::NodeIndex<DefaultIx>
-) -> bool {
-    let component = path.next();
-    dbg!(component);
-    match component {
-        Some(val) => {
-            let mut cnt = 0;
-            for n in graph.neighbors(parent) {
-                let node = &graph[n];
-                println!("testing {:?}", node);
-                if node == val {
-                    println!("match {:?}", node);
-                    if is_valid(path.clone(), graph, n) {
-                        return true;
-                    }
-                }
-                cnt +=1;
-            }
-            // cannot find a way to get number of children for node any other way.
-            // we assume that if we have made it this far, and there are no children,
-            // we are successful. This allows the path to extend beyond the graph.
-            if cnt == 0 {
-                return true;
-            }
-        },
-        None => { return true; }
-    }
-    false
-}
-
 fn main() {
     let graph = build_graph();
     //println!("{:#?}",  petgraph::dot::Dot::with_config(&graph, &[petgraph::dot::Config::EdgeNoLabel]));
     for node in graph.node_references() {
         println!("{:?}", node);
     }
-
 
     println!("\nBFS");
 
@@ -140,9 +105,8 @@ fn main() {
 
     }
 
-    let mut it = Path::new("/dd/shows/DEV01/SHARED/MODEL/foo/bar").iter();
-    it.next();
-    println!("is /dd/shows/DEV01/RD/0001/SHARED/MODEL valid? {}", is_valid(it, &graph, graph.node_references().next().unwrap().0));
+    let p = "/dd/shows/DEV01/SHARED/MODEL/foo/bar";
+    println!("is {} valid? {}", p, is_valid(p, &graph));
 
 
 }

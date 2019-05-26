@@ -7,3 +7,6 @@ edition = "2018"
 [dependencies]
 regex = "1.1.6"
 petgraph = "0.4.13"
+log = "0.4.6"
+fern = "0.5.8"
+structopt = "0.2.15"

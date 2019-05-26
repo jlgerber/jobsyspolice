@@ -12,4 +12,4 @@ pub mod node;
 pub use node::Node;
 
 pub mod graph;
-//pub use graph::Graph;
+pub use graph::{JGraph, is_valid};
