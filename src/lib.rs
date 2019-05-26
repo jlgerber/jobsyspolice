@@ -2,7 +2,7 @@ pub mod regexp;
 pub use regexp::*;
 
 pub mod nodetype;
-pub use nodetype::{Valid, ValidType};
+pub use nodetype::{NodeType, ValidType};
 
 pub mod entrytype;
 pub use entrytype::EntryType;

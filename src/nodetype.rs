@@ -1,7 +1,7 @@
 use crate::Regexp;
 
 #[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Clone)]
-pub enum Valid {
+pub enum NodeType {
     Root,
     Name(String),
     Regexp { name: String, pattern: Regexp },
