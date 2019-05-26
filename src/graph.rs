@@ -5,7 +5,7 @@ use petgraph::visit::IntoNodeReferences;
 
 /// Define a type alias for the type of graph we will be using.
 /// JGraph is a Jobsystem Graph
-pub type JGraph = petgraph::Graph<Node, f32>;
+pub type JGraph = petgraph::Graph<Node, ()>;
 
 /// Determine if the provided path is valid or not.NodeType
 ///
@@ -123,32 +123,32 @@ pub mod testdata {
         ));
 
         graph.extend_with_edges(&[
-            (root, dd, 1.0),
-            (dd, shows, 1.0),
-            (shows, show, 1.0),
-            (show, etc, 1.0),
-            (show, user, 1.0),
-            (user, work, 1.0),
-            (show, shared, 1.0),
-            (shared, etc, 1.0),
-            (shared, previz, 1.0),
-            (shared, integ, 1.0),
-            (shared, model, 1.0),
-            (shared, rig, 1.0),
-            (shared, anim, 1.0),
-            (shared, cfx, 1.0),
-            (shared, fx, 1.0),
-            (shared, light, 1.0),
-            (shared, enviro, 1.0),
-            (shared, comp, 1.0),
-            (show, sequence, 1.0),
-            (sequence, etc, 1.0),
-            (sequence, shared, 1.0),
-            (sequence, user, 1.0),
-            (sequence, shot, 1.0),
-            (shot, etc, 1.0),
-            (shot, shared, 1.0),
-            (shot, user, 1.0),
+            (root, dd),
+            (dd, shows),
+            (shows, show),
+            (show, etc),
+            (show, user),
+            (user, work),
+            (show, shared),
+            (shared, etc),
+            (shared, previz),
+            (shared, integ),
+            (shared, model),
+            (shared, rig),
+            (shared, anim),
+            (shared, cfx),
+            (shared, fx),
+            (shared, light),
+            (shared, enviro),
+            (shared, comp),
+            (show, sequence),
+            (sequence, etc),
+            (sequence, shared),
+            (sequence, user),
+            (sequence, shot),
+            (shot, etc),
+            (shot, shared),
+            (shot, user),
         ]);
         graph
     }
@@ -165,7 +165,6 @@ mod tests {
         let p = "/dd/shows/DEV01/SHARED/MODEL/foo/bar";
         assert!(is_valid(p, &tgraph));
     }
-
 
     #[test]
     fn shot_is_valid_graph() {
