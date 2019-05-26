@@ -16,7 +16,7 @@ use std::io::Write;
 #[structopt( name = "jstest", about = "test jobsystem paths" )]
 struct Opt {
     /// Set logging level to one of trace, debug, info, warn, error
-    #[structopt( short = "l", long = "level", default_value="info" )]
+    #[structopt( short = "l", long = "level", default_value = "info" )]
     level: String,
 
     /// Generate a Graphviz dot file of the jstemplate and print it to stdout
@@ -101,7 +101,7 @@ fn main() {
                 log::warn!("INPUT not compatible with --dot argument. It will be ignored");
             }
             let mut file = match File::create(output) {
-                Ok(mut out) => {
+                Ok(out) => {
                     log::debug!("attempting to write to {:?}", out);
                     out},
                 Err(e) => {
