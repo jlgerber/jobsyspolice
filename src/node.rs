@@ -42,6 +42,11 @@ impl Node {
 
 impl PartialEq<std::ffi::OsStr> for Node {
     fn eq(&self, other: &std::ffi::OsStr) -> bool {
+        // we cannot match a root node
+        if self.entry_type == EntryType::Root {
+            panic!("cannot compair osstr with EntryType::Root. Root should only be set once");
+        }
+
         match &self.identity {
             NodeType::Root => false,
             NodeType::Simple(strval) => strval.as_str() == other,
@@ -62,4 +67,69 @@ impl FromStr for Node {
     fn from_str(s: &str) -> Result<Node, ()> {
         Ok(Node::new(NodeType::Simple(s.to_string()), EntryType::Directory))
     }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::ffi::OsStr;
+    use crate::Regexp;
+
+    #[test]
+    fn new_root_creates_root_node() {
+        let root = Node::new_root();
+        let expected = Node {
+            identity: NodeType::Root,
+            entry_type: EntryType::Root
+        };
+        assert_eq!(root, expected);
+    }
+
+    #[test]
+    #[should_panic]
+    fn osstr_cmp_with_simple_nodetype_root() {
+        let simple = Node::new_root();
+        let osstr = OsStr::new("foobar");
+        assert_eq!(simple, *osstr);
+    }
+
+    #[test]
+    fn osstr_cmp_with_simple_nodetype() {
+        let simple = Node::new(
+            NodeType::Simple("foobar".to_string()),
+            EntryType::Directory
+        );
+
+        let osstr = OsStr::new("foobar");
+        assert_eq!(simple, *osstr);
+    }
+
+    #[test]
+    fn osstr_cmp_with_regexp_nodetype() {
+        let re = Node::new(
+            NodeType::Regexp {
+                name: "sequence".to_string(),
+                pattern: Regexp::new(r"^[A-Z]+[A-Z 0-9]*$").unwrap(),
+            },
+            EntryType::Directory
+        );
+        let osstr = OsStr::new("AD1A");
+        assert_eq!(re, *osstr);
+    }
+
+    #[test]
+    fn osstr_cmp_with_regexp_nodetype_not_equal() {
+        let re = Node::new(
+            NodeType::Regexp {
+                name: "sequence".to_string(),
+                pattern: Regexp::new(r"^[A-Z]+[A-Z 0-9]*$").unwrap(),
+            },
+            EntryType::Directory
+        );
+        // the 1 on the front should make the pattern match fail
+        let osstr = OsStr::new("1AD1A");
+        assert_ne!(re, *osstr);
+    }
+
 }
