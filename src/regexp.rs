@@ -1,13 +1,15 @@
 use regex::*;
 use std::borrow::Cow;
-/// regexp::Regexp
-///
-/// Regexp is a newtype wrapper around Regex that provides sorting and equality
 use std::cmp::Ordering;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
-// because regex doesnt do partialord or partialeq
+/// Regexp is a newtype wrapper around Regex that provides ordering
+/// and equality tests against the types we are likely to encounter
+/// including OsString.
+///
+/// In general, documentation for the various methods and trait
+/// implementations may be found in the regex library documentation.
 #[derive(Debug, Clone)]
 pub struct Regexp(pub Regex);
 
@@ -28,6 +30,7 @@ impl PartialEq for Regexp {
         self.0.as_str() == other.0.as_str()
     }
 }
+
 impl Display for Regexp {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         self.0.fmt(f)
@@ -45,7 +48,15 @@ impl FromStr for Regexp {
 impl Eq for Regexp {}
 
 impl Regexp {
+
     /// new up an Regexp given a str.
+    ///
+    /// # Parameters
+    /// * `r` - The raw regex string. This should be anchored in
+    ///         "^...$" as the rust regex library does not acnhor
+    ///         matches.
+    /// # Returns
+    ///    Result wrapping a Regexp or a regex::Error
     pub fn new(r: &str) -> Result<Regexp, regex::Error> {
         let regx = Regex::new(r)?;
         Ok(Regexp(regx))

@@ -7,7 +7,16 @@ use petgraph::visit::IntoNodeReferences;
 /// JGraph is a Jobsystem Graph
 pub type JGraph = petgraph::Graph<Node, f32>;
 
-/// Determine if the provided path is valid
+/// Determine if the provided path is valid or not.NodeType
+///
+/// # Parameters
+/// * `path` - a str reference representing a candidate path
+/// * `graph` - a reference to a JGrapch, which is the graph
+///             representing the valid paths within the Jobsystem.
+///
+/// # Returns
+///     `bool` indicating whether or not `path` is valid based on
+/// the schema described by the input `graph`.
 pub fn is_valid(path: &str, graph: &JGraph) -> bool {
     let mut it = std::path::Path::new(path).iter();
     // we have to drop the first item, which is the first "/"
@@ -15,6 +24,7 @@ pub fn is_valid(path: &str, graph: &JGraph) -> bool {
     return _is_valid(it, &graph, graph.node_references().next().unwrap().0);
 }
 
+// helper recursive function
 fn _is_valid(
     mut path: std::path::Iter,
     graph: &JGraph,
