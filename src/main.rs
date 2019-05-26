@@ -9,7 +9,7 @@ use std::path::Path;
 fn build_graph() -> petgraph::Graph<Node, f32> {
 let mut graph = petgraph::Graph::<Node, f32>::new();
 
-    let root = graph.add_node(Node::from_str("ROOT").unwrap());
+    let root = graph.add_node(Node::new_root());
     let dd = Node::new(Valid::Name("dd".to_owned()), NodeType::Directory);
 
     let shows = Node::from_str("shows").unwrap();
@@ -142,7 +142,7 @@ fn main() {
 
     let mut it = Path::new("/dd/shows/DEV01/SHARED/MODEL/foo/bar").iter();
     it.next();
-    println!("is /dd/shows/DEV01/SHARED/MODEL valid? {}", is_valid(it, &graph, graph.node_references().next().unwrap().0));
+    println!("is /dd/shows/DEV01/RD/0001/SHARED/MODEL valid? {}", is_valid(it, &graph, graph.node_references().next().unwrap().0));
 
 
 }
