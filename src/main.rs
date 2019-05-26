@@ -8,7 +8,7 @@ fn build_graph() -> JGraph {
     let mut graph = JGraph::new();
 
     let root = graph.add_node(Node::new_root());
-    let dd = Node::new(Valid::Name("dd".to_owned()), NodeType::Directory);
+    let dd = Node::new(Valid::Name("dd".to_owned()), EntryType::Directory);
 
     let shows = Node::from_str("shows").unwrap();
 
@@ -20,7 +20,7 @@ fn build_graph() -> JGraph {
             name: "show".to_owned(),
             pattern: Regexp::new(r"^[A-Z]+[A-Z 0-9]*$").unwrap(),
         },
-        NodeType::Directory,
+        EntryType::Directory,
     ));
 
     let etc = graph.add_node(Node::from_str("etc").unwrap());
@@ -43,7 +43,7 @@ fn build_graph() -> JGraph {
             name: "work".to_string(),
             pattern: Regexp::new(r"^work\.[a-z]+$").unwrap(),
         },
-        NodeType::Directory,
+        EntryType::Directory,
     ));
 
     let sequence = graph.add_node(Node::new(
@@ -51,7 +51,7 @@ fn build_graph() -> JGraph {
             name: "sequence".to_string(),
             pattern: Regexp::new(r"^[A-Z]+[A-Z 0-9]*$").unwrap(),
         },
-        NodeType::Directory,
+        EntryType::Directory,
     ));
 
     let shot = graph.add_node(Node::new(
@@ -59,7 +59,7 @@ fn build_graph() -> JGraph {
             name: "shot".to_string(),
             pattern: Regexp::new(r"^[0-9]+[A-Z 0-9]*$").unwrap(),
         },
-        NodeType::Directory,
+        EntryType::Directory,
     ));
 
     graph.extend_with_edges(&[

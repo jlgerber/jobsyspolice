@@ -7,7 +7,7 @@ enum Valid {
    Expr(Regex)
 }
 
-NodeType {
+EntryType {
    Directory,
    Volume,
 }
@@ -17,10 +17,10 @@ struct Node {
   id: Id
   name: ValidName,
   children: Vec<Id>
-  type: NodeType
-} 
+  type: EntryType
+}
 
 impl Node {
-  
+
 }
 ```

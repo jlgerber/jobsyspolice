@@ -1,21 +1,21 @@
-use crate::NodeType;
+use crate::EntryType;
 use crate::Valid;
 use std::str::FromStr;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Node {
     name: Valid,
-    node_type: NodeType,
+    entry_type: EntryType,
 }
 
 impl Node {
-    pub fn new(name: Valid, node_type: NodeType) -> Self {
-        Self { name, node_type }
+    pub fn new(name: Valid, entry_type: EntryType) -> Self {
+        Self { name, entry_type }
     }
     pub fn new_root() -> Self {
         Self {
             name: Valid::Root,
-            node_type: NodeType::Root,
+            entry_type: EntryType::Root,
         }
     }
 }
@@ -31,7 +31,7 @@ impl PartialEq<std::ffi::OsStr> for Node {
 
 impl std::default::Default for Node {
     fn default() -> Node {
-        Node::new(Valid::Name("NONE".to_string()), NodeType::Directory)
+        Node::new(Valid::Name("NONE".to_string()), EntryType::Directory)
     }
 }
 
@@ -39,6 +39,6 @@ impl FromStr for Node {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Node, ()> {
-        Ok(Node::new(Valid::Name(s.to_string()), NodeType::Directory))
+        Ok(Node::new(Valid::Name(s.to_string()), EntryType::Directory))
     }
 }

@@ -1,11 +1,11 @@
 pub mod regexp;
 pub use regexp::*;
 
-pub mod valid;
-pub use valid::{Valid, ValidType};
-
 pub mod nodetype;
-pub use nodetype::NodeType;
+pub use nodetype::{Valid, ValidType};
+
+pub mod entrytype;
+pub use entrytype::EntryType;
 
 pub mod node;
 pub use node::Node;
