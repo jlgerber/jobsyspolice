@@ -8,20 +8,26 @@ use chrono;
 use log;
 use log::LevelFilter;
 use structopt::StructOpt;
-
+use std::path::PathBuf;
+use std::fs::File;
+use std::io::Write;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "jstest", about = "test jobsystem paths")]
+#[structopt( name = "jstest", about = "test jobsystem paths" )]
 struct Opt {
     /// Set logging level to one of trace, debug, info, warn, error
-    #[structopt(short = "l", long = "level", default_value="info")]
+    #[structopt( short = "l", long = "level", default_value="info" )]
     level: String,
 
-    /// Save out a dot file of the graph
-    #[structopt( long = "dot")]
+    /// Generate a Graphviz dot file of the jstemplate and print it to stdout
+    #[structopt( long = "dot" )]
     dot: bool,
 
-    /// Input file
+    /// Set a file as output for relevant commands
+    #[structopt( short = "f", long = "file", parse(from_os_str) )]
+    output: Option<PathBuf>,
+
+    /// Jobsystem path to validate (eg /dd/shows/FOOBAR)
     #[structopt(name="INPUT")]
     input: Option<String>,
 }
@@ -90,7 +96,34 @@ fn main() {
     */
     //let p = "/dd/shows/DEV01/SHARED/MODEL/foo/bar";
     if args.dot {
-        println!("{:#?}",  petgraph::dot::Dot::with_config(&graph, &[petgraph::dot::Config::EdgeNoLabel]));
+        if let Some(output) = args.output {
+            let mut file = match File::create(output) {
+                Ok(mut out) => {
+                    log::debug!("attempting to write to {:?}", out);
+                    out},
+                Err(e) => {
+                    eprintln!("{}", e);
+                    std::process::exit(1);
+                }
+            };
+            match file.write_all(
+                format!(
+                    "{:#?}"
+                    ,petgraph::dot::Dot::with_config(
+                        &graph,
+                        &[petgraph::dot::Config::EdgeNoLabel]
+                    )
+                ).as_bytes()
+            ) {
+                Err(e) => {
+                    eprintln!("{}",e);
+                    std::process::exit(1);
+                }
+                Ok(_) => ()
+            };
+        } else {
+            println!("{:#?}",  petgraph::dot::Dot::with_config(&graph, &[petgraph::dot::Config::EdgeNoLabel]));
+        }
     } else if let Some(input) = args.input {
         println!("{}", is_valid(input.as_str(), &graph));
     } else {
