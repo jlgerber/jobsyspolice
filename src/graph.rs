@@ -1,6 +1,7 @@
 pub use crate::Node;
 use petgraph::graph::DefaultIx;
 use petgraph::visit::IntoNodeReferences;
+use log::{debug};
 //use petgraph::visit::{Bfs, IntoNeighbors};
 
 /// Define a type alias for the type of graph we will be using.
@@ -37,9 +38,9 @@ fn _is_valid(
             let mut cnt = 0;
             for n in graph.neighbors(parent) {
                 let node = &graph[n];
-                println!("testing {:?}", node);
+                debug!("testing {:?}", node);
                 if node == val {
-                    println!("match {:?}", node);
+                    debug!("match {:?}", node);
                     if _is_valid(path.clone(), graph, n) {
                         return true;
                     }
