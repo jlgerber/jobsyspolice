@@ -97,6 +97,9 @@ fn main() {
     //let p = "/dd/shows/DEV01/SHARED/MODEL/foo/bar";
     if args.dot {
         if let Some(output) = args.output {
+            if args.input.is_some() {
+                log::warn!("INPUT not compatible with --dot argument. It will be ignored");
+            }
             let mut file = match File::create(output) {
                 Ok(mut out) => {
                     log::debug!("attempting to write to {:?}", out);
@@ -125,6 +128,9 @@ fn main() {
             println!("{:#?}",  petgraph::dot::Dot::with_config(&graph, &[petgraph::dot::Config::EdgeNoLabel]));
         }
     } else if let Some(input) = args.input {
+        if args.output.is_some() {
+            log::warn!("-f | --file flag does nothing with current combination of flags");
+        }
         println!("{}", is_valid(input.as_str(), &graph));
     } else {
         eprintln!("\nPass input to command. See help for more details\n")
