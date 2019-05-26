@@ -37,12 +37,14 @@ fn _is_valid(
             let mut cnt = 0;
             for n in graph.neighbors(parent) {
                 let node = &graph[n];
-                trace!("testing {:?}", node);
+                trace!("testing {:?} against {:?}", val, node);
                 if node == val {
-                    trace!("match {:?}", node);
+                    trace!("MATCH");
                     if _is_valid(path.clone(), graph, n) {
                         return true;
                     }
+                } else {
+                    trace!("NO MATCH");
                 }
                 cnt += 1;
             }
