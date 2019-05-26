@@ -1,4 +1,3 @@
-
 pub mod regexp;
 pub use regexp::*;
 
@@ -12,4 +11,4 @@ pub mod node;
 pub use node::Node;
 
 pub mod graph;
-pub use graph::{JGraph, is_valid};
+pub use graph::{is_valid, JGraph};

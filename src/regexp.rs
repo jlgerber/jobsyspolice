@@ -1,10 +1,9 @@
-
+use regex::*;
+use std::borrow::Cow;
 /// regexp::Regexp
 ///
 /// Regexp is a newtype wrapper around Regex that provides sorting and equality
 use std::cmp::Ordering;
-use std::borrow::Cow;
-use regex::*;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
@@ -83,20 +82,11 @@ impl Regexp {
     pub fn replace<'t, R: Replacer>(&self, text: &'t str, rep: R) -> Cow<'t, str> {
         self.0.replace(text, rep)
     }
-    pub fn replace_all<'t, R: Replacer>(
-        &self,
-        text: &'t str,
-        rep: R
-    ) -> Cow<'t, str> {
-        self.0.replace_all(text,rep)
+    pub fn replace_all<'t, R: Replacer>(&self, text: &'t str, rep: R) -> Cow<'t, str> {
+        self.0.replace_all(text, rep)
     }
 
-    pub fn replacen<'t, R: Replacer>(
-        &self,
-        text: &'t str,
-        limit: usize,
-        rep: R
-    ) -> Cow<'t, str> {
+    pub fn replacen<'t, R: Replacer>(&self, text: &'t str, limit: usize, rep: R) -> Cow<'t, str> {
         self.0.replacen(text, limit, rep)
     }
 }
@@ -122,7 +112,7 @@ impl Regexp {
     pub fn captures_read<'t>(
         &self,
         locs: &mut CaptureLocations,
-        text: &'t str
+        text: &'t str,
     ) -> Option<Match<'t>> {
         self.0.captures_read(locs, text)
     }
@@ -131,7 +121,7 @@ impl Regexp {
         &self,
         locs: &mut CaptureLocations,
         text: &'t str,
-        start: usize
+        start: usize,
     ) -> Option<Match<'t>> {
         self.0.captures_read_at(locs, text, start)
     }
