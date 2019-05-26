@@ -4,24 +4,24 @@ use std::str::FromStr;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Node {
-    name: NodeType,
+    identity: NodeType,
     entry_type: EntryType,
 }
 
 impl Node {
-    pub fn new(name: NodeType, entry_type: EntryType) -> Self {
-        Self { name, entry_type }
+    pub fn new(identity: NodeType, entry_type: EntryType) -> Self {
+        Self { identity, entry_type }
     }
     pub fn new_root() -> Self {
         Self {
-            name: NodeType::Root,
+            identity: NodeType::Root,
             entry_type: EntryType::Root,
         }
     }
 }
 impl PartialEq<std::ffi::OsStr> for Node {
     fn eq(&self, other: &std::ffi::OsStr) -> bool {
-        match &self.name {
+        match &self.identity {
             NodeType::Root => false,
             NodeType::Name(strval) => strval.as_str() == other,
             NodeType::Regexp { name: _, pattern } => pattern.is_match(other.to_str().unwrap()),
