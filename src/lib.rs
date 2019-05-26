@@ -12,3 +12,6 @@ pub use node::Node;
 
 pub mod graph;
 pub use graph::{is_valid, JGraph};
+
+pub mod returnvalue;
+pub use returnvalue::ReturnValue;
