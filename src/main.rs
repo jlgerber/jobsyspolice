@@ -13,7 +13,7 @@ fn setup_logger(level: log::LevelFilter) -> Result<(), fern::InitError> {
         .warn(Color::Yellow)
         .info(Color::Green)
         .debug(Color::Cyan)
-        .trace(Color::Magenta);;
+        .trace(Color::BrightCyan);;
 
     fern::Dispatch::new()
         .format(move |out, message, record| {
@@ -32,7 +32,7 @@ fn setup_logger(level: log::LevelFilter) -> Result<(), fern::InitError> {
 }
 
 fn main() {
-    setup_logger(log::LevelFilter::Debug).unwrap();
+    setup_logger(log::LevelFilter::Trace).unwrap();
 
     let graph = graph::testdata::build_graph();
     //println!("{:#?}",  petgraph::dot::Dot::with_config(&graph, &[petgraph::dot::Config::EdgeNoLabel]));

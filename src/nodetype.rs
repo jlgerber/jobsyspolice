@@ -1,4 +1,5 @@
 use crate::Regexp;
+use std::fmt::{Display, Formatter, self};
 
 /// A node in the jobsystem graph may be one of several
 /// types, represented by the NodeType enum.
@@ -17,6 +18,16 @@ pub enum NodeType {
     Root,
     Simple(String),
     Regexp { name: String, pattern: Regexp },
+}
+
+impl Display for NodeType {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match self {
+            NodeType::Regexp{name, pattern} =>  write!(f, "Regexp{{'{}', '{}'}}", name, pattern.as_str()),
+            NodeType::Simple(name) =>  write!(f, "Simple('{}')",name),
+            NodeType::Root =>  write!(f, "Root"),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Clone)]
