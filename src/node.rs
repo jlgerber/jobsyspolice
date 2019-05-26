@@ -23,7 +23,7 @@ impl PartialEq<std::ffi::OsStr> for Node {
     fn eq(&self, other: &std::ffi::OsStr) -> bool {
         match &self.identity {
             NodeType::Root => false,
-            NodeType::Name(strval) => strval.as_str() == other,
+            NodeType::Simple(strval) => strval.as_str() == other,
             NodeType::Regexp { name: _, pattern } => pattern.is_match(other.to_str().unwrap()),
         }
     }
@@ -31,7 +31,7 @@ impl PartialEq<std::ffi::OsStr> for Node {
 
 impl std::default::Default for Node {
     fn default() -> Node {
-        Node::new(NodeType::Name("NONE".to_string()), EntryType::Directory)
+        Node::new(NodeType::Simple("NONE".to_string()), EntryType::Directory)
     }
 }
 
@@ -39,6 +39,6 @@ impl FromStr for Node {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Node, ()> {
-        Ok(Node::new(NodeType::Name(s.to_string()), EntryType::Directory))
+        Ok(Node::new(NodeType::Simple(s.to_string()), EntryType::Directory))
     }
 }

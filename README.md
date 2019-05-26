@@ -3,7 +3,7 @@ a jobsystem template is  an ayclic graph whose nodes represent potential directo
 
 ```rust
 enum Valid {
-   Name(String),
+   Simple(String),
    Expr(Regex)
 }
 

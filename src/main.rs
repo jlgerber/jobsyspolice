@@ -8,7 +8,7 @@ fn build_graph() -> JGraph {
     let mut graph = JGraph::new();
 
     let root = graph.add_node(Node::new_root());
-    let dd = Node::new(NodeType::Name("dd".to_owned()), EntryType::Directory);
+    let dd = Node::new(NodeType::Simple("dd".to_owned()), EntryType::Directory);
 
     let shows = Node::from_str("shows").unwrap();
 
