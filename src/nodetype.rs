@@ -1,6 +1,6 @@
 use crate::Regexp;
-use std::fmt::{Display, Formatter, self};
-use serde::{Deserialize,Serialize};
+use std::fmt::{ Display, Formatter, self };
+use serde::{ Deserialize, Serialize };
 
 /// A node in the jobsystem graph may be one of several
 /// types, represented by the NodeType enum.

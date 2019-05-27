@@ -1,7 +1,7 @@
-use crate::EntryType;
-use crate::NodeType;
+use crate::{ EntryType, NodeType };
+use serde::{ Deserialize, Serialize };
 use std::str::FromStr;
-use serde::{Deserialize,Serialize};
+
 /// The Node caries information about a specific
 /// directory or file within the candidate jobsystem
 /// graph. This information is used to validate
@@ -68,7 +68,7 @@ impl PartialEq<std::ffi::OsStr> for Node {
 
 impl std::default::Default for Node {
     fn default() -> Node {
-        Node::new(NodeType::Simple("NONE".to_string()), EntryType::Directory)
+        Node::new(NodeType::Simple(s!("NONE")), EntryType::Directory)
     }
 }
 
@@ -76,10 +76,9 @@ impl FromStr for Node {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Node, ()> {
-        Ok(Node::new(NodeType::Simple(s.to_string()), EntryType::Directory))
+        Ok(Node::new(NodeType::Simple(s!(s)), EntryType::Directory))
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -108,7 +107,7 @@ mod tests {
     #[test]
     fn osstr_cmp_with_simple_nodetype() {
         let simple = Node::new(
-            NodeType::Simple("foobar".to_string()),
+            NodeType::Simple(s!("foobar")),
             EntryType::Directory
         );
 
@@ -120,7 +119,7 @@ mod tests {
     fn osstr_cmp_with_regexp_nodetype() {
         let re = Node::new(
             NodeType::RegEx {
-                name: "sequence".to_string(),
+                name: s!("sequence"),
                 pattern: Regexp::new(r"^[A-Z]+[A-Z 0-9]*$").unwrap(),
             },
             EntryType::Directory
@@ -133,7 +132,7 @@ mod tests {
     fn osstr_cmp_with_regexp_nodetype_not_equal() {
         let re = Node::new(
             NodeType::RegEx {
-                name: "sequence".to_string(),
+                name: s!("sequence"),
                 pattern: Regexp::new(r"^[A-Z]+[A-Z 0-9]*$").unwrap(),
             },
             EntryType::Directory
@@ -149,49 +148,49 @@ mod tests {
             NodeType::Root,
             EntryType::Root
         );
-        assert_eq!(re.display_name(), String::from("Root()"));
+        assert_eq!(re.display_name(), s!("Root()"));
     }
 
     #[test]
     fn simple_name_for_dir_regex() {
         let re = Node::new(
             NodeType::RegEx {
-                name: "sequence".to_string(),
+                name: s!("sequence"),
                 pattern: Regexp::new(r"^[A-Z]+[A-Z 0-9]*$").unwrap(),
             },
             EntryType::Directory
         );
-        assert_eq!(re.display_name(), String::from("sequence regex: '^[A-Z]+[A-Z 0-9]*$'"));
+        assert_eq!(re.display_name(), s!("sequence regex: '^[A-Z]+[A-Z 0-9]*$'"));
     }
 
     #[test]
     fn simple_name_for_vol_regex() {
         let re = Node::new(
             NodeType::RegEx {
-                name: "sequence".to_string(),
+                name: s!("sequence"),
                 pattern: Regexp::new(r"^[A-Z]+[A-Z 0-9]*$").unwrap(),
             },
             EntryType::Volume
         );
-        assert_eq!(re.display_name(), String::from("sequence regex: '^[A-Z]+[A-Z 0-9]*$'"));
+        assert_eq!(re.display_name(), s!("sequence regex: '^[A-Z]+[A-Z 0-9]*$'"));
     }
 
     #[test]
     fn simple_name_for_dir_simple() {
         let re = Node::new(
-            NodeType::Simple(String::from("DEV01")),
+            NodeType::Simple(s!("DEV01")),
             EntryType::Directory
         );
-        assert_eq!(re.display_name(), String::from("DEV01"));
+        assert_eq!(re.display_name(), s!("DEV01"));
     }
 
     #[test]
     fn simple_name_for_vol_simple() {
         let re = Node::new(
-            NodeType::Simple(String::from("DEV01")),
+            NodeType::Simple(s!("DEV01")),
             EntryType::Volume
         );
-        assert_eq!(re.display_name(), String::from("DEV01"));
+        assert_eq!(re.display_name(), s!("DEV01"));
     }
 
 }

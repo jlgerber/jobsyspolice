@@ -1,17 +1,11 @@
+use chrono;
+use fern::{ colors::{Color, ColoredLevelConfig}, self} ;
 use jstest::*;
 use petgraph;
-//use petgraph::visit::Bfs;
-//use petgraph::visit::IntoNodeReferences;
-use fern;
-use fern::colors::{Color, ColoredLevelConfig};
-use chrono;
-use log;
-use log::LevelFilter;
-use structopt::StructOpt;
-use std::path::{ Path, PathBuf };
-use std::fs::File;
+use log::{ LevelFilter, self };
 use serde_json;
-use std::io::{BufWriter, Write};
+use std::{ io::{BufWriter, Write}, path::{ Path, PathBuf }, fs::File };
+use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 #[structopt( name = "jstest", about = "test jobsystem paths" )]
@@ -93,7 +87,6 @@ fn main() {
             if args.input.is_some() {
                 log::warn!("INPUT not compatible with --file argument. It will be ignored");
             }
-            //let j = serde_json::to_string_pretty(&graph).unwrap();
             let j = serde_json::to_string_pretty(&graph).unwrap();
             let file = match File::create(output) {
                 Ok(out) => {

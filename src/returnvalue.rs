@@ -1,10 +1,25 @@
-use petgraph::graph::DefaultIx;
-use petgraph::graph::NodeIndex;
+use petgraph::graph::{ DefaultIx, NodeIndex };
 use std::ffi::OsString;
 use std::cmp::Ordering;
 
 pub type NIndex = NodeIndex<DefaultIx>;
 
+/// Used to capture the success or failure of a comparison
+/// between a candidate path and the template. It provides
+/// enough information on failure to present to the user
+/// the root cause of a failure, including the requested
+/// directory or file in the request which could not satisfy
+/// the constraints imposed by the template, a well as the specific
+/// nodes which it conflicted with.
+///
+/// # Parameters
+///
+/// * `entry` - OsString capturing the directory or file which
+///             failed to validate against the template.
+/// * `node` - NIndex of the last template node to successfully
+///            match. This is the parent of the failed nodes
+/// * `depth` - The depth of the failure, in terms of the
+///             requested path.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ReturnValue {
     Success,
@@ -12,18 +27,23 @@ pub enum ReturnValue {
 }
 
 impl ReturnValue {
+    /// Is the current ReturnValue instance a Success?
     pub fn is_success(&self) -> bool {
         return self == &ReturnValue::Success
     }
 
+    /// Is the current ReturnValue instance a failure?
     pub fn is_failure(&self) -> bool {
         return !self.is_success()
     }
 
+    /// Return the depth of the ReturnValue. If the ReturnValue
+    /// instance is Success, always return 0. Otherwise, return
+    /// the value captured in the Failure case.
     pub fn depth(&self) -> u8 {
         match self {
             &ReturnValue::Success => 0,
-            &ReturnValue::Failure{entry:_,node:_,depth:d} => d,
+            &ReturnValue::Failure{ entry:_, node:_, depth:d } => d,
         }
     }
 }
@@ -41,8 +61,8 @@ impl Ord for ReturnValue {
             return Ordering::Less;
         }
 
-        if let ReturnValue::Failure{entry: _selfentry, node: _selfnode, depth: selfdepth } = self {
-            if let ReturnValue::Failure{entry: _oentry, node: _onode, depth: odepth } = other {
+        if let ReturnValue::Failure{ entry: _selfentry, node: _selfnode, depth: selfdepth } = self {
+            if let ReturnValue::Failure{ entry: _oentry, node: _onode, depth: odepth } = other {
                 if selfdepth == odepth { return Ordering::Equal; }
                 else if selfdepth > odepth { return Ordering::Greater; }
                 else { return Ordering::Less; }
@@ -53,15 +73,14 @@ impl Ord for ReturnValue {
 }
 
 impl PartialOrd for ReturnValue {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
+    fn partial_cmp( &self, other: &Self ) -> Option<Ordering> {
+        Some( self.cmp(other) )
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    //use crate::{ NodeType, EntryType };
 
     #[test]
     fn equality_test_success() {

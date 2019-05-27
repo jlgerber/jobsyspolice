@@ -1,11 +1,7 @@
 pub use crate::{ Node, ReturnValue, NIndex };
-use petgraph::graph::DefaultIx;
-use petgraph::graph::NodeIndex;
-use petgraph::visit::IntoNodeReferences;
+use petgraph::{ graph::{ DefaultIx, NodeIndex}, visit::IntoNodeReferences };
 #[allow(unused_imports)]
 use log::{debug, trace};
-
-//use petgraph::visit::{Bfs, IntoNeighbors};
 
 /// Define a type alias for the type of graph we will be using.
 /// JGraph is a Jobsystem Graph
@@ -93,7 +89,7 @@ pub mod testdata {
         let mut graph = JGraph::new();
 
         let root = graph.add_node(Node::new_root());
-        let dd = Node::new(NodeType::Simple("dd".to_owned()), EntryType::Directory);
+        let dd = Node::new(NodeType::Simple( s!("dd")), EntryType::Directory);
 
         let shows = Node::from_str("shows").unwrap();
 
@@ -102,7 +98,7 @@ pub mod testdata {
 
         let show = graph.add_node(Node::new(
             NodeType::RegEx {
-                name: "show".to_owned(),
+                name: s!("shot"),
                 pattern: Regexp::new(r"^[A-Z]+[A-Z 0-9]*$").unwrap(),
             },
             EntryType::Directory,
@@ -129,7 +125,7 @@ pub mod testdata {
 
         let work = graph.add_node(Node::new(
             NodeType::RegEx {
-                name: "work".to_string(),
+                name: s!("work"),
                 pattern: Regexp::new(r"^work\.[a-z]+$").unwrap(),
             },
             EntryType::Directory,
@@ -137,7 +133,7 @@ pub mod testdata {
 
         let sequence = graph.add_node(Node::new(
             NodeType::RegEx {
-                name: "sequence".to_string(),
+                name: s!("sequence"),
                 pattern: Regexp::new(r"^[A-Z]+[A-Z 0-9]*$").unwrap(),
             },
             EntryType::Directory,
@@ -145,7 +141,7 @@ pub mod testdata {
 
         let shot = graph.add_node(Node::new(
             NodeType::RegEx {
-                name: "shot".to_string(),
+                name: s!("shot"),
                 pattern: Regexp::new(r"^[0-9]+[A-Z 0-9]*$").unwrap(),
             },
             EntryType::Directory,

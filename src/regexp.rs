@@ -1,14 +1,6 @@
-use regex::*;
-use std::borrow::Cow;
-use std::cmp::Ordering;
-use std::fmt::{Display, Formatter};
-use std::str::FromStr;
-
-use std::fmt;
-use regex::Regex;
-
-use serde::de::{Visitor, Error};
-use serde::{Deserializer, Serializer, Deserialize, Serialize};
+use regex::{ Captures, CaptureLocations, CaptureMatches, CaptureNames, Regex, Replacer, Split, SplitN, Match, Matches };
+use serde::{ de::{Visitor, Error}, Deserializer, Serializer, Deserialize, Serialize };
+use std::{ borrow::Cow, cmp::Ordering, fmt::{Display, Formatter, self}, str::FromStr } ;
 
 /// Regexp is a newtype wrapper around Regex that provides ordering
 /// and equality tests against the types we are likely to encounter
@@ -204,13 +196,14 @@ impl<'de> Deserialize<'de> for Regexp {
 mod tests {
     use super::*;
     use serde_json;
-
+    //use crate::macros::*;
 
     #[test]
     fn can_deserialize_regexp() {
         let re = Regexp::new(r"[a-z]+").unwrap();
         let re_str = serde_json::to_string(&re).unwrap();
-        let expected = String::from(r#""[a-z]+""#);
+        let expected = s!(r#""[a-z]+""#);
+
         assert_eq!(re_str, expected);
     }
 
