@@ -14,7 +14,7 @@ pub struct Node {
 }
 
 impl Node {
-    /// New up a Node, given a NodeType instanc and an EntryType
+    /// New up a Node, given a NodeType instance and an EntryType
     /// instance
     ///
     /// # Parameters
