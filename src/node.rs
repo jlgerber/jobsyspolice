@@ -40,7 +40,7 @@ impl Node {
     }
 
     /// Return a simple name for the node
-    pub fn simple_name(&self) -> String {
+    pub fn display_name(&self) -> String {
         let mut name = match self.entry_type {
             EntryType::Directory => String::from("Dir( "),
             EntryType::Volume => String::from("Vol( "),
