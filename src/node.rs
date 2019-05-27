@@ -161,7 +161,7 @@ mod tests {
             },
             EntryType::Directory
         );
-        assert_eq!(re.display_name(), String::from("Dir( sequence ^[A-Z]+[A-Z 0-9]*$ )"));
+        assert_eq!(re.display_name(), String::from("sequence regex: '^[A-Z]+[A-Z 0-9]*$'"));
     }
 
     #[test]
@@ -173,7 +173,7 @@ mod tests {
             },
             EntryType::Volume
         );
-        assert_eq!(re.display_name(), String::from("Vol( sequence ^[A-Z]+[A-Z 0-9]*$ )"));
+        assert_eq!(re.display_name(), String::from("sequence regex: '^[A-Z]+[A-Z 0-9]*$'"));
     }
 
     #[test]
@@ -182,7 +182,7 @@ mod tests {
             NodeType::Simple(String::from("DEV01")),
             EntryType::Directory
         );
-        assert_eq!(re.display_name(), String::from("Dir( DEV01 )"));
+        assert_eq!(re.display_name(), String::from("DEV01"));
     }
 
     #[test]
@@ -191,7 +191,7 @@ mod tests {
             NodeType::Simple(String::from("DEV01")),
             EntryType::Volume
         );
-        assert_eq!(re.display_name(), String::from("Vol( DEV01 )"));
+        assert_eq!(re.display_name(), String::from("DEV01"));
     }
 
 }
