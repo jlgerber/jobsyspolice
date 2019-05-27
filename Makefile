@@ -1,4 +1,5 @@
-target := jstest
+target := jst
+envfile := ./.env
 
 build:
 	cargo build --release
@@ -12,9 +13,12 @@ install:
 install-debug:
 	cp target/debug/${target} ~/bin/${target}-debug
 
-all: build install
+install-env-file:
+	cp ${envfile} ~/.
 
-all-debug: build-debug install-debug
+all: build install install-env-file
+
+all-debug: build-debug install-debug install-env-file
 
 test:
 	cargo test --release --lib
