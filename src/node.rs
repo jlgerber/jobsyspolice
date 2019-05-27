@@ -41,15 +41,11 @@ impl Node {
 
     /// Return a simple name for the node
     pub fn display_name(&self) -> String {
-        let mut name = match self.entry_type {
-            EntryType::Directory => String::from("Dir( "),
-            EntryType::Volume => String::from("Vol( "),
-            EntryType::Root => String::from("Root()"),
-        };
+        let mut name = String::new();
         match &self.identity {
-            NodeType::Simple(n) => { name.push_str(n.as_str()); name.push_str(" )"); },
-            NodeType::Regexp{name:n, pattern: r} => { name.push_str(format!("{} {} )", n.as_str(), r.as_str()).as_str());},
-            NodeType::Root => (),
+            NodeType::Simple(n) => { name.push_str(n.as_str()); },
+            NodeType::Regexp{name:n, pattern: r} => { name.push_str(format!("{} regex: '{}'", n.as_str(), r.as_str()).as_str());},
+            NodeType::Root => name.push_str("Root()"),
         }
         name
     }

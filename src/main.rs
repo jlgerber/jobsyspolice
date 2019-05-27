@@ -133,8 +133,8 @@ fn main() {
         }
         //println!("{:?}", is_valid(input.as_str(), &graph));
         match is_valid(input.as_str(), &graph) {
-            ReturnValue::Success => eprintln!("Success"),
-            ReturnValue::Failure{entry:_, node, depth} => {
+            ReturnValue::Success => eprintln!("\nSuccess\n"),
+            ReturnValue::Failure{entry, node, depth} => {
 
                 let path = Path::new(input.as_str())
                             .iter()
@@ -142,11 +142,13 @@ fn main() {
                             .fold(PathBuf::new(), |mut p, v| {p.push(v); p});
 
                 let neighbors = graph.neighbors(node);
-                let ncount = graph.neighbors(node).count();
-                eprintln!("Failed to match {:?} against {}:", path, if ncount == 1 {"node"} else {"nodes"});
+                //let ncount = graph.neighbors(node).count();
+                eprintln!("\nFailed to match {:?} in {:?} against:", entry, path);
                 for n in neighbors {
-                    eprintln!("\t{:?}", graph[n]);
+                    eprintln!("{}", graph[n].display_name());
                 }
+                eprintln!("");
+                std::process::exit(1);
             }
         }
     } else {
