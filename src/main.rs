@@ -8,7 +8,7 @@ use chrono;
 use log;
 use log::LevelFilter;
 use structopt::StructOpt;
-use std::path::PathBuf;
+use std::path::{ Path, PathBuf };
 use std::fs::File;
 use std::io::Write;
 
@@ -131,7 +131,24 @@ fn main() {
         if args.output.is_some() {
             log::warn!("-f | --file flag does nothing with current combination of flags");
         }
-        println!("{:?}", is_valid(input.as_str(), &graph));
+        //println!("{:?}", is_valid(input.as_str(), &graph));
+        match is_valid(input.as_str(), &graph) {
+            ReturnValue::Success => eprintln!("Success"),
+            ReturnValue::Failure{entry:_, node, depth} => {
+
+                let path = Path::new(input.as_str())
+                            .iter()
+                            .take((depth+1) as usize) // +1 because '/' is considered 1st element
+                            .fold(PathBuf::new(), |mut p, v| {p.push(v); p});
+
+                let neighbors = graph.neighbors(node);
+                let ncount = graph.neighbors(node).count();
+                eprintln!("Failed to match {:?} against {}:", path, if ncount == 1 {"node"} else {"nodes"});
+                for n in neighbors {
+                    eprintln!("\t{:?}", graph[n]);
+                }
+            }
+        }
     } else {
         eprintln!("\nPass input to command. See help for more details\n")
     }
