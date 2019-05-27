@@ -1,3 +1,12 @@
+#[macro_use]
+pub mod macros {
+    macro_rules! s {
+        ($val: expr) => {
+            $val.to_string();
+        }
+    }
+}
+
 pub mod regexp;
 pub use regexp::*;
 
