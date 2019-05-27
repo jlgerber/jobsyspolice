@@ -38,6 +38,21 @@ impl Node {
             entry_type: EntryType::Root,
         }
     }
+
+    /// Return a simple name for the node
+    pub fn simple_name(&self) -> String {
+        let mut name = match self.entry_type {
+            EntryType::Directory => String::from("Dir( "),
+            EntryType::Volume => String::from("Vol( "),
+            EntryType::Root => String::from("Root()"),
+        };
+        match &self.identity {
+            NodeType::Simple(n) => { name.push_str(n.as_str()); name.push_str(" )"); },
+            NodeType::Regexp{name:n, pattern: r} => { name.push_str(format!("{} {} )", n.as_str(), r.as_str()).as_str());},
+            NodeType::Root => (),
+        }
+        name
+    }
 }
 
 impl PartialEq<std::ffi::OsStr> for Node {
@@ -130,6 +145,57 @@ mod tests {
         // the 1 on the front should make the pattern match fail
         let osstr = OsStr::new("1AD1A");
         assert_ne!(re, *osstr);
+    }
+
+    #[test]
+    fn simple_name_for_root() {
+        let re = Node::new(
+            NodeType::Root,
+            EntryType::Root
+        );
+        assert_eq!(re.simple_name(), String::from("Root()"));
+    }
+
+    #[test]
+    fn simple_name_for_dir_regex() {
+        let re = Node::new(
+            NodeType::Regexp {
+                name: "sequence".to_string(),
+                pattern: Regexp::new(r"^[A-Z]+[A-Z 0-9]*$").unwrap(),
+            },
+            EntryType::Directory
+        );
+        assert_eq!(re.simple_name(), String::from("Dir( sequence ^[A-Z]+[A-Z 0-9]*$ )"));
+    }
+
+    #[test]
+    fn simple_name_for_vol_regex() {
+        let re = Node::new(
+            NodeType::Regexp {
+                name: "sequence".to_string(),
+                pattern: Regexp::new(r"^[A-Z]+[A-Z 0-9]*$").unwrap(),
+            },
+            EntryType::Volume
+        );
+        assert_eq!(re.simple_name(), String::from("Vol( sequence ^[A-Z]+[A-Z 0-9]*$ )"));
+    }
+
+    #[test]
+    fn simple_name_for_dir_simple() {
+        let re = Node::new(
+            NodeType::Simple(String::from("DEV01")),
+            EntryType::Directory
+        );
+        assert_eq!(re.simple_name(), String::from("Dir( DEV01 )"));
+    }
+
+    #[test]
+    fn simple_name_for_vol_simple() {
+        let re = Node::new(
+            NodeType::Simple(String::from("DEV01")),
+            EntryType::Volume
+        );
+        assert_eq!(re.simple_name(), String::from("Vol( DEV01 )"));
     }
 
 }
