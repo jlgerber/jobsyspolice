@@ -117,7 +117,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "jstemplate2"
+name = "jstest"
 version = "0.2.0"
 dependencies = [
  "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",

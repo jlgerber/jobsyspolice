@@ -1,4 +1,4 @@
-target := jstemplate2
+target := jstest
 
 build:
 	cargo build --release

@@ -1,4 +1,4 @@
-use jstemplate2::*;
+use jstest::*;
 use petgraph;
 //use petgraph::visit::Bfs;
 //use petgraph::visit::IntoNodeReferences;
