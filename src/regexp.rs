@@ -4,6 +4,12 @@ use std::cmp::Ordering;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
+use std::fmt;
+use regex::Regex;
+
+use serde::de::{Visitor, Error};
+use serde::{Deserializer, Serializer, Deserialize, Serialize};
+
 /// Regexp is a newtype wrapper around Regex that provides ordering
 /// and equality tests against the types we are likely to encounter
 /// including OsString.
@@ -154,5 +160,65 @@ impl Regexp {
 
     pub fn capture_locations(&self) -> CaptureLocations {
         self.0.capture_locations()
+    }
+}
+
+impl Serialize for Regexp {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        //serializer.serialize_newtype_struct("Regexp", &self.0.as_str())
+        self.0.as_str().serialize(serializer)
+    }
+}
+
+pub struct RegexpVisitor;
+
+impl<'a> Visitor<'a> for RegexpVisitor {
+    type Value = Regexp;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("valid regex str")
+    }
+
+    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+        where E: Error
+    {
+        Regexp::new(value).map_err(E::custom)
+    }
+}
+
+impl<'de> Deserialize<'de> for Regexp {
+    fn deserialize<D>(deserializer: D) -> Result<Regexp, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        //deserializer.deserialize_newtype_struct("Regexp",  RegexpVisitor)
+        deserializer.deserialize_str(RegexpVisitor)
+
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json;
+
+
+    #[test]
+    fn can_deserialize_regexp() {
+        let re = Regexp::new(r"[a-z]+").unwrap();
+        let re_str = serde_json::to_string(&re).unwrap();
+        let expected = String::from(r#""[a-z]+""#);
+        assert_eq!(re_str, expected);
+    }
+
+    #[test]
+    fn can_serialize_regexp() {
+        let re = Regexp::new(r"[a-z]+").unwrap();
+        let re_str = serde_json::to_string(&re).unwrap();
+        let re1 = serde_json::from_str(re_str.as_str()).unwrap();
+        assert_eq!(re,re1);
     }
 }

@@ -1,6 +1,7 @@
 use std::fmt::{Display, Formatter, self};
+use serde::{Deserialize,Serialize};
 
-#[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Clone, Copy)]
+#[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Clone, Copy, Deserialize, Serialize)]
 pub enum EntryType {
     Directory,
     Volume,

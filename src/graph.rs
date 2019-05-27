@@ -101,7 +101,7 @@ pub mod testdata {
         let shows = graph.add_node(shows);
 
         let show = graph.add_node(Node::new(
-            NodeType::Regexp {
+            NodeType::RegEx {
                 name: "show".to_owned(),
                 pattern: Regexp::new(r"^[A-Z]+[A-Z 0-9]*$").unwrap(),
             },
@@ -128,7 +128,7 @@ pub mod testdata {
         let img = graph.add_node(Node::from_str("IMG").unwrap());
 
         let work = graph.add_node(Node::new(
-            NodeType::Regexp {
+            NodeType::RegEx {
                 name: "work".to_string(),
                 pattern: Regexp::new(r"^work\.[a-z]+$").unwrap(),
             },
@@ -136,7 +136,7 @@ pub mod testdata {
         ));
 
         let sequence = graph.add_node(Node::new(
-            NodeType::Regexp {
+            NodeType::RegEx {
                 name: "sequence".to_string(),
                 pattern: Regexp::new(r"^[A-Z]+[A-Z 0-9]*$").unwrap(),
             },
@@ -144,7 +144,7 @@ pub mod testdata {
         ));
 
         let shot = graph.add_node(Node::new(
-            NodeType::Regexp {
+            NodeType::RegEx {
                 name: "shot".to_string(),
                 pattern: Regexp::new(r"^[0-9]+[A-Z 0-9]*$").unwrap(),
             },

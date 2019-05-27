@@ -10,7 +10,8 @@ use log::LevelFilter;
 use structopt::StructOpt;
 use std::path::{ Path, PathBuf };
 use std::fs::File;
-use std::io::Write;
+use serde_json;
+use std::io::{BufWriter, Write};
 
 #[derive(Debug, StructOpt)]
 #[structopt( name = "jstest", about = "test jobsystem paths" )]
@@ -20,12 +21,16 @@ struct Opt {
     level: String,
 
     /// Generate a Graphviz dot file of the jstemplate and print it to stdout
-    #[structopt( long = "dot" )]
-    dot: bool,
+    #[structopt( short="d", long = "dot", parse(from_os_str))]
+    dot: Option<PathBuf>,
 
-    /// Set a file as output for relevant commands
+    /// Write the graph out as json
     #[structopt( short = "f", long = "file", parse(from_os_str) )]
     output: Option<PathBuf>,
+
+    /// read the graph from  json
+    #[structopt( short = "i", long = "input", parse(from_os_str) )]
+    graph: Option<PathBuf>,
 
     /// Jobsystem path to validate (eg /dd/shows/FOOBAR)
     #[structopt(name="INPUT")]
@@ -73,30 +78,37 @@ fn setup_cli() -> (Opt, log::LevelFilter) {
 fn main() {
     let (args, level) = setup_cli();
     setup_logger(level).unwrap();
-    let graph = graph::testdata::build_graph();
-    //println!("{:#?}",  petgraph::dot::Dot::with_config(&graph, &[petgraph::dot::Config::EdgeNoLabel]));
-    /*
-    for node in graph.node_references() {
-        println!("{:?}", node);
-    }
+    let graph = if args.graph.is_none() {
+        graph::testdata::build_graph()
+    } else {
+        let json_file_path = args.graph.unwrap();
+        let json_file = File::open(json_file_path).expect("file not found");
+        let result: JGraph =
+        serde_json::from_reader(json_file).expect("error while reading json");
+        result
+    };
 
-    println!("\nBFS");
-
-    let mut bfs = Bfs::new(&graph, graph.node_references().next().unwrap().0);
-    while let Some(nx) = bfs.next(&graph) {
-        // we can access `graph` mutably here still
-        println!("{:?}", nx);
-    }
-
-    println!("\nNEIGHBORS");
-    let neighbors = graph.neighbors(graph.node_references().next().unwrap().0);
-    for n in neighbors {
-        println!("{:?}", n);
-    }
-    */
-    //let p = "/dd/shows/DEV01/SHARED/MODEL/foo/bar";
-    if args.dot {
+    if args.output.is_some() {
         if let Some(output) = args.output {
+            if args.input.is_some() {
+                log::warn!("INPUT not compatible with --file argument. It will be ignored");
+            }
+            //let j = serde_json::to_string_pretty(&graph).unwrap();
+            let j = serde_json::to_string_pretty(&graph).unwrap();
+            let file = match File::create(output) {
+                Ok(out) => {
+                    log::debug!("attempting to write to {:?}", out);
+                    out},
+                Err(e) => {
+                    eprintln!("{}", e);
+                    std::process::exit(1);
+                }
+            };
+            let mut f = BufWriter::new(file);
+            f.write_all(j.as_bytes()).expect("Unable to write data");
+        }
+    } else if args.dot.is_some() {
+        if let Some(output) = args.dot {
             if args.input.is_some() {
                 log::warn!("INPUT not compatible with --dot argument. It will be ignored");
             }
@@ -128,10 +140,6 @@ fn main() {
             println!("{:#?}",  petgraph::dot::Dot::with_config(&graph, &[petgraph::dot::Config::EdgeNoLabel]));
         }
     } else if let Some(input) = args.input {
-        if args.output.is_some() {
-            log::warn!("-f | --file flag does nothing with current combination of flags");
-        }
-        //println!("{:?}", is_valid(input.as_str(), &graph));
         match is_valid(input.as_str(), &graph) {
             ReturnValue::Success => eprintln!("\nSuccess\n"),
             ReturnValue::Failure{entry, node, depth} => {

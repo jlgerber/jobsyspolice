@@ -1,13 +1,13 @@
 use crate::EntryType;
 use crate::NodeType;
 use std::str::FromStr;
-
+use serde::{Deserialize,Serialize};
 /// The Node caries information about a specific
 /// directory or file within the candidate jobsystem
 /// graph. This information is used to validate
 /// candidate paths in order to determine wheither or not
 /// they are valid.
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct Node {
     identity: NodeType,
     entry_type: EntryType,
@@ -44,7 +44,7 @@ impl Node {
         let mut name = String::new();
         match &self.identity {
             NodeType::Simple(n) => { name.push_str(n.as_str()); },
-            NodeType::Regexp{name:n, pattern: r} => { name.push_str(format!("{} regex: '{}'", n.as_str(), r.as_str()).as_str());},
+            NodeType::RegEx{name:n, pattern: r} => { name.push_str(format!("{} regex: '{}'", n.as_str(), r.as_str()).as_str());},
             NodeType::Root => name.push_str("Root()"),
         }
         name
@@ -61,7 +61,7 @@ impl PartialEq<std::ffi::OsStr> for Node {
         match &self.identity {
             NodeType::Root => false,
             NodeType::Simple(strval) => strval.as_str() == other,
-            NodeType::Regexp { name: _, pattern } => pattern.is_match(other.to_str().unwrap()),
+            NodeType::RegEx { name: _, pattern } => pattern.is_match(other.to_str().unwrap()),
         }
     }
 }
@@ -119,7 +119,7 @@ mod tests {
     #[test]
     fn osstr_cmp_with_regexp_nodetype() {
         let re = Node::new(
-            NodeType::Regexp {
+            NodeType::RegEx {
                 name: "sequence".to_string(),
                 pattern: Regexp::new(r"^[A-Z]+[A-Z 0-9]*$").unwrap(),
             },
@@ -132,7 +132,7 @@ mod tests {
     #[test]
     fn osstr_cmp_with_regexp_nodetype_not_equal() {
         let re = Node::new(
-            NodeType::Regexp {
+            NodeType::RegEx {
                 name: "sequence".to_string(),
                 pattern: Regexp::new(r"^[A-Z]+[A-Z 0-9]*$").unwrap(),
             },
@@ -155,7 +155,7 @@ mod tests {
     #[test]
     fn simple_name_for_dir_regex() {
         let re = Node::new(
-            NodeType::Regexp {
+            NodeType::RegEx {
                 name: "sequence".to_string(),
                 pattern: Regexp::new(r"^[A-Z]+[A-Z 0-9]*$").unwrap(),
             },
@@ -167,7 +167,7 @@ mod tests {
     #[test]
     fn simple_name_for_vol_regex() {
         let re = Node::new(
-            NodeType::Regexp {
+            NodeType::RegEx {
                 name: "sequence".to_string(),
                 pattern: Regexp::new(r"^[A-Z]+[A-Z 0-9]*$").unwrap(),
             },

@@ -1,5 +1,6 @@
 use crate::Regexp;
 use std::fmt::{Display, Formatter, self};
+use serde::{Deserialize,Serialize};
 
 /// A node in the jobsystem graph may be one of several
 /// types, represented by the NodeType enum.
@@ -10,20 +11,20 @@ use std::fmt::{Display, Formatter, self};
 /// - `NodeType::Simple` wraps a String and is used to represent
 /// explicit directory and file names, such as `dd`, `etc`, and
 /// `SHARED`.
-/// - `NodeType::Regexp` wraps a Regexp type which reprents a range
+/// - `NodeType::RegEx` wraps a Regexp type which reprents a range
 /// of potentially valid names for a directory or file, dictated
 /// by the regex stored in the type.
-#[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Clone)]
+#[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Clone, Serialize, Deserialize)]
 pub enum NodeType {
     Root,
     Simple(String),
-    Regexp { name: String, pattern: Regexp },
+    RegEx { name: String, pattern: Regexp },
 }
 
 impl Display for NodeType {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match self {
-            NodeType::Regexp{name, pattern} =>  write!(f, "Regexp{{'{}', '{}'}}", name, pattern.as_str()),
+            NodeType::RegEx{name, pattern} =>  write!(f, "RegEx{{'{}', '{}'}}", name, pattern.as_str()),
             NodeType::Simple(name) =>  write!(f, "Simple('{}')",name),
             NodeType::Root =>  write!(f, "Root"),
         }
@@ -33,5 +34,5 @@ impl Display for NodeType {
 #[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Clone)]
 pub enum ValidType {
     Simple,
-    Regexp,
+    RegEx,
 }
