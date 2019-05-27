@@ -1,6 +1,7 @@
 pub use crate::Node;
 use petgraph::graph::DefaultIx;
 use petgraph::visit::IntoNodeReferences;
+#[allow(unused_imports)]
 use log::{debug, trace};
 //use petgraph::visit::{Bfs, IntoNeighbors};
 
@@ -85,10 +86,13 @@ pub mod testdata {
             EntryType::Directory,
         ));
 
+        let tools = graph.add_node(Node::from_str("tools").unwrap());
+        let package = graph.add_node(Node::from_str("package").unwrap());
+        let extension = graph.add_node(Node::from_str("extension").unwrap());
+        let bin = graph.add_node(Node::from_str("bin").unwrap());
         let etc = graph.add_node(Node::from_str("etc").unwrap());
         let user = graph.add_node(Node::from_str("user").unwrap());
         let shared = graph.add_node(Node::from_str("SHARED").unwrap());
-
         let previz = graph.add_node(Node::from_str("PREVIZ").unwrap());
         let integ = graph.add_node(Node::from_str("INTEG").unwrap());
         let model = graph.add_node(Node::from_str("MODEL").unwrap());
@@ -99,6 +103,7 @@ pub mod testdata {
         let enviro = graph.add_node(Node::from_str("ENVIRO").unwrap());
         let fx = graph.add_node(Node::from_str("FX").unwrap());
         let comp = graph.add_node(Node::from_str("COMP").unwrap());
+        let img = graph.add_node(Node::from_str("IMG").unwrap());
 
         let work = graph.add_node(Node::new(
             NodeType::Regexp {
@@ -128,6 +133,10 @@ pub mod testdata {
             (root, dd),
             (dd, shows),
             (shows, show),
+            (show, tools),
+            (tools, package),
+            (tools, extension),
+            (tools, bin),
             (show, etc),
             (show, user),
             (user, work),
@@ -143,15 +152,26 @@ pub mod testdata {
             (shared, light),
             (shared, enviro),
             (shared, comp),
+            (shared, img),
             (show, sequence),
+        ]);
+        // split it up because there appears to be
+        // a max size for &[]
+        graph.extend_with_edges(&[
+            (sequence, tools),
             (sequence, etc),
             (sequence, shared),
             (sequence, user),
             (sequence, shot),
+        ]);
+
+        graph.extend_with_edges(&[
+            (shot, tools),
             (shot, etc),
             (shot, shared),
             (shot, user),
         ]);
+
         graph
     }
 }

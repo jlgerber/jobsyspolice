@@ -15,3 +15,6 @@ install-debug:
 all: build install
 
 all-debug: build-debug install-debug
+
+test:
+	cargo test --release --lib
