@@ -1,8 +1,10 @@
-pub use crate::Node;
+pub use crate::{ Node, ReturnValue, NIndex };
 use petgraph::graph::DefaultIx;
+use petgraph::graph::NodeIndex;
 use petgraph::visit::IntoNodeReferences;
 #[allow(unused_imports)]
 use log::{debug, trace};
+
 //use petgraph::visit::{Bfs, IntoNeighbors};
 
 /// Define a type alias for the type of graph we will be using.
@@ -19,19 +21,25 @@ pub type JGraph = petgraph::Graph<Node, ()>;
 /// # Returns
 ///     `bool` indicating whether or not `path` is valid based on
 /// the schema described by the input `graph`.
-pub fn is_valid(path: &str, graph: &JGraph) -> bool {
+pub fn is_valid(path: &str, graph: &JGraph) -> ReturnValue {
     let mut it = std::path::Path::new(path).iter();
     // we have to drop the first item, which is the first "/"
     it.next();
-    return _is_valid(it, &graph, graph.node_references().next().unwrap().0);
+    let level: u8 = 0;
+    return _is_valid(it, &graph, graph.node_references().next().unwrap().0, level);
 }
 
 // helper recursive function
 fn _is_valid(
     mut path: std::path::Iter,
     graph: &JGraph,
-    parent: petgraph::graph::NodeIndex<DefaultIx>,
-) -> bool {
+    parent: NodeIndex<DefaultIx>,
+    level: u8
+) -> ReturnValue {
+
+    let mut result: Option<ReturnValue> = None;
+
+    let level = level+1;
     let component = path.next();
     match component {
         Some(val) => {
@@ -41,8 +49,18 @@ fn _is_valid(
                 trace!("testing {:?} against {:?}", val, node);
                 if node == val {
                     trace!("MATCH");
-                    if _is_valid(path.clone(), graph, n) {
-                        return true;
+                    let r = _is_valid(path.clone(), graph, n, level);
+                    if r.is_success() {
+                        return ReturnValue::Success;
+                    } else {
+                        match result {
+                            None => result = Some(r),
+                            Some(ref val) => {
+                                if val.depth() < r.depth() {
+                                    result = Some(r);
+                                }
+                            }
+                        }
                     }
                 } else {
                     trace!("NO MATCH");
@@ -53,14 +71,18 @@ fn _is_valid(
             // we assume that if we have made it this far, and there are no children,
             // we are successful. This allows the path to extend beyond the graph.
             if cnt == 0 {
-                return true;
+                return ReturnValue::Success;
             }
         }
         None => {
-            return true;
+            return ReturnValue::Success;
         }
     }
-    false
+    if result.is_some() {
+        result.unwrap()
+    } else {
+        ReturnValue::Failure{entry: component.unwrap().to_os_string(), node: parent, depth: level }
+    }
 }
 
 pub mod testdata {
@@ -185,14 +207,14 @@ mod tests {
     fn path_extends_beyond_graph() {
         let tgraph = build_graph();
         let p = "/dd/shows/DEV01/SHARED/MODEL/foo/bar";
-        assert!(is_valid(p, &tgraph));
+        assert!(is_valid(p, &tgraph).is_success());
     }
 
     #[test]
     fn shot_is_valid_graph() {
         let tgraph = build_graph();
         let p = "/dd/shows/DEV01/RD/9999/SHARED/MODEL";
-        assert!(is_valid(p, &tgraph));
+        assert!(is_valid(p, &tgraph).is_success());
     }
 
 
@@ -200,6 +222,6 @@ mod tests {
     fn wrong_path_is_invalid_graph() {
         let tgraph = build_graph();
         let p = "/dd/shows/DEV01/RD/9999/FOO/SHARED/MODEL";
-        assert_eq!(is_valid(p, &tgraph), false);
+        assert!(is_valid(p, &tgraph).is_failure());
     }
 }

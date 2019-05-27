@@ -131,7 +131,7 @@ fn main() {
         if args.output.is_some() {
             log::warn!("-f | --file flag does nothing with current combination of flags");
         }
-        println!("{}", is_valid(input.as_str(), &graph));
+        println!("{:?}", is_valid(input.as_str(), &graph));
     } else {
         eprintln!("\nPass input to command. See help for more details\n")
     }

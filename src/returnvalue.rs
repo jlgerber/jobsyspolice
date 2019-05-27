@@ -1,11 +1,14 @@
-use crate::Node;
+use petgraph::graph::DefaultIx;
+use petgraph::graph::NodeIndex;
 use std::ffi::OsString;
 use std::cmp::Ordering;
+
+pub type NIndex = NodeIndex<DefaultIx>;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ReturnValue {
     Success,
-    Failure{ entry: OsString, node: Node, depth: u8 }
+    Failure{ entry: OsString, node: NIndex, depth: u8 }
 }
 
 impl ReturnValue {
@@ -15,6 +18,13 @@ impl ReturnValue {
 
     pub fn is_failure(&self) -> bool {
         return !self.is_success()
+    }
+
+    pub fn depth(&self) -> u8 {
+        match self {
+            &ReturnValue::Success => 0,
+            &ReturnValue::Failure{entry:_,node:_,depth:d} => d,
+        }
     }
 }
 
@@ -51,7 +61,7 @@ impl PartialOrd for ReturnValue {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{ NodeType, EntryType };
+    //use crate::{ NodeType, EntryType };
 
     #[test]
     fn equality_test_success() {
@@ -62,10 +72,7 @@ mod tests {
 
     #[test]
     fn equality_test_failure() {
-        let n1  = Node::new(
-            NodeType::Simple("foobar".to_string()),
-            EntryType::Directory
-        );
+        let n1  = NIndex::new(1);
         let entry = OsString::from("foob");
         let rv1 = ReturnValue::Failure{ entry: entry, node: n1, depth: 10 };
         let rv2 = ReturnValue::Success;
@@ -74,10 +81,7 @@ mod tests {
 
     #[test]
     fn inequality_test_same_node_and_entry() {
-        let n1  = Node::new(
-            NodeType::Simple("foobar".to_string()),
-            EntryType::Directory
-        );
+        let n1  =NIndex::new(2);
 
         let entry = OsString::from("foob");
         let rv1 = ReturnValue::Failure{ entry: entry.clone(), node: n1.clone(), depth: 10 };
@@ -87,14 +91,9 @@ mod tests {
 
     #[test]
     fn inequality_test_different_node_and_entry() {
-        let n1  = Node::new(
-            NodeType::Simple("foobar".to_string()),
-            EntryType::Directory
-        );
-        let n2  = Node::new(
-            NodeType::Simple("bla".to_string()),
-            EntryType::Directory
-        );
+        let n1  = NIndex::new(1);
+        let n2  = NIndex::new(2);
+
         let entry = OsString::from("foob");
         let entry2 = OsString::from("bla");
 
