@@ -213,7 +213,6 @@ mod tests {
         assert!(is_valid(p, &tgraph).is_success());
     }
 
-
     #[test]
     fn wrong_path_is_invalid_graph() {
         let tgraph = build_graph();
