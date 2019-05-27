@@ -75,8 +75,20 @@ fn setup_cli() -> (Opt, log::LevelFilter) {
 const JST_PATH: &'static str = "JST_PATH";
 const JST_NAME: &'static str = "jstemplate.json";
 
-fn get_template_from_env() -> Result<String, env::VarError> {
+fn get_template_from_env() -> Result<PathBuf, env::VarError> {
     let jst_path = env::var(JST_PATH)?;
+    log::trace!("expanding tilde for {:?}", jst_path);
+    let jst_path = shellexpand::tilde(jst_path.as_str());
+    log::trace!("attempting to cannonicalize {:?}", jst_path);
+    let jst_path = match PathBuf::from(jst_path.into_owned().as_str()).canonicalize() {
+        Ok(p) => p,
+        Err(e) => {
+            log::error!("failed to cannonicalize {}", e);
+            // Todo swap this out when implement failure
+            return Err(env::VarError::NotPresent);
+        }
+    };
+    log::trace!("returning {:?}", jst_path);
     Ok(jst_path)
 }
 
@@ -93,10 +105,10 @@ fn main() {
                 std::process::exit(1);
             }
         };
-        let json_file = match File::open(template.as_str()) {
+        let json_file = match File::open(&template) {
             Ok(f) => f,
             Err(e) => {
-                eprintln!("\nunable to open {}. error: {}\n", template, e);
+                eprintln!("\nunable to open {:?}. error: {}\n", template, e);
                 std::process::exit(1);
             }
         };
