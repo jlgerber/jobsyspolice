@@ -2,6 +2,8 @@ pub use crate::{ Node, ReturnValue, NIndex };
 use petgraph::{ graph::{ DefaultIx, NodeIndex}, visit::IntoNodeReferences };
 #[allow(unused_imports)]
 use log::{debug, trace};
+use std::cell::RefCell;
+use std::rc::Rc;
 
 /// Define a type alias for the type of graph we will be using.
 /// JGraph is a Jobsystem Graph
@@ -22,7 +24,8 @@ pub fn is_valid(path: &str, graph: &JGraph) -> ReturnValue {
     // we have to drop the first item, which is the first "/"
     it.next();
     let level: u8 = 0;
-    return _is_valid(it, &graph, graph.node_references().next().unwrap().0, level);
+    let indices = Vec::new();
+    return _is_valid(it, &graph, graph.node_references().next().unwrap().0, level, Rc::new(RefCell::new(indices)));
 }
 
 // helper recursive function
@@ -30,11 +33,11 @@ fn _is_valid(
     mut path: std::path::Iter,
     graph: &JGraph,
     parent: NodeIndex<DefaultIx>,
-    level: u8
+    level: u8,
+    indices: Rc<RefCell<Vec<NIndex>>>
 ) -> ReturnValue {
 
     let mut result: Option<ReturnValue> = None;
-
     let level = level+1;
     let component = path.next();
     match component {
@@ -45,9 +48,10 @@ fn _is_valid(
                 trace!("testing {:?} against {:?}", val, node);
                 if node == val {
                     trace!("MATCH");
-                    let r = _is_valid(path.clone(), graph, n, level);
+                    let r = _is_valid(path.clone(), graph, n, level, indices.clone());
                     if r.is_success() {
-                        return ReturnValue::Success;
+                        indices.borrow_mut().push(n);
+                        return ReturnValue::Success(indices);
                     } else {
                         match result {
                             None => result = Some(r),
@@ -67,11 +71,11 @@ fn _is_valid(
             // we assume that if we have made it this far, and there are no children,
             // we are successful. This allows the path to extend beyond the graph.
             if cnt == 0 {
-                return ReturnValue::Success;
+                return ReturnValue::Success(indices);
             }
         }
         None => {
-            return ReturnValue::Success;
+            return ReturnValue::Success(indices);
         }
     }
     if result.is_some() {
@@ -91,7 +95,7 @@ pub mod testdata {
         let root = graph.add_node(Node::new_root());
         let dd = graph.add_node(Node::from_str("dd").unwrap());
         let shows = graph.add_node(Node::from_str("shows").unwrap());
-        let show = graph.add_node(Node::new_regexp("shot", r"^[A-Z]+[A-Z 0-9]*$"));
+        let show = graph.add_node(Node::new_regexp("show", r"^[A-Z]+[A-Z 0-9]*$"));
         let tools = graph.add_node(Node::from_str("tools").unwrap());
         let package = graph.add_node(Node::from_str("package").unwrap());
         let extension = graph.add_node(Node::from_str("extension").unwrap());
@@ -177,6 +181,7 @@ mod tests {
     fn shot_is_valid_graph() {
         let tgraph = build_graph();
         let p = "/dd/shows/DEV01/RD/9999/SHARED/MODEL";
+
         assert!(is_valid(p, &tgraph).is_success());
     }
 
