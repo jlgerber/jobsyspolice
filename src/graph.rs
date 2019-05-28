@@ -96,13 +96,42 @@ pub mod testdata {
         let dd = graph.add_node(Node::from_str("dd").unwrap());
         let shows = graph.add_node(Node::from_str("shows").unwrap());
         let show = graph.add_node(Node::new_regexp("show", r"^[A-Z]+[A-Z 0-9]*$", None));
+        let mut refdir = Node::from_str("REF").unwrap();
+        // ref
+        refdir.set_volume();
+        let refdir = graph.add_node(refdir);
+        let quicktimes = graph.add_node(Node::from_str("quicktimes").unwrap());
+        let qtsubdir = graph.add_node(Node::new_regexp("qtsubdir", r"^[0-9_]+$", None));
+
+        let mut clientvault = Node::from_str("CLIENT_VAULT").unwrap();
+        clientvault.set_volume();
+        let clientvault = graph.add_node(clientvault);
+        let clientvaultsd = graph.add_node(Node::new_regexp("clientvault_subdir", r"^(incoming|outgoing)$", None));
+        let clientvaultssd = graph.add_node(Node::new_regexp("clientvault_ssd", r"^[0-9_]+$", None));
+        let slates_n_categories = graph.add_node(Node::new_regexp("slatesNcategories", r"(SLATES|CATGORIES)^$", None));
+        let snc_sd = graph.add_node(Node::new_regexp("snc_sd", r"^[a-z0-9_.-]+$", None));
+        let locations = graph.add_node(Node::from_str("LOCATIONS").unwrap());
+        let loc_sd = graph.add_node(Node::new_regexp("loc_sd", r"^[a-z0-9_.-]+$", None));
+        let loc_ssd = graph.add_node(Node::new_regexp("loc_ssd", r"^[a-z0-9_.-]+$", None));
+        let documents = graph.add_node(Node::from_str("documents").unwrap());
+        let doc_sd = graph.add_node(Node::new_regexp("doc_sd", r"^(agency|director_treatments|vfx_methodology|shcedules|scripts|storyboards)$", None));
+        let audio = graph.add_node(Node::from_str("audio").unwrap());
+        let audio_sd = graph.add_node(Node::new_regexp("audio_sd", r"^(mixes|sources)$", None));
+        let threed = graph.add_node(Node::from_str("3d").unwrap());
+        let threed_sd = graph.add_node(Node::new_regexp("3d_sd", r"^(3d_assets|mocap)$", None));
+        let chars = graph.add_node(Node::from_str("CHARACTERS").unwrap());
+        let chars_sd = graph.add_node(Node::new_regexp("chars_sd",r"^[a-z0-9_]+$", None));
+        // the full chars regexp has a lookahead negative which the regexp lib does not support.
+        // TODO: add an optional Negative expression to regexp that will reject matches
+        // RegexpWneg
+
         let tools = graph.add_node(Node::from_str("tools").unwrap());
         let package = graph.add_node(Node::from_str("package").unwrap());
         let extension = graph.add_node(Node::from_str("extension").unwrap());
         let color = graph.add_node(Node::from_str("COLOR").unwrap());
         let category = graph.add_node(Node::new_regexp("category", r"^(char|prop|veh|scene|enviro|kit)$", None));
         let dept = graph.add_node(Node::new_regexp("department", r"^(integ|model|previz|postviz|enviro|rig|anim|fx|cfx|light|comp|lookdev|shotmodel)$", None));
-        let subcontext = graph.add_node(Node::new_regexp("subcontext", r"^[a-z]+([_]{0,1}[a-z 0-9])*$", None));
+        let subcontext = graph.add_node(Node::new_regexp("subcontext", r"^[a-z]+([_]{0,1}[a-z0-9])*$", None));
         let bin = graph.add_node(Node::from_str("bin").unwrap());
         let etc = graph.add_node(Node::from_str("etc").unwrap());
         let user = graph.add_node(Node::from_str("user").unwrap());
@@ -111,14 +140,37 @@ pub mod testdata {
         let work = graph.add_node(Node::new_regexp("work", r"^work\.[a-z]+$", None));
         let sequence = graph.add_node(Node::new_regexp("sequence", r"^(([A-Z]{2,4})|LIBRARY)$", None));
         let adsequence = graph.add_node(Node::from_str("ASSETDEV").unwrap());
-        let shot = graph.add_node(Node::new_regexp("shot", r"^[0-9]+[A-Z 0-9]*$", None));
-        let adshot = graph.add_node(Node::new_regexp("assetdev shot", r"^([A-Z][A-Z 0-9]+[_]{0,1})+[A-Z 0-9]+$", None));
+        let shot = graph.add_node(Node::new_regexp("shot", r"^[0-9]+[A-Z0-9]*$", None));
+        let adshot = graph.add_node(Node::new_regexp("assetdev shot", r"^([A-Z][A-Z0-9]+[_]{0,1})+[A-Z0-9]+$", None));
 
         graph.extend_with_edges(&[
             (root, dd),
             (dd, shows),
             (shows, show),
             (show, tools),
+            (show, refdir),
+            (refdir, quicktimes),
+            (quicktimes, qtsubdir),
+            (refdir, clientvault),
+            (clientvault, clientvaultsd),
+            (clientvaultsd, clientvaultssd),
+            (refdir, slates_n_categories),
+            (slates_n_categories, snc_sd),
+            (refdir, locations),
+            (locations, loc_sd),
+            (loc_sd, loc_ssd),
+            (refdir, documents),
+            (documents, doc_sd),
+            (refdir, audio),
+            (refdir, audio_sd),
+            (refdir, threed),
+            (threed, threed_sd),
+            (refdir, chars),
+            (chars, chars_sd),
+
+        ]);
+
+        graph.extend_with_edges(&[
             (tools, package),
             (tools, extension),
             (tools, bin),
