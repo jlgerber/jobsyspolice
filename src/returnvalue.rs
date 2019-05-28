@@ -1,7 +1,8 @@
 use petgraph::graph::{ DefaultIx, NodeIndex };
 use std::ffi::OsString;
 use std::cmp::Ordering;
-
+use std::cell::RefCell;
+use std::rc::Rc;
 pub type NIndex = NodeIndex<DefaultIx>;
 
 /// Used to capture the success or failure of a comparison
@@ -20,16 +21,25 @@ pub type NIndex = NodeIndex<DefaultIx>;
 ///            match. This is the parent of the failed nodes
 /// * `depth` - The depth of the failure, in terms of the
 ///             requested path.
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum ReturnValue {
-    Success,
+    Success(Rc<RefCell<Vec<NIndex>>>),
     Failure{ entry: OsString, node: NIndex, depth: u8 }
 }
 
 impl ReturnValue {
+    pub fn new_success(val: Vec<NIndex>) -> ReturnValue {
+        ReturnValue::Success(Rc::new(RefCell::new(val)))
+    }
+
     /// Is the current ReturnValue instance a Success?
     pub fn is_success(&self) -> bool {
-        return self == &ReturnValue::Success
+        if let ReturnValue::Success(_) = self {
+            true
+        } else {
+            false
+        }
+        //return self == &ReturnValue::Success(_)
     }
 
     /// Is the current ReturnValue instance a failure?
@@ -42,7 +52,7 @@ impl ReturnValue {
     /// the value captured in the Failure case.
     pub fn depth(&self) -> u8 {
         match self {
-            &ReturnValue::Success => 0,
+            &ReturnValue::Success(_) => 0,
             &ReturnValue::Failure{ entry:_, node:_, depth:d } => d,
         }
     }
@@ -50,6 +60,7 @@ impl ReturnValue {
 
 impl Ord for ReturnValue {
     fn cmp(&self, other: &Self) -> Ordering {
+        // success always equals success regardless of the internals
         if self.is_success() && other.is_success() {
             return Ordering::Equal;
         }
@@ -84,8 +95,10 @@ mod tests {
 
     #[test]
     fn equality_test_success() {
-        let rv1 = ReturnValue::Success;
-        let rv2 = ReturnValue::Success;
+        let mut v = Vec::new();
+        let mut v2 = Vec::new();
+        let rv1 = ReturnValue::new_success(v);
+        let rv2 = ReturnValue::new_success(v2);
         assert_eq!(rv1, rv2);
     }
 
@@ -94,7 +107,8 @@ mod tests {
         let n1  = NIndex::new(1);
         let entry = OsString::from("foob");
         let rv1 = ReturnValue::Failure{ entry: entry, node: n1, depth: 10 };
-        let rv2 = ReturnValue::Success;
+        let mut v2 =Vec::new();
+        let rv2 = ReturnValue::new_success(v2);
         assert_ne!(rv1, rv2);
     }
 
