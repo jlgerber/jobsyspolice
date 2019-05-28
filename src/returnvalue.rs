@@ -95,8 +95,8 @@ mod tests {
 
     #[test]
     fn equality_test_success() {
-        let mut v = Vec::new();
-        let mut v2 = Vec::new();
+        let v = Vec::new();
+        let v2 = Vec::new();
         let rv1 = ReturnValue::new_success(v);
         let rv2 = ReturnValue::new_success(v2);
         assert_eq!(rv1, rv2);
@@ -107,7 +107,7 @@ mod tests {
         let n1  = NIndex::new(1);
         let entry = OsString::from("foob");
         let rv1 = ReturnValue::Failure{ entry: entry, node: n1, depth: 10 };
-        let mut v2 =Vec::new();
+        let v2 =Vec::new();
         let rv2 = ReturnValue::new_success(v2);
         assert_ne!(rv1, rv2);
     }
