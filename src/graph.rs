@@ -95,24 +95,24 @@ pub mod testdata {
         let root = graph.add_node(Node::new_root());
         let dd = graph.add_node(Node::from_str("dd").unwrap());
         let shows = graph.add_node(Node::from_str("shows").unwrap());
-        let show = graph.add_node(Node::new_regexp("show", r"^[A-Z]+[A-Z 0-9]*$"));
+        let show = graph.add_node(Node::new_regexp("show", r"^[A-Z]+[A-Z 0-9]*$", None));
         let tools = graph.add_node(Node::from_str("tools").unwrap());
         let package = graph.add_node(Node::from_str("package").unwrap());
         let extension = graph.add_node(Node::from_str("extension").unwrap());
         let color = graph.add_node(Node::from_str("COLOR").unwrap());
-        let category = graph.add_node(Node::new_regexp("category", r"^(char|prop|veh|scene|enviro|kit)$"));
-        let dept = graph.add_node(Node::new_regexp("department", r"^(integ|model|previz|postviz|enviro|rig|anim|fx|cfx|light|comp|lookdev|shotmodel)$"));
-        let subcontext = graph.add_node(Node::new_regexp("subcontext", r"^[a-z]+([_]{0,1}[a-z 0-9])*$"));
+        let category = graph.add_node(Node::new_regexp("category", r"^(char|prop|veh|scene|enviro|kit)$", None));
+        let dept = graph.add_node(Node::new_regexp("department", r"^(integ|model|previz|postviz|enviro|rig|anim|fx|cfx|light|comp|lookdev|shotmodel)$", None));
+        let subcontext = graph.add_node(Node::new_regexp("subcontext", r"^[a-z]+([_]{0,1}[a-z 0-9])*$", None));
         let bin = graph.add_node(Node::from_str("bin").unwrap());
         let etc = graph.add_node(Node::from_str("etc").unwrap());
         let user = graph.add_node(Node::from_str("user").unwrap());
         let shared = graph.add_node(Node::from_str("SHARED").unwrap());
-        let shared_dirs = graph.add_node(Node::new_regexp("shared_dirs", r"^(PREVIZ|INTEG|MODEL|RIG|ANIM|CFX|LIGHT|ENVIRO|FX|COMP|IMG)$"));
-        let work = graph.add_node(Node::new_regexp("work", r"^work\.[a-z]+$"));
-        let sequence = graph.add_node(Node::new_regexp("sequence", r"^(([A-Z]{2,4})|LIBRARY)$"));
+        let shared_dirs = graph.add_node(Node::new_regexp("shared_dirs", r"^(PREVIZ|INTEG|MODEL|RIG|ANIM|CFX|LIGHT|ENVIRO|FX|COMP|IMG)$", None));
+        let work = graph.add_node(Node::new_regexp("work", r"^work\.[a-z]+$", None));
+        let sequence = graph.add_node(Node::new_regexp("sequence", r"^(([A-Z]{2,4})|LIBRARY)$", None));
         let adsequence = graph.add_node(Node::from_str("ASSETDEV").unwrap());
-        let shot = graph.add_node(Node::new_regexp("shot", r"^[0-9]+[A-Z 0-9]*$"));
-        let adshot = graph.add_node(Node::new_regexp("assetdev shot", r"^([A-Z][A-Z 0-9]+[_]{0,1})+[A-Z 0-9]+$"));
+        let shot = graph.add_node(Node::new_regexp("shot", r"^[0-9]+[A-Z 0-9]*$", None));
+        let adshot = graph.add_node(Node::new_regexp("assetdev shot", r"^([A-Z][A-Z 0-9]+[_]{0,1})+[A-Z 0-9]+$", None));
 
         graph.extend_with_edges(&[
             (root, dd),
@@ -173,7 +173,7 @@ mod tests {
     #[test]
     fn path_extends_beyond_graph() {
         let tgraph = build_graph();
-        let p = "/dd/shows/DEV01/SHARED/MODEL/foo/bar";
+        let p = "/dd/shows/DEV01/SHARED/MODEL/veh/model";
         assert!(is_valid(p, &tgraph).is_success());
     }
 

@@ -10,6 +10,7 @@ use std::str::FromStr;
 pub struct Node {
     identity: NodeType,
     entry_type: EntryType,
+    owner: Option<String>,
 }
 
 impl Node {
@@ -26,8 +27,8 @@ impl Node {
     ///
     /// # Returns
     ///   A new instance of Node
-    pub fn new(identity: NodeType, entry_type: EntryType) -> Self {
-        Self { identity, entry_type }
+    pub fn new(identity: NodeType, entry_type: EntryType, owner: Option<String>) -> Self {
+        Self { identity, entry_type, owner }
     }
 
     /// Specialized constructor function which returns a Root node.
@@ -35,16 +36,18 @@ impl Node {
         Self {
             identity: NodeType::Root,
             entry_type: EntryType::Root,
+            owner: None,
         }
     }
 
-    pub fn new_regexp<I: Into<String>>(name: I, re: &str) -> Node {
+    pub fn new_regexp<I: Into<String>>(name: I, re: &str, owner: Option<String>) -> Node {
         Node::new(
             NodeType::RegEx {
                 name: name.into(),
                 pattern: Regexp::new(re).unwrap(),
             },
             EntryType::Directory,
+            owner,
         )
     }
     /// Return a simple name for the node
@@ -55,7 +58,15 @@ impl Node {
             NodeType::RegEx{name:n, pattern: r} => { name.push_str(format!("{} regex: '{}'", n.as_str(), r.as_str()).as_str());},
             NodeType::Root => name.push_str("Root()"),
         }
+        if let Some(ref n) = self.owner {
+            name.push_str(format!(" [{}]", n).as_str());
+        }
         name
+    }
+
+    /// Set the owner to someone after instantiation
+    pub fn set_owner<I>(&mut self, owner: I ) where I: Into<String> {
+        self.owner = Some(owner.into());
     }
 }
 
@@ -76,7 +87,7 @@ impl PartialEq<std::ffi::OsStr> for Node {
 
 impl std::default::Default for Node {
     fn default() -> Node {
-        Node::new(NodeType::Simple(s!("NONE")), EntryType::Directory)
+        Node::new(NodeType::Simple(s!("NONE")), EntryType::Directory, None)
     }
 }
 
@@ -84,7 +95,7 @@ impl FromStr for Node {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Node, ()> {
-        Ok(Node::new(NodeType::Simple(s!(s)), EntryType::Directory))
+        Ok(Node::new(NodeType::Simple(s!(s)), EntryType::Directory, None))
     }
 }
 
@@ -99,7 +110,8 @@ mod tests {
         let root = Node::new_root();
         let expected = Node {
             identity: NodeType::Root,
-            entry_type: EntryType::Root
+            entry_type: EntryType::Root,
+            owner: None
         };
         assert_eq!(root, expected);
     }
@@ -116,7 +128,8 @@ mod tests {
     fn osstr_cmp_with_simple_nodetype() {
         let simple = Node::new(
             NodeType::Simple(s!("foobar")),
-            EntryType::Directory
+            EntryType::Directory,
+            None
         );
 
         let osstr = OsStr::new("foobar");
@@ -130,7 +143,8 @@ mod tests {
                 name: s!("sequence"),
                 pattern: Regexp::new(r"^[A-Z]+[A-Z 0-9]*$").unwrap(),
             },
-            EntryType::Directory
+            EntryType::Directory,
+            None
         );
         let osstr = OsStr::new("AD1A");
         assert_eq!(re, *osstr);
@@ -143,7 +157,8 @@ mod tests {
                 name: s!("sequence"),
                 pattern: Regexp::new(r"^[A-Z]+[A-Z 0-9]*$").unwrap(),
             },
-            EntryType::Directory
+            EntryType::Directory,
+            None
         );
         // the 1 on the front should make the pattern match fail
         let osstr = OsStr::new("1AD1A");
@@ -154,7 +169,8 @@ mod tests {
     fn simple_name_for_root() {
         let re = Node::new(
             NodeType::Root,
-            EntryType::Root
+            EntryType::Root,
+            None
         );
         assert_eq!(re.display_name(), s!("Root()"));
     }
@@ -166,7 +182,8 @@ mod tests {
                 name: s!("sequence"),
                 pattern: Regexp::new(r"^[A-Z]+[A-Z 0-9]*$").unwrap(),
             },
-            EntryType::Directory
+            EntryType::Directory,
+            None
         );
         assert_eq!(re.display_name(), s!("sequence regex: '^[A-Z]+[A-Z 0-9]*$'"));
     }
@@ -178,7 +195,8 @@ mod tests {
                 name: s!("sequence"),
                 pattern: Regexp::new(r"^[A-Z]+[A-Z 0-9]*$").unwrap(),
             },
-            EntryType::Volume
+            EntryType::Volume,
+            None
         );
         assert_eq!(re.display_name(), s!("sequence regex: '^[A-Z]+[A-Z 0-9]*$'"));
     }
@@ -187,7 +205,8 @@ mod tests {
     fn simple_name_for_dir_simple() {
         let re = Node::new(
             NodeType::Simple(s!("DEV01")),
-            EntryType::Directory
+            EntryType::Directory,
+            None
         );
         assert_eq!(re.display_name(), s!("DEV01"));
     }
@@ -196,7 +215,8 @@ mod tests {
     fn simple_name_for_vol_simple() {
         let re = Node::new(
             NodeType::Simple(s!("DEV01")),
-            EntryType::Volume
+            EntryType::Volume,
+            None
         );
         assert_eq!(re.display_name(), s!("DEV01"));
     }
