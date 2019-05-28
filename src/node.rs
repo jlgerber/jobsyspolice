@@ -1,7 +1,6 @@
-use crate::{ EntryType, NodeType };
+use crate::{ EntryType, NodeType, Regexp };
 use serde::{ Deserialize, Serialize };
 use std::str::FromStr;
-
 /// The Node caries information about a specific
 /// directory or file within the candidate jobsystem
 /// graph. This information is used to validate
@@ -39,6 +38,15 @@ impl Node {
         }
     }
 
+    pub fn new_regexp<I: Into<String>>(name: I, re: &str) -> Node {
+        Node::new(
+            NodeType::RegEx {
+                name: name.into(),
+                pattern: Regexp::new(re).unwrap(),
+            },
+            EntryType::Directory,
+        )
+    }
     /// Return a simple name for the node
     pub fn display_name(&self) -> String {
         let mut name = String::new();
