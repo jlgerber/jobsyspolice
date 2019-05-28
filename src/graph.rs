@@ -105,8 +105,10 @@ pub mod testdata {
         let shared = graph.add_node(Node::from_str("SHARED").unwrap());
         let shared_dirs = graph.add_node(Node::new_regexp("shared_dirs", r"^(PREVIZ|INTEG|MODEL|RIG|ANIM|CFX|LIGHT|ENVIRO|FX|COMP|IMG)$"));
         let work = graph.add_node(Node::new_regexp("work", r"^work\.[a-z]+$"));
-        let sequence = graph.add_node(Node::new_regexp("sequence", r"^(([A-Z]{2,4})|LIBRARY|ASSETDEV)$"));
+        let sequence = graph.add_node(Node::new_regexp("sequence", r"^(([A-Z]{2,4})|LIBRARY)$"));
+        let adsequence = graph.add_node(Node::from_str("ASSETDEV").unwrap());
         let shot = graph.add_node(Node::new_regexp("shot", r"^[0-9]+[A-Z 0-9]*$"));
+        let adshot = graph.add_node(Node::new_regexp("assetdev shot", r"^([A-Z][A-Z 0-9]+[_]{0,1})+[A-Z 0-9]+$"));
 
         graph.extend_with_edges(&[
             (root, dd),
@@ -131,11 +133,17 @@ pub mod testdata {
             (category, dept),
             (dept, subcontext),
             (show, sequence),
+            (show, adsequence),
             (sequence, tools),
             (sequence, etc),
             (sequence, shared),
             (sequence, user),
             (sequence, shot),
+            (adsequence, tools),
+            (adsequence, etc),
+            (adsequence, shared),
+            (adsequence, user),
+            (adsequence, adshot),
         ]);
 
         graph.extend_with_edges(&[
@@ -143,6 +151,10 @@ pub mod testdata {
             (shot, etc),
             (shot, shared),
             (shot, user),
+            (adshot, tools),
+            (adshot, etc),
+            (adshot, shared),
+            (adshot, user),
         ]);
 
         graph
