@@ -105,7 +105,7 @@ pub mod testdata {
         let shared = graph.add_node(Node::from_str("SHARED").unwrap());
         let shared_dirs = graph.add_node(Node::new_regexp("shared_dirs", r"^(PREVIZ|INTEG|MODEL|RIG|ANIM|CFX|LIGHT|ENVIRO|FX|COMP|IMG)$"));
         let work = graph.add_node(Node::new_regexp("work", r"^work\.[a-z]+$"));
-        let sequence = graph.add_node(Node::new_regexp("sequence", r"^[A-Z]+[A-Z 0-9]*$"));
+        let sequence = graph.add_node(Node::new_regexp("sequence", r"^(([A-Z]{2,4})|LIBRARY|ASSETDEV)$"));
         let shot = graph.add_node(Node::new_regexp("shot", r"^[0-9]+[A-Z 0-9]*$"));
 
         graph.extend_with_edges(&[
