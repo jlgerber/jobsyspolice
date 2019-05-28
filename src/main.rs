@@ -200,6 +200,6 @@ fn main() {
             }
         }
     } else {
-        eprintln!("\nPass input to command. See help for more details\n")
+        Opt::clap().print_help().unwrap();
     }
 }
