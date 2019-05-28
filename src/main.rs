@@ -7,6 +7,7 @@ use log::{ LevelFilter, self };
 use serde_json;
 use std::{ env, io::{BufWriter, Write}, path::{ Path, PathBuf }, fs::File };
 use structopt::StructOpt;
+use std::rc::Rc;
 
 #[derive(Debug, StructOpt)]
 #[structopt( name = "jst", about = "Interact with the jstemplate.json file. \
@@ -182,7 +183,17 @@ fn main() {
         }
     } else if let Some(input) = args.input {
         match is_valid(input.as_str(), &graph) {
-            ReturnValue::Success => eprintln!("\nSuccess\n"),
+            ReturnValue::Success(vals) => {
+                eprintln!("\nSuccess\n");
+                let vals = Rc::try_unwrap(vals)
+                            .unwrap()
+                            .into_inner();
+
+                //let vals = vals.into_inner();
+                for n in vals.into_iter().rev() {
+                    eprintln!("{:?}", graph[n].display_name());
+                }
+            },
             ReturnValue::Failure{entry, node, depth} => {
 
                 let path = Path::new(input.as_str())
