@@ -127,30 +127,30 @@ pub mod testdata {
         // let fx = graph.add_node(Node::from_str("FX").unwrap());
         // let comp = graph.add_node(Node::from_str("COMP").unwrap());
         // let img = graph.add_node(Node::from_str("IMG").unwrap());
-
-        let work = graph.add_node(Node::new(
-            NodeType::RegEx {
-                name: s!("work"),
-                pattern: Regexp::new(r"^work\.[a-z]+$").unwrap(),
-            },
-            EntryType::Directory,
-        ));
-
-        let sequence = graph.add_node(Node::new(
-            NodeType::RegEx {
-                name: s!("sequence"),
-                pattern: Regexp::new(r"^[A-Z]+[A-Z 0-9]*$").unwrap(),
-            },
-            EntryType::Directory,
-        ));
-
-        let shot = graph.add_node(Node::new(
-            NodeType::RegEx {
-                name: s!("shot"),
-                pattern: Regexp::new(r"^[0-9]+[A-Z 0-9]*$").unwrap(),
-            },
-            EntryType::Directory,
-        ));
+        let work = graph.add_node(Node::new_regexp("work", r"^work\.[a-z]+$"));
+        // let work = graph.add_node(Node::new(
+        //     NodeType::RegEx {
+        //         name: s!("work"),
+        //         pattern: Regexp::new(r"^work\.[a-z]+$").unwrap(),
+        //     },
+        //     EntryType::Directory,
+        // ));
+        let sequence = graph.add_node(Node::new_regexp("sequence", r"^[A-Z]+[A-Z 0-9]*$"));
+        // let sequence = graph.add_node(Node::new(
+        //     NodeType::RegEx {
+        //         name: s!("sequence"),
+        //         pattern: Regexp::new(r"^[A-Z]+[A-Z 0-9]*$").unwrap(),
+        //     },
+        //     EntryType::Directory,
+        // ));
+        let shot = graph.add_node(Node::new_regexp("shot", r"^[0-9]+[A-Z 0-9]*$"));
+        // let shot = graph.add_node(Node::new(
+        //     NodeType::RegEx {
+        //         name: s!("shot"),
+        //         pattern: Regexp::new(r"^[0-9]+[A-Z 0-9]*$").unwrap(),
+        //     },
+        //     EntryType::Directory,
+        // ));
 
         graph.extend_with_edges(&[
             (root, dd),
