@@ -50,6 +50,7 @@ impl Node {
             owner,
         )
     }
+
     /// Return a simple name for the node
     pub fn display_name(&self) -> String {
         let mut name = String::new();
@@ -67,6 +68,11 @@ impl Node {
     /// Set the owner to someone after instantiation
     pub fn set_owner<I>(&mut self, owner: I ) where I: Into<String> {
         self.owner = Some(owner.into());
+    }
+
+    /// Set the entry_type to EntryType::Volume
+    pub fn set_volume(&mut self) {
+        self.entry_type = EntryType::Volume;
     }
 }
 
