@@ -107,21 +107,26 @@ pub mod testdata {
         let tools = graph.add_node(Node::from_str("tools").unwrap());
         let package = graph.add_node(Node::from_str("package").unwrap());
         let extension = graph.add_node(Node::from_str("extension").unwrap());
+        let color = graph.add_node(Node::from_str("COLOR").unwrap());
+        let category = graph.add_node(Node::new_regexp("category", r"^(char|prop|veh|scene|enviro|kit)$"));
+        let dept = graph.add_node(Node::new_regexp("department", r"^(integ|model|previz|postviz|enviro|rig|anim|fx|cfx|light|comp|lookdev|shotmodel)$"));
+        let subcontext = graph.add_node(Node::new_regexp("subcontext", r"^[a-z]+([_]{0,1}[a-z 0-9])*$"));
         let bin = graph.add_node(Node::from_str("bin").unwrap());
         let etc = graph.add_node(Node::from_str("etc").unwrap());
         let user = graph.add_node(Node::from_str("user").unwrap());
         let shared = graph.add_node(Node::from_str("SHARED").unwrap());
-        let previz = graph.add_node(Node::from_str("PREVIZ").unwrap());
-        let integ = graph.add_node(Node::from_str("INTEG").unwrap());
-        let model = graph.add_node(Node::from_str("MODEL").unwrap());
-        let rig = graph.add_node(Node::from_str("RIG").unwrap());
-        let anim = graph.add_node(Node::from_str("ANIM").unwrap());
-        let cfx = graph.add_node(Node::from_str("CFX").unwrap());
-        let light = graph.add_node(Node::from_str("LIGHT").unwrap());
-        let enviro = graph.add_node(Node::from_str("ENVIRO").unwrap());
-        let fx = graph.add_node(Node::from_str("FX").unwrap());
-        let comp = graph.add_node(Node::from_str("COMP").unwrap());
-        let img = graph.add_node(Node::from_str("IMG").unwrap());
+        let shared_dirs = graph.add_node(Node::new_regexp("shared_dirs", r"^(PREVIZ|INTEG|MODEL|RIG|ANIM|CFX|LIGHT|ENVIRO|FX|COMP|IMG)$"));
+        // let previz = graph.add_node(Node::from_str("PREVIZ").unwrap());
+        // let integ = graph.add_node(Node::from_str("INTEG").unwrap());
+        // let model = graph.add_node(Node::from_str("MODEL").unwrap());
+        // let rig = graph.add_node(Node::from_str("RIG").unwrap());
+        // let anim = graph.add_node(Node::from_str("ANIM").unwrap());
+        // let cfx = graph.add_node(Node::from_str("CFX").unwrap());
+        // let light = graph.add_node(Node::from_str("LIGHT").unwrap());
+        // let enviro = graph.add_node(Node::from_str("ENVIRO").unwrap());
+        // let fx = graph.add_node(Node::from_str("FX").unwrap());
+        // let comp = graph.add_node(Node::from_str("COMP").unwrap());
+        // let img = graph.add_node(Node::from_str("IMG").unwrap());
 
         let work = graph.add_node(Node::new(
             NodeType::RegEx {
@@ -156,26 +161,42 @@ pub mod testdata {
             (tools, extension),
             (tools, bin),
             (show, etc),
+            (show, color),
             (show, user),
             (user, work),
             (show, shared),
             (shared, etc),
-            (shared, previz),
-            (shared, integ),
-            (shared, model),
-            (shared, rig),
-            (shared, anim),
-            (shared, cfx),
-            (shared, fx),
-            (shared, light),
-            (shared, enviro),
-            (shared, comp),
-            (shared, img),
-            (show, sequence),
+            (shared, shared_dirs),
+            // (shared, previz),
+            // (shared, integ),
+            // (shared, model),
+            // (shared, rig),
+            // (shared, anim),
+            // (shared, cfx),
+            // (shared, fx),
+            // (shared, light),
+            // (shared, enviro),
+            // (shared, comp),
+            // (shared, img),
         ]);
         // split it up because there appears to be
         // a max size for &[]
         graph.extend_with_edges(&[
+            (shared_dirs, category),
+            // (previz, category),
+            // (integ, category),
+            // (model, category),
+            // (rig, category),
+            // (anim, category),
+            // (cfx, category),
+            // (fx, category),
+            // (light, category),
+            // (enviro, category),
+            // (comp, category),
+            // (img, category),
+            (category, dept),
+            (dept, subcontext),
+            (show, sequence),
             (sequence, tools),
             (sequence, etc),
             (sequence, shared),
