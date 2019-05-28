@@ -83,27 +83,15 @@ fn _is_valid(
 
 pub mod testdata {
     use std::str::FromStr;
-    use crate::{ JGraph, Node, NodeType, EntryType, Regexp };
+    use crate::{ JGraph, Node };
 
     pub fn build_graph() -> JGraph {
         let mut graph = JGraph::new();
 
         let root = graph.add_node(Node::new_root());
-        let dd = Node::new(NodeType::Simple( s!("dd")), EntryType::Directory);
-
-        let shows = Node::from_str("shows").unwrap();
-
-        let dd = graph.add_node(dd);
-        let shows = graph.add_node(shows);
-
-        let show = graph.add_node(Node::new(
-            NodeType::RegEx {
-                name: s!("shot"),
-                pattern: Regexp::new(r"^[A-Z]+[A-Z 0-9]*$").unwrap(),
-            },
-            EntryType::Directory,
-        ));
-
+        let dd = graph.add_node(Node::from_str("dd").unwrap());
+        let shows = graph.add_node(Node::from_str("shows").unwrap());
+        let show = graph.add_node(Node::new_regexp("shot", r"^[A-Z]+[A-Z 0-9]*$"));
         let tools = graph.add_node(Node::from_str("tools").unwrap());
         let package = graph.add_node(Node::from_str("package").unwrap());
         let extension = graph.add_node(Node::from_str("extension").unwrap());
@@ -116,41 +104,9 @@ pub mod testdata {
         let user = graph.add_node(Node::from_str("user").unwrap());
         let shared = graph.add_node(Node::from_str("SHARED").unwrap());
         let shared_dirs = graph.add_node(Node::new_regexp("shared_dirs", r"^(PREVIZ|INTEG|MODEL|RIG|ANIM|CFX|LIGHT|ENVIRO|FX|COMP|IMG)$"));
-        // let previz = graph.add_node(Node::from_str("PREVIZ").unwrap());
-        // let integ = graph.add_node(Node::from_str("INTEG").unwrap());
-        // let model = graph.add_node(Node::from_str("MODEL").unwrap());
-        // let rig = graph.add_node(Node::from_str("RIG").unwrap());
-        // let anim = graph.add_node(Node::from_str("ANIM").unwrap());
-        // let cfx = graph.add_node(Node::from_str("CFX").unwrap());
-        // let light = graph.add_node(Node::from_str("LIGHT").unwrap());
-        // let enviro = graph.add_node(Node::from_str("ENVIRO").unwrap());
-        // let fx = graph.add_node(Node::from_str("FX").unwrap());
-        // let comp = graph.add_node(Node::from_str("COMP").unwrap());
-        // let img = graph.add_node(Node::from_str("IMG").unwrap());
         let work = graph.add_node(Node::new_regexp("work", r"^work\.[a-z]+$"));
-        // let work = graph.add_node(Node::new(
-        //     NodeType::RegEx {
-        //         name: s!("work"),
-        //         pattern: Regexp::new(r"^work\.[a-z]+$").unwrap(),
-        //     },
-        //     EntryType::Directory,
-        // ));
         let sequence = graph.add_node(Node::new_regexp("sequence", r"^[A-Z]+[A-Z 0-9]*$"));
-        // let sequence = graph.add_node(Node::new(
-        //     NodeType::RegEx {
-        //         name: s!("sequence"),
-        //         pattern: Regexp::new(r"^[A-Z]+[A-Z 0-9]*$").unwrap(),
-        //     },
-        //     EntryType::Directory,
-        // ));
         let shot = graph.add_node(Node::new_regexp("shot", r"^[0-9]+[A-Z 0-9]*$"));
-        // let shot = graph.add_node(Node::new(
-        //     NodeType::RegEx {
-        //         name: s!("shot"),
-        //         pattern: Regexp::new(r"^[0-9]+[A-Z 0-9]*$").unwrap(),
-        //     },
-        //     EntryType::Directory,
-        // ));
 
         graph.extend_with_edges(&[
             (root, dd),
@@ -167,33 +123,11 @@ pub mod testdata {
             (show, shared),
             (shared, etc),
             (shared, shared_dirs),
-            // (shared, previz),
-            // (shared, integ),
-            // (shared, model),
-            // (shared, rig),
-            // (shared, anim),
-            // (shared, cfx),
-            // (shared, fx),
-            // (shared, light),
-            // (shared, enviro),
-            // (shared, comp),
-            // (shared, img),
         ]);
         // split it up because there appears to be
         // a max size for &[]
         graph.extend_with_edges(&[
             (shared_dirs, category),
-            // (previz, category),
-            // (integ, category),
-            // (model, category),
-            // (rig, category),
-            // (anim, category),
-            // (cfx, category),
-            // (fx, category),
-            // (light, category),
-            // (enviro, category),
-            // (comp, category),
-            // (img, category),
             (category, dept),
             (dept, subcontext),
             (show, sequence),
