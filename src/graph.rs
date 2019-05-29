@@ -93,107 +93,86 @@ pub mod testdata {
         let mut graph = JGraph::new();
 
         let root = graph.add_node(Node::new_root());
-        let dd = graph.add_node(Node::from_str("dd").unwrap());
-        let shows = graph.add_node(Node::from_str("shows").unwrap());
-        let show = graph.add_node(Node::new_regexp("show", r"^[A-Z]+[A-Z0-9]*$", None));
-        let mut refdir = Node::from_str("REF").unwrap();
+        let dd = graph.add_node(jstnode!("dd"));
+        let shows = graph.add_node(jstnode!("shows"));
+        let show = graph.add_node(jstnode!("show", r"^[A-Z]+[A-Z0-9]*$"));
 
-        // ref
-        refdir.set_volume();
-        let refdir = graph.add_node(refdir);
-        let quicktimes = graph.add_node(Node::from_str("quicktimes").unwrap());
-        let qtsubdir = graph.add_node(Node::new_regexp("qtsubdir", r"^[0-9_]+$", None));
-        let mut clientvault = Node::from_str("CLIENT_VAULT").unwrap();
-        clientvault.set_volume();
-        let clientvault = graph.add_node(clientvault);
-        let clientvaultsd = graph.add_node(Node::new_regexp("clientvault_subdir", r"^(incoming|outgoing)$", None));
-        let clientvaultssd = graph.add_node(Node::new_regexp("clientvault_ssd", r"^[0-9_]+$", None));
-        let slates_n_categories = graph.add_node(Node::new_regexp("slatesNcategories", r"(SLATES|CATGORIES)^$", None));
-        let snc_sd = graph.add_node(Node::new_regexp("snc_sd", r"^[a-z0-9_.-]+$", None));
-        let locations = graph.add_node(Node::from_str("LOCATIONS").unwrap());
-        let loc_sd = graph.add_node(Node::new_regexp("loc_sd", r"^[a-z0-9_.-]+$", None));
-        let loc_ssd = graph.add_node(Node::new_regexp("loc_ssd", r"^[a-z0-9_.-]+$", None));
-        let documents = graph.add_node(Node::from_str("documents").unwrap());
-        let doc_sd = graph.add_node(Node::new_regexp("doc_sd", r"^(agency|director_treatments|vfx_methodology|shcedules|scripts|storyboards)$", None));
-        let audio = graph.add_node(Node::from_str("audio").unwrap());
-        let audio_sd = graph.add_node(Node::new_regexp("audio_sd", r"^(mixes|sources)$", None));
-        let threed = graph.add_node(Node::from_str("3d").unwrap());
-        let threed_sd = graph.add_node(Node::new_regexp("3d_sd", r"^(3d_assets|mocap)$", None));
-        let chars = graph.add_node(Node::from_str("CHARACTERS").unwrap());
+        //ref
+        let refdir = graph.add_node(jstnode!("REF").set_volume());
+        let quicktimes = graph.add_node(jstnode!("quicktimes"));
+        let qtsubdir = graph.add_node(jstnode!("qtsubdir", r"^[0-9_]+$"));
+        let clientvault = graph.add_node(jstnode!("CLIENT_VAULT").set_volume());
+        let clientvaultsd = graph.add_node(jstnode!("clientvault_subdir", r"^(incoming|outgoing)$"));
+        let clientvaultssd = graph.add_node(jstnode!("clientvault_ssd", r"^[0-9_]+$"));
+        let slates_n_categories = graph.add_node(jstnode!("slatesNcategories", r"(SLATES|CATGORIES)^$"));
+        let snc_sd = graph.add_node(jstnode!("snc_sd", r"^[a-z0-9_.-]+$"));
+        let locations = graph.add_node(jstnode!("LOCATIONS"));
+        let loc_sd = graph.add_node(jstnode!("loc_sd", r"^[a-z0-9_.-]+$"));
+        let loc_ssd = graph.add_node(jstnode!("loc_ssd", r"^[a-z0-9_.-]+$"));
+        let documents = graph.add_node(jstnode!("documents"));
+        let doc_sd = graph.add_node(jstnode!("doc_sd", r"^(agency|director_treatments|vfx_methodology|shcedules|scripts|storyboards)$"));
+        let audio = graph.add_node(jstnode!("audio"));
+        let audio_sd = graph.add_node(jstnode!("audio_sd", r"^(mixes|sources)$"));
+        let threed = graph.add_node(jstnode!("3d"));
+        let threed_sd = graph.add_node(jstnode!("3d_sd", r"^(3d_assets|mocap)$"));
+        let chars = graph.add_node(jstnode!("CHARACTERS"));
         let chars_sd = graph.add_node(
-            Node::new_regexp_adv(
-                "chars_sd",
-                r"^[a-z0-9_]+$",
-                r"^(DEVL|SHARED|etc|lib|bin|user)$",
-                None)
+            jstnode!("chars_sd", r"^[a-z0-9_]+$", r"^(DEVL|SHARED|etc|lib|bin|user)$")
         );
 
         // SHOW
-        let mut client_dd_edit = Node::new_regexp("client_dd_edit", r"^(CLIENT|DD)$", None);
-        client_dd_edit.set_volume();
-        let client_dd_edit = graph.add_node(client_dd_edit);
+        let client_dd_edit = graph.add_node(jstnode!("client_dd_edit", r"^(CLIENT|DD)$").set_volume());
         let client_dd_edit_sd = graph.add_node(
-            Node::new_regexp("client_dd_edit_sd",r"^(([0-9]{4,5})|([0-9]{1,2}?[a-z]+)|([a-z]{2}[0-9]{4,5}))$",None)
+            jstnode!("client_dd_edit_sd",r"^(([0-9]{4,5})|([0-9]{1,2}?[a-z]+)|([a-z]{2}[0-9]{4,5}))$")
         );
-        let tools = graph.add_node(Node::from_str("tools").unwrap()); // 0751 ddinst
-        let logs = graph.add_node(Node::from_str("logs").unwrap()); // 0771
-        let package = graph.add_node(Node::from_str("package").unwrap());
-        let extension = graph.add_node(Node::from_str("extension").unwrap());
-        let color = graph.add_node(Node::from_str("color").unwrap());
-        let category = graph.add_node(Node::new_regexp("category", r"^(char|prop|veh|scene|enviro|kit)$", None));
-        let dept = graph.add_node(Node::new_regexp("department", r"^(integ|model|previz|postviz|enviro|rig|anim|fx|cfx|light|comp|lookdev|shotmodel)$", None));
-        let subcontext = graph.add_node(Node::new_regexp("subcontext", r"^[a-z]+([_]{0,1}[a-z0-9])*$", None));
-        let bin = graph.add_node(Node::from_str("bin").unwrap());
-        let etc = graph.add_node(Node::from_str("etc").unwrap()); //0751 ddinst
-        let lib = graph.add_node(Node::from_str("lib").unwrap()); //ddinst
+        let tools = graph.add_node(jstnode!("tools")); // 0751 ddinst
+        let logs = graph.add_node(jstnode!("logs")); // 0771
+        let package = graph.add_node(jstnode!("package"));
+        let extension = graph.add_node(jstnode!("extension"));
+        let color = graph.add_node(jstnode!("color"));
+        let category = graph.add_node(jstnode!("category", r"^(char|prop|veh|scene|enviro|kit)$"));
+        let dept = graph.add_node(jstnode!("department", r"^(integ|model|previz|postviz|enviro|rig|anim|fx|cfx|light|comp|lookdev|shotmodel)$"));
+        let subcontext = graph.add_node(jstnode!("subcontext", r"^[a-z]+([_]{0,1}[a-z0-9])*$"));
+        let bin = graph.add_node(jstnode!("bin"));
+        let etc = graph.add_node(jstnode!("etc")); //0751 ddinst
+        let lib = graph.add_node(jstnode!("lib")); //ddinst
         let lib_sd = graph.add_node(
-            Node::new_regexp("lib_sd", r"^(config|cortex|dmx|houdini|integ|jstools|katana|lw|massive|max|maya|mentalray|mkfoldy|moco|mova|nfb|nuke|perl|python[0-9.]*|race|refchef|rman|scratch|setupenv|shader|shoot2x|submission|vray|wam|web)$", None) // 0771
+            jstnode!("lib_sd", r"^(config|cortex|dmx|houdini|integ|jstools|katana|lw|massive|max|maya|mentalray|mkfoldy|moco|mova|nfb|nuke|perl|python[0-9.]*|race|refchef|rman|scratch|setupenv|shader|shoot2x|submission|vray|wam|web)$") // 0771
         );
-        let prod = graph.add_node(Node::from_str("prod").unwrap()); // 755
-        let docs = graph.add_node(Node::from_str("docs").unwrap()); // 0771
-        let mut user = Node::from_str("user").unwrap(); // 751
-        user.set_volume();
-        let user = graph.add_node(user);
-        let work = graph.add_node(Node::new_regexp("work", r"^work\.[a-z]+$", None)); // 0770 default 0555
-        let mut outsource = Node::from_str("OUTSOURCE").unwrap();
-        outsource.set_volume();
-        let outsource = graph.add_node(outsource);
-        let outsource_sd = graph.add_node(Node::new_regexp("outsource_sd", r"^[a-zA-Z0-9_.]+$", None)); //perms default 555
+        let prod = graph.add_node(jstnode!("prod")); // 755
+        let docs = graph.add_node(jstnode!("docs")); // 0771
+        let user = graph.add_node(jstnode!("user").set_volume()); //751
+        let work = graph.add_node(jstnode!("work", r"^work\.[a-z]+$")); // 0770 default 0555
+        let outsource = graph.add_node(jstnode!("OUTSOURCE").set_volume());
+        let outsource_sd = graph.add_node(jstnode!("outsource_sd", r"^[a-zA-Z0-9_.]+$")); //perms default 555
         let outsource_sdd = graph.add_node(
-            Node::new_regexp_adv(
-                "outsource_sdd",
-                r"[a-zA-Z0-9_.]+^$",
-                r"^prod$",
-                None)
+            jstnode!( "outsource_sdd", r"[a-zA-Z0-9_.]+^$", r"^prod$")
         ); // 0770 (?!(\bprod\b))
-        let finals = graph.add_node(Node::from_str("FINALS").unwrap()); // 750
-        let finals_sd = graph.add_node(Node::new_regexp("finals_sd", r"[0-9_]+", None));
-        let conform = graph.add_node(Node::from_str("CONFORM").unwrap());
-        let conform_sd =graph.add_node(Node::new_regexp("conform_sd", r"^[a-z0-9_]+$", None));
+        let finals = graph.add_node(jstnode!("FINALS")); // 750
+        let finals_sd = graph.add_node(jstnode!("finals_sd", r"[0-9_]+"));
+        let conform = graph.add_node(jstnode!("CONFORM"));
+        let conform_sd =graph.add_node(jstnode!("conform_sd", r"^[a-z0-9_]+$"));
         // conform can also have SHARED as subdir as well as user docs and prod
 
-        let artdept = graph.add_node(Node::from_str("ARTDEPT").unwrap());
-        let artdept_sd = graph.add_node(Node::new_regexp("artdept_sd", r"^[a-zA-Z0-9_.-]+$", None)); //0770
-        let storyboard = graph.add_node(Node::from_str("STORYBOARD").unwrap());
+        let artdept = graph.add_node(jstnode!("ARTDEPT"));
+        let artdept_sd = graph.add_node(jstnode!("artdept_sd", r"^[a-zA-Z0-9_.-]+$")); //0770
+        let storyboard = graph.add_node(jstnode!("STORYBOARD"));
         let storyboard_sd = graph.add_node(
-            Node::new_regexp("storyboard_sd", r"^[0-9]{2}_[0-9]{4}$", None)
+            jstnode!("storyboard_sd", r"^[0-9]{2}_[0-9]{4}$")
         );// 0770
-        let editorial = graph.add_node(Node::from_str("STORYBOARD").unwrap());
-        let film_lens = graph.add_node(Node::new_regexp("film_lens", r"^(FILM|LENS)$", None));
-        let dailies = graph.add_node(Node::from_str("DAILIES").unwrap());
+        let editorial = graph.add_node(jstnode!("STORYBOARD"));
+        let film_lens = graph.add_node(jstnode!("film_lens", r"^(FILM|LENS)$"));
+        let dailies = graph.add_node(jstnode!("DAILIES"));
 
-        let shared = graph.add_node(Node::from_str("SHARED").unwrap());
-        let shared_dirs = graph.add_node(Node::new_regexp("shared_dirs", r"^(PREVIZ|INTEG|MODEL|RIG|ANIM|CFX|LIGHT|ENVIRO|FX|COMP|IMG)$", None));
-        let assetdev = graph.add_node(Node::from_str("ASSETDEV").unwrap());
-        let adshot = graph.add_node(Node::new_regexp("assetdev shot", r"^([A-Z][A-Z0-9]+[_]{0,1})+[A-Z0-9]+$", None));
+        let shared = graph.add_node(jstnode!("SHARED"));
+        let shared_dirs = graph.add_node(jstnode!("shared_dirs", r"^(PREVIZ|INTEG|MODEL|RIG|ANIM|CFX|LIGHT|ENVIRO|FX|COMP|IMG)$"));
+        let assetdev = graph.add_node(jstnode!("ASSETDEV"));
+        let adshot = graph.add_node(jstnode!("assetdev shot", r"^([A-Z][A-Z0-9]+[_]{0,1})+[A-Z0-9]+$"));
         let sequence = graph.add_node(
-            Node::new_regexp_adv(
-                "sequence",
-                r"^(([A-Z]{2,4})|LIBRARY)$",
-                r"^(SHARED|etc|lib|tool|user|bin)$",
-                None)
+            jstnode!(
+                "sequence", r"^(([A-Z]{2,4})|LIBRARY)$", r"^(SHARED|etc|lib|tool|user|bin)$")
         );
-        let shot = graph.add_node(Node::new_regexp("shot", r"^[0-9]+[A-Z0-9]*$", None));
+        let shot = graph.add_node(jstnode!("shot", r"^[0-9]+[A-Z0-9]*$"));
 
         graph.extend_with_edges(&[
             (root, dd),
