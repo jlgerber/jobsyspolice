@@ -86,92 +86,92 @@ fn _is_valid(
 }
 
 pub mod testdata {
-    use crate::{ JGraph, Node, jstnode, Regexp, NodeType, EntryType };
+    use crate::{ JGraph, Node, jspnode, Regexp, NodeType, EntryType };
 
     pub fn build_graph() -> JGraph {
         let mut graph = JGraph::new();
 
         let root = graph.add_node(Node::new_root());
-        let dd = graph.add_node(jstnode!("dd"));
-        let shows = graph.add_node(jstnode!("shows"));
-        let show = graph.add_node(jstnode!("show", r"^[A-Z]+[A-Z0-9]*$"));
+        let dd = graph.add_node(jspnode!("dd"));
+        let shows = graph.add_node(jspnode!("shows"));
+        let show = graph.add_node(jspnode!("show", r"^[A-Z]+[A-Z0-9]*$"));
 
         //ref
-        let refdir = graph.add_node(jstnode!("REF").set_volume());
-        let quicktimes = graph.add_node(jstnode!("quicktimes"));
-        let qtsubdir = graph.add_node(jstnode!("qtsubdir", r"^[0-9_]+$"));
-        let clientvault = graph.add_node(jstnode!("CLIENT_VAULT").set_volume());
-        let clientvaultsd = graph.add_node(jstnode!("clientvault_subdir", r"^(incoming|outgoing)$"));
-        let clientvaultssd = graph.add_node(jstnode!("clientvault_ssd", r"^[0-9_]+$"));
-        let slates_n_categories = graph.add_node(jstnode!("slatesNcategories", r"(SLATES|CATGORIES)^$"));
-        let snc_sd = graph.add_node(jstnode!("snc_sd", r"^[a-z0-9_.-]+$"));
-        let locations = graph.add_node(jstnode!("LOCATIONS"));
-        let loc_sd = graph.add_node(jstnode!("loc_sd", r"^[a-z0-9_.-]+$"));
-        let loc_ssd = graph.add_node(jstnode!("loc_ssd", r"^[a-z0-9_.-]+$"));
-        let documents = graph.add_node(jstnode!("documents"));
-        let doc_sd = graph.add_node(jstnode!("doc_sd", r"^(agency|director_treatments|vfx_methodology|shcedules|scripts|storyboards)$"));
-        let audio = graph.add_node(jstnode!("audio"));
-        let audio_sd = graph.add_node(jstnode!("audio_sd", r"^(mixes|sources)$"));
-        let threed = graph.add_node(jstnode!("3d"));
-        let threed_sd = graph.add_node(jstnode!("3d_sd", r"^(3d_assets|mocap)$"));
-        let chars = graph.add_node(jstnode!("CHARACTERS"));
+        let refdir = graph.add_node(jspnode!("REF").set_volume());
+        let quicktimes = graph.add_node(jspnode!("quicktimes"));
+        let qtsubdir = graph.add_node(jspnode!("qtsubdir", r"^[0-9_]+$"));
+        let clientvault = graph.add_node(jspnode!("CLIENT_VAULT").set_volume());
+        let clientvaultsd = graph.add_node(jspnode!("clientvault_subdir", r"^(incoming|outgoing)$"));
+        let clientvaultssd = graph.add_node(jspnode!("clientvault_ssd", r"^[0-9_]+$"));
+        let slates_n_categories = graph.add_node(jspnode!("slatesNcategories", r"(SLATES|CATGORIES)^$"));
+        let snc_sd = graph.add_node(jspnode!("snc_sd", r"^[a-z0-9_.-]+$"));
+        let locations = graph.add_node(jspnode!("LOCATIONS"));
+        let loc_sd = graph.add_node(jspnode!("loc_sd", r"^[a-z0-9_.-]+$"));
+        let loc_ssd = graph.add_node(jspnode!("loc_ssd", r"^[a-z0-9_.-]+$"));
+        let documents = graph.add_node(jspnode!("documents"));
+        let doc_sd = graph.add_node(jspnode!("doc_sd", r"^(agency|director_treatments|vfx_methodology|shcedules|scripts|storyboards)$"));
+        let audio = graph.add_node(jspnode!("audio"));
+        let audio_sd = graph.add_node(jspnode!("audio_sd", r"^(mixes|sources)$"));
+        let threed = graph.add_node(jspnode!("3d"));
+        let threed_sd = graph.add_node(jspnode!("3d_sd", r"^(3d_assets|mocap)$"));
+        let chars = graph.add_node(jspnode!("CHARACTERS"));
         let chars_sd = graph.add_node(
-            jstnode!("chars_sd", r"^[a-z0-9_]+$", r"^(DEVL|SHARED|etc|lib|bin|user)$")
+            jspnode!("chars_sd", r"^[a-z0-9_]+$", r"^(DEVL|SHARED|etc|lib|bin|user)$")
         );
 
         // SHOW
-        let client_dd_edit = graph.add_node(jstnode!("client_dd_edit", r"^(CLIENT|DD)$").set_volume());
+        let client_dd_edit = graph.add_node(jspnode!("client_dd_edit", r"^(CLIENT|DD)$").set_volume());
         let client_dd_edit_sd = graph.add_node(
-            jstnode!("client_dd_edit_sd",r"^(([0-9]{4,5})|([0-9]{1,2}?[a-z]+)|([a-z]{2}[0-9]{4,5}))$")
+            jspnode!("client_dd_edit_sd",r"^(([0-9]{4,5})|([0-9]{1,2}?[a-z]+)|([a-z]{2}[0-9]{4,5}))$")
         );
-        let tools = graph.add_node(jstnode!("tools")); // 0751 ddinst
-        let logs = graph.add_node(jstnode!("logs")); // 0771
-        let package = graph.add_node(jstnode!("package"));
-        let extension = graph.add_node(jstnode!("extension"));
-        let color = graph.add_node(jstnode!("color"));
-        let category = graph.add_node(jstnode!("category", r"^(char|prop|veh|scene|enviro|kit)$"));
-        let dept = graph.add_node(jstnode!("department", r"^(integ|model|previz|postviz|enviro|rig|anim|fx|cfx|light|comp|lookdev|shotmodel)$"));
-        let subcontext = graph.add_node(jstnode!("subcontext", r"^[a-z]+([_]{0,1}[a-z0-9])*$"));
-        let bin = graph.add_node(jstnode!("bin"));
-        let etc = graph.add_node(jstnode!("etc")); //0751 ddinst
-        let lib = graph.add_node(jstnode!("lib")); //ddinst
+        let tools = graph.add_node(jspnode!("tools")); // 0751 ddinst
+        let logs = graph.add_node(jspnode!("logs")); // 0771
+        let package = graph.add_node(jspnode!("package"));
+        let extension = graph.add_node(jspnode!("extension"));
+        let color = graph.add_node(jspnode!("color"));
+        let category = graph.add_node(jspnode!("category", r"^(char|prop|veh|scene|enviro|kit)$"));
+        let dept = graph.add_node(jspnode!("department", r"^(integ|model|previz|postviz|enviro|rig|anim|fx|cfx|light|comp|lookdev|shotmodel)$"));
+        let subcontext = graph.add_node(jspnode!("subcontext", r"^[a-z]+([_]{0,1}[a-z0-9])*$"));
+        let bin = graph.add_node(jspnode!("bin"));
+        let etc = graph.add_node(jspnode!("etc")); //0751 ddinst
+        let lib = graph.add_node(jspnode!("lib")); //ddinst
         let lib_sd = graph.add_node(
-            jstnode!("lib_sd", r"^(config|cortex|dmx|houdini|integ|jstools|katana|lw|massive|max|maya|mentalray|mkfoldy|moco|mova|nfb|nuke|perl|python[0-9.]*|race|refchef|rman|scratch|setupenv|shader|shoot2x|submission|vray|wam|web)$") // 0771
+            jspnode!("lib_sd", r"^(config|cortex|dmx|houdini|integ|jspools|katana|lw|massive|max|maya|mentalray|mkfoldy|moco|mova|nfb|nuke|perl|python[0-9.]*|race|refchef|rman|scratch|setupenv|shader|shoot2x|submission|vray|wam|web)$") // 0771
         );
-        let prod = graph.add_node(jstnode!("prod")); // 755
-        let docs = graph.add_node(jstnode!("docs")); // 0771
-        let user = graph.add_node(jstnode!("user").set_volume()); //751
-        let work = graph.add_node(jstnode!("work", r"^work\.[a-z]+$")); // 0770 default 0555
-        let outsource = graph.add_node(jstnode!("OUTSOURCE").set_volume());
-        let outsource_sd = graph.add_node(jstnode!("outsource_sd", r"^[a-zA-Z0-9_.]+$")); //perms default 555
+        let prod = graph.add_node(jspnode!("prod")); // 755
+        let docs = graph.add_node(jspnode!("docs")); // 0771
+        let user = graph.add_node(jspnode!("user").set_volume()); //751
+        let work = graph.add_node(jspnode!("work", r"^work\.[a-z]+$")); // 0770 default 0555
+        let outsource = graph.add_node(jspnode!("OUTSOURCE").set_volume());
+        let outsource_sd = graph.add_node(jspnode!("outsource_sd", r"^[a-zA-Z0-9_.]+$")); //perms default 555
         let outsource_sdd = graph.add_node(
-            jstnode!( "outsource_sdd", r"[a-zA-Z0-9_.]+^$", r"^prod$")
+            jspnode!( "outsource_sdd", r"[a-zA-Z0-9_.]+^$", r"^prod$")
         ); // 0770 (?!(\bprod\b))
-        let finals = graph.add_node(jstnode!("FINALS")); // 750
-        let finals_sd = graph.add_node(jstnode!("finals_sd", r"[0-9_]+"));
-        let conform = graph.add_node(jstnode!("CONFORM"));
-        let conform_sd =graph.add_node(jstnode!("conform_sd", r"^[a-z0-9_]+$"));
+        let finals = graph.add_node(jspnode!("FINALS")); // 750
+        let finals_sd = graph.add_node(jspnode!("finals_sd", r"[0-9_]+"));
+        let conform = graph.add_node(jspnode!("CONFORM"));
+        let conform_sd =graph.add_node(jspnode!("conform_sd", r"^[a-z0-9_]+$"));
         // conform can also have SHARED as subdir as well as user docs and prod
 
-        let artdept = graph.add_node(jstnode!("ARTDEPT"));
-        let artdept_sd = graph.add_node(jstnode!("artdept_sd", r"^[a-zA-Z0-9_.-]+$")); //0770
-        let storyboard = graph.add_node(jstnode!("STORYBOARD"));
+        let artdept = graph.add_node(jspnode!("ARTDEPT"));
+        let artdept_sd = graph.add_node(jspnode!("artdept_sd", r"^[a-zA-Z0-9_.-]+$")); //0770
+        let storyboard = graph.add_node(jspnode!("STORYBOARD"));
         let storyboard_sd = graph.add_node(
-            jstnode!("storyboard_sd", r"^[0-9]{2}_[0-9]{4}$")
+            jspnode!("storyboard_sd", r"^[0-9]{2}_[0-9]{4}$")
         );// 0770
-        let editorial = graph.add_node(jstnode!("STORYBOARD"));
-        let film_lens = graph.add_node(jstnode!("film_lens", r"^(FILM|LENS)$"));
-        let dailies = graph.add_node(jstnode!("DAILIES"));
+        let editorial = graph.add_node(jspnode!("STORYBOARD"));
+        let film_lens = graph.add_node(jspnode!("film_lens", r"^(FILM|LENS)$"));
+        let dailies = graph.add_node(jspnode!("DAILIES"));
 
-        let shared = graph.add_node(jstnode!("SHARED"));
-        let shared_dirs = graph.add_node(jstnode!("shared_dirs", r"^(PREVIZ|INTEG|MODEL|RIG|ANIM|CFX|LIGHT|ENVIRO|FX|COMP|IMG)$"));
-        let assetdev = graph.add_node(jstnode!("ASSETDEV"));
-        let adshot = graph.add_node(jstnode!("assetdev shot", r"^([A-Z][A-Z0-9]+[_]{0,1})+[A-Z0-9]+$"));
+        let shared = graph.add_node(jspnode!("SHARED"));
+        let shared_dirs = graph.add_node(jspnode!("shared_dirs", r"^(PREVIZ|INTEG|MODEL|RIG|ANIM|CFX|LIGHT|ENVIRO|FX|COMP|IMG)$"));
+        let assetdev = graph.add_node(jspnode!("ASSETDEV"));
+        let adshot = graph.add_node(jspnode!("assetdev shot", r"^([A-Z][A-Z0-9]+[_]{0,1})+[A-Z0-9]+$"));
         let sequence = graph.add_node(
-            jstnode!(
+            jspnode!(
                 "sequence", r"^(([A-Z]{2,4})|LIBRARY)$", r"^(SHARED|etc|lib|tool|user|bin)$")
         );
-        let shot = graph.add_node(jstnode!("shot", r"^[0-9]+[A-Z0-9]*$"));
+        let shot = graph.add_node(jspnode!("shot", r"^[0-9]+[A-Z0-9]*$"));
 
         graph.extend_with_edges(&[
             (root, dd),

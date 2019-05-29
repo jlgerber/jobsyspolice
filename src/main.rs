@@ -1,7 +1,7 @@
 use chrono;
 use dotenv::dotenv;
 use fern::{ colors::{Color, ColoredLevelConfig}, self} ;
-use jst::*;
+use jsp::*;
 use petgraph;
 use log::{ LevelFilter, self };
 use serde_json;
@@ -10,7 +10,10 @@ use structopt::StructOpt;
 use std::rc::Rc;
 
 #[derive(Debug, StructOpt)]
-#[structopt( name = "jst", about = "Interact with the jstemplate.json file. \
+#[structopt( name = "jsp", about = "
+Job System Police
+
+Interact with the jstemplate.json file. \
 This command may be used to validate candidate paths, create the template, etc" )]
 struct Opt {
     /// Set logging level to one of trace, debug, info, warn, error
@@ -26,7 +29,7 @@ struct Opt {
     output: Option<PathBuf>,
 
     /// Read the graph from a specified template file. Normally, we identify
-    /// the template from the JST_PATH environment variable
+    /// the template from the JSP_PATH environment variable
     #[structopt( short = "i", long = "input", parse(from_os_str) )]
     graph: Option<PathBuf>,
 
@@ -73,15 +76,15 @@ fn setup_cli() -> (Opt, log::LevelFilter) {
     (args, level)
 }
 
-const JST_PATH: &'static str = "JST_PATH";
-const JST_NAME: &'static str = "jstemplate.json";
+const JSP_PATH: &'static str = "JSP_PATH";
+const JSP_NAME: &'static str = "jstemplate.json";
 
 fn get_template_from_env() -> Result<PathBuf, env::VarError> {
-    let jst_path = env::var(JST_PATH)?;
-    log::trace!("expanding tilde for {:?}", jst_path);
-    let jst_path = shellexpand::tilde(jst_path.as_str());
-    log::trace!("attempting to cannonicalize {:?}", jst_path);
-    let jst_path = match PathBuf::from(jst_path.into_owned().as_str()).canonicalize() {
+    let jsp_path = env::var(JSP_PATH)?;
+    log::trace!("expanding tilde for {:?}", jsp_path);
+    let jsp_path = shellexpand::tilde(jsp_path.as_str());
+    log::trace!("attempting to cannonicalize {:?}", jsp_path);
+    let jsp_path = match PathBuf::from(jsp_path.into_owned().as_str()).canonicalize() {
         Ok(p) => p,
         Err(e) => {
             log::error!("failed to cannonicalize {}", e);
@@ -89,8 +92,8 @@ fn get_template_from_env() -> Result<PathBuf, env::VarError> {
             return Err(env::VarError::NotPresent);
         }
     };
-    log::trace!("returning {:?}", jst_path);
-    Ok(jst_path)
+    log::trace!("returning {:?}", jsp_path);
+    Ok(jsp_path)
 }
 
 fn main() {
@@ -98,11 +101,10 @@ fn main() {
     let (args, level) = setup_cli();
     setup_logger(level).unwrap();
     let graph = if args.graph.is_none() {
-        //graph::testdata::build_graph()
         let template = match get_template_from_env() {
             Ok(v) => v,
             Err(e) => {
-                eprintln!("\nunable to get template from environment: {}. Is {} set?\n", e, JST_PATH);
+                eprintln!("\nunable to get template from environment: {}. Is {} set?\n", e, JSP_PATH);
                 std::process::exit(1);
             }
         };
@@ -134,7 +136,7 @@ fn main() {
 
             // test to see if buffer is a directory. if it is apply the standard name
             if output.is_dir() {
-                output.push(JST_NAME);
+                output.push(JSP_NAME);
             }
             let j = serde_json::to_string_pretty(&graph).unwrap();
             let file = match File::create(output) {
@@ -193,6 +195,7 @@ fn main() {
                 for n in vals.into_iter().rev() {
                     eprintln!("{:?}", graph[n].display_name());
                 }
+                println!("");
             },
             ReturnValue::Failure{entry, node, depth} => {
 
@@ -202,7 +205,8 @@ fn main() {
                             .fold(PathBuf::new(), |mut p, v| {p.push(v); p});
 
                 let neighbors = graph.neighbors(node);
-                eprintln!("\nFailed to match {:?} in {:?} against:", entry, path);
+                eprintln!("\nFailure\n");
+                eprintln!("Failed to match {:?} in {:?} against:", entry, path);
                 for n in neighbors {
                     eprintln!("{}", graph[n].display_name());
                 }

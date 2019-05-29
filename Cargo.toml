@@ -1,6 +1,6 @@
 [package]
-name = "jst"
-version = "0.10.0"
+name = "jsp"
+version = "0.11.0"
 authors = ["jonathan gerber <jlgerber@gmail.com>"]
 edition = "2018"
 

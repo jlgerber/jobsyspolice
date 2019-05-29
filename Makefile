@@ -1,4 +1,4 @@
-target := jst
+target := jsp
 envfile := ./.env
 
 build:

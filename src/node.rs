@@ -122,7 +122,7 @@ impl std::default::Default for Node {
 
 
 #[macro_export]
-macro_rules!  jstnode {
+macro_rules!  jspnode {
     ($name:expr) => (
         Node::new(
             NodeType::Simple(String::from($name)),
