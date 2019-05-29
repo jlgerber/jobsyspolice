@@ -176,7 +176,13 @@ pub mod testdata {
         let shared_dirs = graph.add_node(Node::new_regexp("shared_dirs", r"^(PREVIZ|INTEG|MODEL|RIG|ANIM|CFX|LIGHT|ENVIRO|FX|COMP|IMG)$", None));
         let assetdev = graph.add_node(Node::from_str("ASSETDEV").unwrap());
         let adshot = graph.add_node(Node::new_regexp("assetdev shot", r"^([A-Z][A-Z0-9]+[_]{0,1})+[A-Z0-9]+$", None));
-        let sequence = graph.add_node(Node::new_regexp("sequence", r"^(([A-Z]{2,4})|LIBRARY)$", None));
+        let sequence = graph.add_node(
+            Node::new_regexp_adv(
+                "sequence",
+                r"^(([A-Z]{2,4})|LIBRARY)$",
+                r"^(SHARED|etc|lib|tool|user|bin)$",
+                None)
+        );
         let shot = graph.add_node(Node::new_regexp("shot", r"^[0-9]+[A-Z0-9]*$", None));
 
         graph.extend_with_edges(&[
