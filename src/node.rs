@@ -82,15 +82,45 @@ impl Node {
         name
     }
 
-    /// Set the owner to someone after instantiation
-    pub fn set_owner<I>(&mut self, owner: I ) where I: Into<String> {
+    /// Set the owner to someone after instantiation.
+    /// `set_owner` consumes self
+    ///
+    /// # Examples
+    /// There are two ways to use `set_owner`. The first is by
+    /// chaining
+    /// ```
+    /// let node = Node::new().set_owner("jobsys");
+    /// ```
+    /// The second way is to reassign the return value
+    ///
+    /// ```
+    /// let node = Node::new();
+    /// let node = node.set_owner("ddinst");
+    /// ```
+    pub fn set_owner<I>(mut self, owner: I ) -> Node where I: Into<String> {
         self.owner = Some(owner.into());
+        self
     }
 
     /// Set the entry_type to EntryType::Volume
-    pub fn set_volume(&mut self) {
+    /// set_volume consumes self and must be used thusly
+    ///
+    /// # Examples
+    /// Like `set_owner`, there are two ways to use `set_volume`.
+    /// You may chain calls:
+    /// ```
+    /// let node = Node::new().set_volume();
+    /// ```
+    /// Or, you may reassign the return value:
+    /// ```
+    /// let node = Node::new(...);
+    /// let node = node.set_volume();
+    /// ```
+    pub fn set_volume(mut self) -> Node  {
         self.entry_type = EntryType::Volume;
+        self
     }
+
 }
 
 impl PartialEq<std::ffi::OsStr> for Node {
