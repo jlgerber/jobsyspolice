@@ -1,6 +1,6 @@
-use crate::{ EntryType, NodeType, Regexp };
+use crate::{ EntryType, NodeType};
 use serde::{ Deserialize, Serialize, self };
-use std::str::FromStr;
+
 /// The Node caries information about a specific
 /// directory or file within the candidate jobsystem
 /// graph. This information is used to validate
@@ -39,32 +39,6 @@ impl Node {
             entry_type: EntryType::Root,
             owner: None,
         }
-    }
-
-    pub fn new_regexp<I: Into<String>>(name: I, re: &str, owner: Option<String>) -> Node {
-        Node::new(
-            NodeType::RegEx {
-                name: name.into(),
-                pattern: Regexp::new(re).unwrap(),
-                exclude: None,
-            },
-            EntryType::Directory,
-            owner,
-        )
-    }
-
-    /// For those times when you need to define an exclusion regex in addition to a match regex.
-    /// We provide this call, as the library we use does not support forward matches.
-    pub fn new_regexp_adv<I: Into<String>>(name: I, re: &str, exclude_re: &str, owner: Option<String>) -> Node {
-        Node::new(
-            NodeType::RegEx {
-                name: name.into(),
-                pattern: Regexp::new(re).unwrap(),
-                exclude: Some(Regexp::new(exclude_re).unwrap()),
-            },
-            EntryType::Directory,
-            owner,
-        )
     }
 
     /// Return a simple name for the node
@@ -146,13 +120,39 @@ impl std::default::Default for Node {
     }
 }
 
-impl FromStr for Node {
-    type Err = ();
 
-    fn from_str(s: &str) -> Result<Node, ()> {
-        Ok(Node::new(NodeType::Simple(s!(s)), EntryType::Directory, None))
-    }
+#[macro_export]
+macro_rules!  jstnode {
+    ($name:expr) => (
+        Node::new(
+            NodeType::Simple(String::from($name)),
+            EntryType::Directory,
+            None
+        )
+    );
+    ($name:expr, $regex:expr) => (
+        Node::new(
+        NodeType::RegEx {
+            name: $name.into(),
+            pattern: Regexp::new($regex).unwrap(),
+            exclude: None,
+        },
+        EntryType::Directory,
+        None));
+    ($name:expr, $regex:expr, $exclude:expr) => (
+        Node::new(
+            NodeType::RegEx {
+                name: $name.into(),
+                pattern: Regexp::new($regex).unwrap(),
+                exclude: Some(Regexp::new($exclude).unwrap()),
+            },
+            EntryType::Directory,
+            None
+        )
+    );
 }
+
+
 
 #[cfg(test)]
 mod tests {

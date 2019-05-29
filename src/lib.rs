@@ -17,16 +17,7 @@ pub mod entrytype;
 pub use entrytype::EntryType;
 
 pub mod node;
-pub use node::Node;
-
-#[macro_use]
-pub mod jstmacro {
-    macro_rules! jstnode {
-        ($name:expr) => (Node::from_str($name).unwrap());
-        ($name:expr, $regex:expr) => (Node::new_regexp($name, $regex, None));
-        ($name:expr, $regex:expr, $exclude:expr) => (Node::new_regexp_adv($name, $regex, $exclude, None));
-    }
-}
+pub use node::{Node };
 
 pub mod graph;
 pub use graph::{is_valid, JGraph};

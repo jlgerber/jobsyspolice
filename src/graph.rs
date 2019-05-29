@@ -86,8 +86,7 @@ fn _is_valid(
 }
 
 pub mod testdata {
-    use std::str::FromStr;
-    use crate::{ JGraph, Node };
+    use crate::{ JGraph, Node, jstnode, Regexp, NodeType, EntryType };
 
     pub fn build_graph() -> JGraph {
         let mut graph = JGraph::new();
