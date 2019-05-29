@@ -1,5 +1,5 @@
 use crate::{ EntryType, NodeType, Regexp };
-use serde::{ Deserialize, Serialize };
+use serde::{ Deserialize, Serialize, self };
 use std::str::FromStr;
 /// The Node caries information about a specific
 /// directory or file within the candidate jobsystem
@@ -10,6 +10,7 @@ use std::str::FromStr;
 pub struct Node {
     identity: NodeType,
     entry_type: EntryType,
+    #[serde(skip_serializing_if = "Option::is_none")]
     owner: Option<String>,
 }
 

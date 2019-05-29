@@ -18,7 +18,12 @@ use serde::{ Deserialize, Serialize };
 pub enum NodeType {
     Root,
     Simple(String),
-    RegEx { name: String, pattern: Regexp, exclude: Option<Regexp> },
+    RegEx {
+        name: String,
+        pattern: Regexp,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        exclude: Option<Regexp>
+    },
 }
 
 impl Display for NodeType {
