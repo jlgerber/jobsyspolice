@@ -120,9 +120,13 @@ pub mod testdata {
         let threed = graph.add_node(Node::from_str("3d").unwrap());
         let threed_sd = graph.add_node(Node::new_regexp("3d_sd", r"^(3d_assets|mocap)$", None));
         let chars = graph.add_node(Node::from_str("CHARACTERS").unwrap());
-        let chars_sd = graph.add_node(Node::new_regexp("chars_sd",r"^[a-z0-9_]+$", None));
-        // the full chars regexp has a lookahead negative which the regexp lib does not support.
-        // TODO: add an optional Negative expression to regexp that will reject matches
+        let chars_sd = graph.add_node(
+            Node::new_regexp_adv(
+                "chars_sd",
+                r"^[a-z0-9_]+$",
+                r"^(DEVL|SHARED|etc|lib|bin|user)$",
+                None)
+        );
 
         // SHOW
         let mut client_dd_edit = Node::new_regexp("client_dd_edit", r"^(CLIENT|DD)$", None);
@@ -155,7 +159,13 @@ pub mod testdata {
         outsource.set_volume();
         let outsource = graph.add_node(outsource);
         let outsource_sd = graph.add_node(Node::new_regexp("outsource_sd", r"^[a-zA-Z0-9_.]+$", None)); //perms default 555
-        let outsource_sdd = graph.add_node(Node::new_regexp("outsource_sdd", r"[a-zA-Z0-9_.]+^$", None)); // 0770 (?!(\bprod\b))
+        let outsource_sdd = graph.add_node(
+            Node::new_regexp_adv(
+                "outsource_sdd",
+                r"[a-zA-Z0-9_.]+^$",
+                r"^prod$",
+                None)
+        ); // 0770 (?!(\bprod\b))
         let finals = graph.add_node(Node::from_str("FINALS").unwrap()); // 750
         let finals_sd = graph.add_node(Node::new_regexp("finals_sd", r"[0-9_]+", None));
         let conform = graph.add_node(Node::from_str("CONFORM").unwrap());
