@@ -130,6 +130,20 @@ macro_rules!  jspnode {
             None
         )
     );
+    ($name:expr, $($key:expr => $val:expr),+) => ({
+        let mut n = Node::new(
+            NodeType::Simple(String::from($name)),
+            EntryType::Directory,
+            None
+        );
+        $(
+            match $key {
+                "owner" => {n = n.set_owner($val);}
+                _ => ()
+            }
+        )+
+        n
+    });
     ($name:expr, $regex:expr) => (
         Node::new(
         NodeType::RegEx {
@@ -139,6 +153,23 @@ macro_rules!  jspnode {
         },
         EntryType::Directory,
         None));
+    ($name:expr, $regex:expr, $($key:expr => $val:expr),+) => ({
+        let mut n = Node::new(
+        NodeType::RegEx {
+            name: $name.into(),
+            pattern: Regexp::new($regex).unwrap(),
+            exclude: None,
+        },
+        EntryType::Directory,
+        None);
+        $(
+            match $key {
+                "owner" => {n = n.set_owner($val);}
+                _ => ()
+            }
+        )+
+        n
+    });
     ($name:expr, $regex:expr, $exclude:expr) => (
         Node::new(
             NodeType::RegEx {
@@ -150,6 +181,24 @@ macro_rules!  jspnode {
             None
         )
     );
+    ($name:expr, $regex:expr, $exclude:expr, $($key:expr => $val:expr),+) => ({
+        let mut n = Node::new(
+            NodeType::RegEx {
+                name: $name.into(),
+                pattern: Regexp::new($regex).unwrap(),
+                exclude: Some(Regexp::new($exclude).unwrap()),
+            },
+            EntryType::Directory,
+            None
+        );
+        $(
+            match $key {
+                "owner" => {n = n.set_owner($val);}
+                _ => ()
+            }
+        )+
+        n
+    });
 }
 
 

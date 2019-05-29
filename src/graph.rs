@@ -92,9 +92,9 @@ pub mod testdata {
         let mut graph = JGraph::new();
 
         let root = graph.add_node(Node::new_root());
-        let dd = graph.add_node(jspnode!("dd"));
+        let dd = graph.add_node(jspnode!("dd", "owner"=>"jobsys"));
         let shows = graph.add_node(jspnode!("shows"));
-        let show = graph.add_node(jspnode!("show", r"^[A-Z]+[A-Z0-9]*$"));
+        let show = graph.add_node(jspnode!("show", r"^[A-Z]+[A-Z0-9]*$",r"^(REF|SHARED|OUTSOURCE|LOCATIONS)$", "owner"=>"jobsys"));
 
         //ref
         let refdir = graph.add_node(jspnode!("REF").set_volume());
@@ -109,7 +109,7 @@ pub mod testdata {
         let loc_sd = graph.add_node(jspnode!("loc_sd", r"^[a-z0-9_.-]+$"));
         let loc_ssd = graph.add_node(jspnode!("loc_ssd", r"^[a-z0-9_.-]+$"));
         let documents = graph.add_node(jspnode!("documents"));
-        let doc_sd = graph.add_node(jspnode!("doc_sd", r"^(agency|director_treatments|vfx_methodology|shcedules|scripts|storyboards)$"));
+        let doc_sd = graph.add_node(jspnode!("doc_sd", r"^(agency|director_treatments|vfx_methodology|schedules|scripts|storyboards)$"));
         let audio = graph.add_node(jspnode!("audio"));
         let audio_sd = graph.add_node(jspnode!("audio_sd", r"^(mixes|sources)$"));
         let threed = graph.add_node(jspnode!("3d"));
