@@ -45,6 +45,21 @@ impl Node {
             NodeType::RegEx {
                 name: name.into(),
                 pattern: Regexp::new(re).unwrap(),
+                exclude: None,
+            },
+            EntryType::Directory,
+            owner,
+        )
+    }
+
+    /// For those times when you need to define an exclusion regex in addition to a match regex.
+    /// We provide this call, as the library we use does not support forward matches.
+    pub fn new_regexp_adv<I: Into<String>>(name: I, re: &str, exclude_re: &str, owner: Option<String>) -> Node {
+        Node::new(
+            NodeType::RegEx {
+                name: name.into(),
+                pattern: Regexp::new(re).unwrap(),
+                exclude: Some(Regexp::new(exclude_re).unwrap()),
             },
             EntryType::Directory,
             owner,
@@ -56,7 +71,8 @@ impl Node {
         let mut name = String::new();
         match &self.identity {
             NodeType::Simple(n) => { name.push_str(n.as_str()); },
-            NodeType::RegEx{name:n, pattern: r} => { name.push_str(format!("{} regex: '{}'", n.as_str(), r.as_str()).as_str());},
+            NodeType::RegEx{name:n, pattern: r, exclude: None} => { name.push_str(format!("{} regex: '{}'", n.as_str(), r.as_str()).as_str());},
+            NodeType::RegEx{name:n, pattern: r, exclude: Some(excl)} => { name.push_str(format!("{} regex: '{}' exclude: '{}'", n.as_str(), r.as_str(), excl.as_str()).as_str());},
             NodeType::Root => name.push_str("Root()"),
         }
         if let Some(ref n) = self.owner {
@@ -86,7 +102,9 @@ impl PartialEq<std::ffi::OsStr> for Node {
         match &self.identity {
             NodeType::Root => false,
             NodeType::Simple(strval) => strval.as_str() == other,
-            NodeType::RegEx { name: _, pattern } => pattern.is_match(other.to_str().unwrap()),
+            NodeType::RegEx { name: _, pattern, exclude: None } => pattern.is_match(other.to_str().unwrap()),
+            NodeType::RegEx { name: _, pattern, exclude: Some(exc) } => !exc.is_match(other.to_str().unwrap()) && pattern.is_match(other.to_str().unwrap()),
+
         }
     }
 }
@@ -148,6 +166,7 @@ mod tests {
             NodeType::RegEx {
                 name: s!("sequence"),
                 pattern: Regexp::new(r"^[A-Z]+[A-Z 0-9]*$").unwrap(),
+                exclude: None,
             },
             EntryType::Directory,
             None
@@ -157,11 +176,42 @@ mod tests {
     }
 
     #[test]
+    fn osstr_cmp_with_exlude_nodetype() {
+        let re = Node::new(
+            NodeType::RegEx {
+                name: s!("sequence"),
+                pattern: Regexp::new(r"^[A-Z]+[A-Z 0-9]*$").unwrap(),
+                exclude: Some(Regexp::new(r"^(SHARED|etc)$").unwrap()),
+            },
+            EntryType::Directory,
+            None
+        );
+        let osstr = OsStr::new("SHARE");
+        assert_eq!(re, *osstr);
+    }
+
+    #[test]
+    fn osstr_cmp_with_exlude_nodetype_notequal() {
+        let re = Node::new(
+            NodeType::RegEx {
+                name: s!("sequence"),
+                pattern: Regexp::new(r"^[A-Z]+[A-Z 0-9]*$").unwrap(),
+                exclude: Some(Regexp::new(r"^(SHARED|etc)$").unwrap()),
+            },
+            EntryType::Directory,
+            None
+        );
+        let osstr = OsStr::new("SHARED");
+        assert_ne!(re, *osstr);
+    }
+
+    #[test]
     fn osstr_cmp_with_regexp_nodetype_not_equal() {
         let re = Node::new(
             NodeType::RegEx {
                 name: s!("sequence"),
                 pattern: Regexp::new(r"^[A-Z]+[A-Z 0-9]*$").unwrap(),
+                exclude: None,
             },
             EntryType::Directory,
             None
@@ -187,6 +237,7 @@ mod tests {
             NodeType::RegEx {
                 name: s!("sequence"),
                 pattern: Regexp::new(r"^[A-Z]+[A-Z 0-9]*$").unwrap(),
+                exclude: None,
             },
             EntryType::Directory,
             None
@@ -200,11 +251,26 @@ mod tests {
             NodeType::RegEx {
                 name: s!("sequence"),
                 pattern: Regexp::new(r"^[A-Z]+[A-Z 0-9]*$").unwrap(),
+                exclude: None,
             },
             EntryType::Volume,
             None
         );
         assert_eq!(re.display_name(), s!("sequence regex: '^[A-Z]+[A-Z 0-9]*$'"));
+    }
+
+    #[test]
+    fn simple_name_for_vol_regex_with_exclude() {
+        let re = Node::new(
+            NodeType::RegEx {
+                name: s!("sequence"),
+                pattern: Regexp::new(r"^[A-Z]+[A-Z 0-9]*$").unwrap(),
+                exclude: Some(Regexp::new(r"^(SHARED|etc)$").unwrap()),
+            },
+            EntryType::Volume,
+            None
+        );
+        assert_eq!(re.display_name(), s!("sequence regex: '^[A-Z]+[A-Z 0-9]*$' exclude: '^(SHARED|etc )$'"));
     }
 
     #[test]

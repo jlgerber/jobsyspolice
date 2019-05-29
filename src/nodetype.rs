@@ -18,13 +18,14 @@ use serde::{ Deserialize, Serialize };
 pub enum NodeType {
     Root,
     Simple(String),
-    RegEx { name: String, pattern: Regexp },
+    RegEx { name: String, pattern: Regexp, exclude: Option<Regexp> },
 }
 
 impl Display for NodeType {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match self {
-            NodeType::RegEx{name, pattern} =>  write!(f, "RegEx{{'{}', '{}'}}", name, pattern.as_str()),
+            NodeType::RegEx{name, pattern, exclude: None} =>  write!(f, "RegEx{{'{}', '{}'}}", name, pattern.as_str()),
+            NodeType::RegEx{name, pattern, exclude: Some(neg_pattern) } =>  write!(f, "RegEx{{'{}', '{}', '{}'}}", name, pattern.as_str(), neg_pattern.as_str()),
             NodeType::Simple(name) =>  write!(f, "Simple('{}')",name),
             NodeType::Root =>  write!(f, "Root"),
         }
