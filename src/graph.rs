@@ -95,7 +95,7 @@ pub mod testdata {
         let root = graph.add_node(Node::new_root());
         let dd = graph.add_node(Node::from_str("dd").unwrap());
         let shows = graph.add_node(Node::from_str("shows").unwrap());
-        let show = graph.add_node(Node::new_regexp("show", r"^[A-Z]+[A-Z 0-9]*$", None));
+        let show = graph.add_node(Node::new_regexp("show", r"^[A-Z]+[A-Z0-9]*$", None));
         let mut refdir = Node::from_str("REF").unwrap();
 
         // ref
