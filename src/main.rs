@@ -79,7 +79,7 @@ fn setup_cli() -> (Opt, log::LevelFilter) {
 const JSP_PATH: &'static str = "JSP_PATH";
 const JSP_NAME: &'static str = "jstemplate.json";
 
-fn get_template_from_env() -> Result<PathBuf, env::VarError> {
+fn _get_template_from_env() -> Result<PathBuf, env::VarError> {
     let jsp_path = env::var(JSP_PATH)?;
     log::trace!("expanding tilde for {:?}", jsp_path);
     let jsp_path = shellexpand::tilde(jsp_path.as_str());
@@ -96,34 +96,51 @@ fn get_template_from_env() -> Result<PathBuf, env::VarError> {
     Ok(jsp_path)
 }
 
-fn main() {
-    dotenv().ok();
-    let (args, level) = setup_cli();
-    setup_logger(level).unwrap();
-    let graph = if args.graph.is_none() {
-        let template = match get_template_from_env() {
-            Ok(v) => v,
-            Err(e) => {
-                eprintln!("\nunable to get template from environment: {}. Is {} set?\n", e, JSP_PATH);
-                std::process::exit(1);
-            }
-        };
-        let json_file = match File::open(&template) {
-            Ok(f) => f,
-            Err(e) => {
-                eprintln!("\nunable to open {:?}. error: {}\n", template, e);
-                std::process::exit(1);
-            }
-        };
+fn get_template_from_env() -> PathBuf {
+    match _get_template_from_env() {
+        Ok(v) => v,
+        Err(e) => {
+            eprintln!("\nunable to get template from environment: {}. Is {} set?\n", e, JSP_PATH);
+            std::process::exit(1);
+        }
+    }
+}
+
+fn open_template(template: &Path) -> File {
+    match File::open(&template) {
+        Ok(f) => f,
+        Err(e) => {
+            eprintln!("\nunable to open {:?}. error: {}\n", template, e);
+            std::process::exit(1);
+        }
+    }
+}
+
+fn get_graph(graph: Option<PathBuf>) -> JGraph {
+    if graph.is_none() {
+        let template = get_template_from_env();
+        let json_file = open_template(&template);
         let result: JGraph =
         serde_json::from_reader(json_file).expect("error while reading json");
         result
     } else {
-        let json_file_path = args.graph.unwrap();
+        let json_file_path = graph.unwrap();
         let json_file = File::open(json_file_path).expect("file not found");
         let result: JGraph =
         serde_json::from_reader(json_file).expect("error while reading json");
         result
+    }
+}
+
+fn main() {
+    dotenv().ok();
+    let (args, level) = setup_cli();
+    setup_logger(level).unwrap();
+
+    let graph = if args.output.is_none() {
+        get_graph(args.graph)
+    } else {
+        graph::testdata::build_graph()
     };
 
     if args.output.is_some() {
@@ -132,7 +149,7 @@ fn main() {
                 log::warn!("INPUT not compatible with --file argument. It will be ignored");
             }
             // if we are writing out the template, we use the internal definition
-            let graph = graph::testdata::build_graph();
+            //let graph = graph::testdata::build_graph();
 
             // test to see if buffer is a directory. if it is apply the standard name
             if output.is_dir() {
