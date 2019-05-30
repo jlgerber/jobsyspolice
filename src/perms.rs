@@ -310,6 +310,37 @@ mod tests {
     }
 
     #[test]
+    fn pretty_perms_passed_0776() {
+        assert_eq!(pretty_perms(0o0776), AsciiString::from_ascii("-rwxrwxrw-").unwrap());
+    }
+
+    #[test]
+    fn pretty_perms_passed_0775() {
+        assert_eq!(pretty_perms(0o0775), AsciiString::from_ascii("-rwxrwxr-x").unwrap());
+    }
+
+    #[test]
+    fn pretty_perms_passed_0774() {
+        assert_eq!(pretty_perms(0o0774), AsciiString::from_ascii("-rwxrwxr--").unwrap());
+    }
+
+    #[test]
+    fn pretty_perms_passed_0772() {
+        assert_eq!(pretty_perms(0o0772), AsciiString::from_ascii("-rwxrwx-w-").unwrap());
+    }
+
+    #[test]
+    fn pretty_perms_passed_0771() {
+        assert_eq!(pretty_perms(0o0771), AsciiString::from_ascii("-rwxrwx--x").unwrap());
+    }
+
+    #[test]
+    fn pretty_perms_passed_0751() {
+        assert_eq!(pretty_perms(0o0751), AsciiString::from_ascii("-rwxr-x--x").unwrap());
+    }
+
+    // sticky bit
+    #[test]
     fn pretty_perms_passed_1777_sticky_bit_on() {
         assert_eq!(pretty_perms(0o1777), AsciiString::from_ascii("trwxrwxrwx").unwrap());
     }
@@ -339,10 +370,6 @@ mod tests {
         assert_eq!(pretty_perms(0o1077), AsciiString::from_ascii("T---rwxrwx").unwrap());
     }
 
-    #[test]
-    fn pretty_perms_passed_0751() {
-        assert_eq!(pretty_perms(0o0751), AsciiString::from_ascii("-rwxr-x--x").unwrap());
-    }
 
     #[test]
     fn pretty_perms_passed_2751_sgid_on_group_exe_on() {
@@ -392,16 +419,27 @@ mod tests {
     }
 
     #[test]
-    fn test_rwx_permissions() {
+    fn test_file_perm_call_with_100644() {
         let perms = 0o100644;
         assert_eq!(file_perms(perms), 0o0644);
     }
 
+    #[test]
+    fn test_file_perm_call_with_100000() {
+        let perms = 0o100000;
+        assert_eq!(file_perms(perms), 0o0000);
+    }
 
     #[test]
-    fn test_leftover_permissions() {
+    fn test_file_type_call_with_100644() {
         let perms = 0o100644;
         assert_eq!(file_type(perms), 0o100000);
+    }
+
+    #[test]
+    fn test_file_type_call_with_000777() {
+        let perms = 0o000777;
+        assert_eq!(file_type(perms), 0o000000);
     }
 
 }
