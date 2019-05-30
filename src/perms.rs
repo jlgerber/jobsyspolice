@@ -366,23 +366,29 @@ mod tests {
 
     #[test]
     fn test_permissions() {
-        let  f = File::create("foo.txt").unwrap();
+        let fname = "test_permissions.txt";
+        let  f = File::create(fname).unwrap();
         let metadata = f.metadata().unwrap();
         let mut permissions = metadata.permissions();
         permissions.set_mode(0o777);
         let mode = permissions.mode();
+        std::fs::remove_file(fname).expect("unable to remove temp file");
         assert_eq!(mode, 0o777);
     }
 
     #[test]
     fn test_permissions_ugo() {
-        let  f = File::create("foo.txt").unwrap();
+        let fname = "test_permissions_ugo.txt";
+        let  f = File::create(fname).unwrap();
         let metadata = f.metadata().unwrap();
         let  permissions = metadata.permissions();
         //permissions.set_mode(0o777);
         // so is it a u32 or an i32????
-        let mode = pretty_perms(permissions.mode() as i32);
-        assert_eq!(mode, AsciiString::from_ascii("rwxrw-r--").unwrap());
+        let pmode = permissions.mode() as i32;
+        let mode = pretty_perms(pmode);
+        std::fs::remove_file(fname).expect("unable to remove temp file");
+        assert_eq!(mode, AsciiString::from_ascii("-rw-r--r--").unwrap());
+        assert_eq!(pmode & !S_IFMT, 0o644);
     }
 
     #[test]

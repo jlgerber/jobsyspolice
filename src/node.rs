@@ -352,7 +352,7 @@ mod tests {
             EntryType::Volume,
             None
         );
-        assert_eq!(re.display_name(), s!("sequence regex: '^[A-Z]+[A-Z 0-9]*$' exclude: '^(SHARED|etc )$'"));
+        assert_eq!(re.display_name(), s!("sequence regex: '^[A-Z]+[A-Z 0-9]*$' exclude: '^(SHARED|etc)$'"));
     }
 
     #[test]
