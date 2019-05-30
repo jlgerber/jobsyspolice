@@ -123,6 +123,7 @@ impl std::default::Default for Node {
 
 #[macro_export]
 macro_rules!  jspnode {
+    // jspnode("foo")
     ($name:expr) => (
         Node::new(
             NodeType::Simple(String::from($name)),
@@ -130,6 +131,7 @@ macro_rules!  jspnode {
             None
         )
     );
+    // jspnode!("foo", "owner" => "bob")
     ($name:expr, $($key:expr => $val:expr),+) => ({
         let mut n = Node::new(
             NodeType::Simple(String::from($name)),
