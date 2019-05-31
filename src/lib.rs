@@ -19,6 +19,9 @@ pub use entrytype::EntryType;
 pub mod node;
 pub use node::{Node };
 
+pub mod nodepath;
+pub use nodepath::NodePath;
+
 pub mod graph;
 pub use graph::{is_valid, JGraph};
 
