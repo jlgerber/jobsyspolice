@@ -73,6 +73,7 @@ fn main() {
     }
 }
 
+#[inline]
 fn setup_logger(level: log::LevelFilter) -> Result<(), fern::InitError> {
     let  colors = ColoredLevelConfig::new()
         .error(Color::Red)
@@ -97,6 +98,7 @@ fn setup_logger(level: log::LevelFilter) -> Result<(), fern::InitError> {
     Ok(())
 }
 
+#[inline]
 fn setup_cli() -> (Opt, log::LevelFilter) {
     let args = Opt::from_args();
     let level = match args.level.as_str() {
@@ -114,6 +116,7 @@ fn setup_cli() -> (Opt, log::LevelFilter) {
 const JSP_PATH: &'static str = "JSP_PATH";
 const JSP_NAME: &'static str = "jstemplate.json";
 
+#[inline]
 fn _get_template_from_env() -> Result<PathBuf, env::VarError> {
     let jsp_path = env::var(JSP_PATH)?;
     log::trace!("expanding tilde for {:?}", jsp_path);
@@ -131,6 +134,7 @@ fn _get_template_from_env() -> Result<PathBuf, env::VarError> {
     Ok(jsp_path)
 }
 
+#[inline]
 fn get_template_from_env() -> PathBuf {
     match _get_template_from_env() {
         Ok(v) => v,
@@ -141,6 +145,7 @@ fn get_template_from_env() -> PathBuf {
     }
 }
 
+#[inline]
 fn open_template(template: &Path) -> File {
     match File::open(&template) {
         Ok(f) => f,
@@ -151,6 +156,7 @@ fn open_template(template: &Path) -> File {
     }
 }
 
+#[inline]
 fn _get_graph(graph: Option<PathBuf>) -> JGraph {
     if graph.is_none() {
         let template = get_template_from_env();
@@ -167,6 +173,7 @@ fn _get_graph(graph: Option<PathBuf>) -> JGraph {
     }
 }
 
+#[inline]
 fn write_template(output: &mut PathBuf, graph: &JGraph) {
     log::warn!("INPUT not compatible with --file argument. It will be ignored");
 
@@ -191,6 +198,7 @@ fn write_template(output: &mut PathBuf, graph: &JGraph) {
     f.write_all(j.as_bytes()).expect("Unable to write data");
 }
 
+#[inline]
 fn write_template_as_dotfile(output: &PathBuf, graph: &JGraph) {
     let mut file = match File::create(output) {
         Ok(out) => {
@@ -218,6 +226,7 @@ fn write_template_as_dotfile(output: &PathBuf, graph: &JGraph) {
     };
 }
 
+#[inline]
 fn get_graph(has_output: bool, graph: Option<PathBuf>) -> JGraph {
     if has_output {
         graph::testdata::build_graph()
@@ -226,6 +235,7 @@ fn get_graph(has_output: bool, graph: Option<PathBuf>) -> JGraph {
     }
 }
 
+#[inline]
 fn report_success(vals: Rc<std::cell::RefCell<Vec<NIndex>>>, graph: &JGraph) {
     eprintln!("\nSuccess\n");
     let vals = Rc::try_unwrap(vals)
@@ -238,6 +248,7 @@ fn report_success(vals: Rc<std::cell::RefCell<Vec<NIndex>>>, graph: &JGraph) {
     println!("");
 }
 
+#[inline]
 fn report_failure(input: &str, entry: &OsString, node: NIndex, depth: u8, graph: &JGraph ) {
     let path = Path::new(input)
                 .iter()
