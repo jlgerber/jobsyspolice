@@ -184,7 +184,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "jsp"
-version = "0.12.0"
+version = "0.13.0"
 dependencies = [
  "ascii 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -198,6 +198,7 @@ dependencies = [
  "serde_regex 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "shellexpand 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "structopt 0.2.15 (registry+https://github.com/rust-lang/crates.io-index)",
+ "xnixperms 0.1.0 (git+https://github.com/jlgerber/xnixperms.git)",
 ]
 
 [[package]]
@@ -551,6 +552,15 @@ dependencies = [
  "winapi 0.3.7 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
+[[package]]
+name = "xnixperms"
+version = "0.1.0"
+source = "git+https://github.com/jlgerber/xnixperms.git#c724eda811c873436d8286decae80fae01bdc8b1"
+dependencies = [
+ "ascii 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
 [metadata]
 "checksum aho-corasick 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)" = "e6f484ae0c99fec2e858eb6134949117399f222608d84cadb3f58c1f97c2364c"
 "checksum ansi_term 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ee49baf6cb617b853aa8d93bf420db2383fab46d314482ca2803b40d5fde979b"
@@ -622,3 +632,4 @@ dependencies = [
 "checksum winapi-i686-pc-windows-gnu 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ac3b87c63620426dd9b991e5ce0329eff545bccbbb34f3be09ff6fb6ab51b7b6"
 "checksum winapi-x86_64-pc-windows-gnu 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 "checksum winconsole 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)" = "3ef84b96d10db72dd980056666d7f1e7663ce93d82fa33b63e71c966f4cf5032"
+"checksum xnixperms 0.1.0 (git+https://github.com/jlgerber/xnixperms.git)" = "<none>"

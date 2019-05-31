@@ -8,6 +8,7 @@ use serde_json;
 use std::{ env, io::{BufWriter, Write}, path::{ Path, PathBuf }, fs::File };
 use structopt::StructOpt;
 use std::rc::Rc;
+use std::ffi::OsString;
 
 #[derive(Debug, StructOpt)]
 #[structopt( name = "jsp", about = "
@@ -36,6 +37,40 @@ struct Opt {
     /// Jobsystem path to validate (eg /dd/shows/FOOBAR)
     #[structopt(name="INPUT")]
     input: Option<String>,
+}
+
+fn main() {
+    dotenv().ok();
+    let (args, level) = setup_cli();
+    setup_logger(level).unwrap();
+
+    let graph = get_graph(args.output.is_some(), args.graph);
+
+    if args.output.is_some() {
+        if let Some(mut output) = args.output {
+            write_template(&mut output, &graph);
+        }
+    } else if args.dot.is_some() {
+        if let Some(output) = args.dot {
+            if args.input.is_some() {
+                log::warn!("INPUT not compatible with --dot argument. It will be ignored");
+            }
+            write_template_as_dotfile(&output, &graph);
+        } else {
+            println!("{:#?}",  petgraph::dot::Dot::with_config(&graph, &[petgraph::dot::Config::EdgeNoLabel]));
+        }
+    } else if let Some(input) = args.input {
+        match is_valid(input.as_str(), &graph) {
+            ReturnValue::Success(vals) => {
+                report_success(vals, &graph);
+            },
+            ReturnValue::Failure{entry, node, depth} => {
+                report_failure(input.as_str(), &entry, node, depth, &graph );
+            }
+        }
+    } else {
+        Opt::clap().print_help().unwrap();
+    }
 }
 
 fn setup_logger(level: log::LevelFilter) -> Result<(), fern::InitError> {
@@ -116,7 +151,7 @@ fn open_template(template: &Path) -> File {
     }
 }
 
-fn get_graph(graph: Option<PathBuf>) -> JGraph {
+fn _get_graph(graph: Option<PathBuf>) -> JGraph {
     if graph.is_none() {
         let template = get_template_from_env();
         let json_file = open_template(&template);
@@ -132,106 +167,89 @@ fn get_graph(graph: Option<PathBuf>) -> JGraph {
     }
 }
 
-fn main() {
-    dotenv().ok();
-    let (args, level) = setup_cli();
-    setup_logger(level).unwrap();
+fn write_template(output: &mut PathBuf, graph: &JGraph) {
+    log::warn!("INPUT not compatible with --file argument. It will be ignored");
 
-    let graph = if args.output.is_none() {
-        get_graph(args.graph)
-    } else {
-        graph::testdata::build_graph()
-    };
+    // if we are writing out the template, we use the internal definition
+    //let graph = graph::testdata::build_graph();
 
-    if args.output.is_some() {
-        if let Some(mut output) = args.output {
-            if args.input.is_some() {
-                log::warn!("INPUT not compatible with --file argument. It will be ignored");
-            }
-            // if we are writing out the template, we use the internal definition
-            //let graph = graph::testdata::build_graph();
-
-            // test to see if buffer is a directory. if it is apply the standard name
-            if output.is_dir() {
-                output.push(JSP_NAME);
-            }
-            let j = serde_json::to_string_pretty(&graph).unwrap();
-            let file = match File::create(output) {
-                Ok(out) => {
-                    log::debug!("attempting to write to {:?}", out);
-                    out},
-                Err(e) => {
-                    eprintln!("{}", e);
-                    std::process::exit(1);
-                }
-            };
-            let mut f = BufWriter::new(file);
-            f.write_all(j.as_bytes()).expect("Unable to write data");
-        }
-    } else if args.dot.is_some() {
-        if let Some(output) = args.dot {
-            if args.input.is_some() {
-                log::warn!("INPUT not compatible with --dot argument. It will be ignored");
-            }
-            let mut file = match File::create(output) {
-                Ok(out) => {
-                    log::debug!("attempting to write to {:?}", out);
-                    out},
-                Err(e) => {
-                    eprintln!("{}", e);
-                    std::process::exit(1);
-                }
-            };
-            match file.write_all(
-                format!(
-                    "{:#?}"
-                    ,petgraph::dot::Dot::with_config(
-                        &graph,
-                        &[petgraph::dot::Config::EdgeNoLabel]
-                    )
-                ).as_bytes()
-            ) {
-                Err(e) => {
-                    eprintln!("{}",e);
-                    std::process::exit(1);
-                }
-                Ok(_) => ()
-            };
-        } else {
-            println!("{:#?}",  petgraph::dot::Dot::with_config(&graph, &[petgraph::dot::Config::EdgeNoLabel]));
-        }
-    } else if let Some(input) = args.input {
-        match is_valid(input.as_str(), &graph) {
-            ReturnValue::Success(vals) => {
-                eprintln!("\nSuccess\n");
-                let vals = Rc::try_unwrap(vals)
-                            .unwrap()
-                            .into_inner();
-
-                //let vals = vals.into_inner();
-                for n in vals.into_iter().rev() {
-                    eprintln!("{:?}", graph[n].display_name());
-                }
-                println!("");
-            },
-            ReturnValue::Failure{entry, node, depth} => {
-
-                let path = Path::new(input.as_str())
-                            .iter()
-                            .take((depth+1) as usize)
-                            .fold(PathBuf::new(), |mut p, v| {p.push(v); p});
-
-                let neighbors = graph.neighbors(node);
-                eprintln!("\nFailure\n");
-                eprintln!("Failed to match {:?} in {:?} against:", entry, path);
-                for n in neighbors {
-                    eprintln!("{}", graph[n].display_name());
-                }
-                eprintln!("");
-                std::process::exit(1);
-            }
-        }
-    } else {
-        Opt::clap().print_help().unwrap();
+    // test to see if buffer is a directory. if it is apply the standard name
+    if output.is_dir() {
+        output.push(JSP_NAME);
     }
+    let j = serde_json::to_string_pretty(&graph).unwrap();
+    let file = match File::create(output) {
+        Ok(out) => {
+            log::debug!("attempting to write to {:?}", out);
+            out},
+        Err(e) => {
+            eprintln!("{}", e);
+            std::process::exit(1);
+        }
+    };
+    let mut f = BufWriter::new(file);
+    f.write_all(j.as_bytes()).expect("Unable to write data");
+}
+
+fn write_template_as_dotfile(output: &PathBuf, graph: &JGraph) {
+    let mut file = match File::create(output) {
+        Ok(out) => {
+            log::debug!("attempting to write to {:?}", out);
+            out},
+        Err(e) => {
+            eprintln!("{}", e);
+            std::process::exit(1);
+        }
+    };
+    match file.write_all(
+        format!(
+            "{:#?}"
+            ,petgraph::dot::Dot::with_config(
+                &graph,
+                &[petgraph::dot::Config::EdgeNoLabel]
+            )
+        ).as_bytes()
+    ) {
+        Err(e) => {
+            eprintln!("{}",e);
+            std::process::exit(1);
+        }
+        Ok(_) => ()
+    };
+}
+
+fn get_graph(has_output: bool, graph: Option<PathBuf>) -> JGraph {
+    if has_output {
+        graph::testdata::build_graph()
+    } else {
+         _get_graph(graph)
+    }
+}
+
+fn report_success(vals: Rc<std::cell::RefCell<Vec<NIndex>>>, graph: &JGraph) {
+    eprintln!("\nSuccess\n");
+    let vals = Rc::try_unwrap(vals)
+                .unwrap()
+                .into_inner();
+
+    for n in vals.into_iter().rev() {
+        eprintln!("{:?}", graph[n].display_name());
+    }
+    println!("");
+}
+
+fn report_failure(input: &str, entry: &OsString, node: NIndex, depth: u8, graph: &JGraph ) {
+    let path = Path::new(input)
+                .iter()
+                .take((depth+1) as usize)
+                .fold(PathBuf::new(), |mut p, v| {p.push(v); p});
+
+    let neighbors = graph.neighbors(node);
+    eprintln!("\nFailure\n");
+    eprintln!("Failed to match {:?} in {:?} against:", entry, path);
+    for n in neighbors {
+        eprintln!("{}", graph[n].display_name());
+    }
+    eprintln!("");
+    std::process::exit(1);
 }
