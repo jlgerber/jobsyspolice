@@ -92,13 +92,13 @@ pub mod testdata {
         let mut graph = JGraph::new();
 
         let root = graph.add_node(Node::new_root());
-        let dd = graph.add_node(jspnode!("dd", "owner"=>"jobsys"));
+        let dd = graph.add_node(jspnode!("dd", "owner"=>"jobsys", "perms"=>"751"));
         let shows = graph.add_node(jspnode!("shows"));
-        let show = graph.add_node(jspnode!("show", r"^[A-Z]+[A-Z0-9]*$",r"^(REF|SHARED|OUTSOURCE|LOCATIONS)$", "owner"=>"jobsys"));
+        let show = graph.add_node(jspnode!("show", r"^[A-Z]+[A-Z0-9]*$",r"^(REF|SHARED|OUTSOURCE|LOCATIONS)$", "owner"=>"jobsys", "perms"=>"751"));
 
         //ref
         let refdir = graph.add_node(jspnode!("REF").set_volume());
-        let quicktimes = graph.add_node(jspnode!("quicktimes"));
+        let quicktimes = graph.add_node(jspnode!("quicktimes", "perms"=>"751"));
         let qtsubdir = graph.add_node(jspnode!("qtsubdir", r"^[0-9_]+$"));
         let clientvault = graph.add_node(jspnode!("CLIENT_VAULT").set_volume());
         let clientvaultsd = graph.add_node(jspnode!("clientvault_subdir", r"^(incoming|outgoing)$"));
@@ -138,23 +138,23 @@ pub mod testdata {
         let lib_sd = graph.add_node(
             jspnode!("lib_sd", r"^(config|cortex|dmx|houdini|integ|jspools|katana|lw|massive|max|maya|mentalray|mkfoldy|moco|mova|nfb|nuke|perl|python[0-9.]*|race|refchef|rman|scratch|setupenv|shader|shoot2x|submission|vray|wam|web)$") // 0771
         );
-        let prod = graph.add_node(jspnode!("prod")); // 755
-        let docs = graph.add_node(jspnode!("docs")); // 0771
-        let user = graph.add_node(jspnode!("user").set_volume()); //751
-        let work = graph.add_node(jspnode!("work", r"^work\.[a-z]+$")); // 0770 default 0555
+        let prod = graph.add_node(jspnode!("prod", "perms"=>"755")); // 755
+        let docs = graph.add_node(jspnode!("docs", "perms"=>"771")); // 0771
+        let user = graph.add_node(jspnode!("user", "perms"=>"751").set_volume()); //751
+        let work = graph.add_node(jspnode!("work", r"^work\.[a-z]+$", "perms"=>"770")); // 0770 default 0555
         let outsource = graph.add_node(jspnode!("OUTSOURCE").set_volume());
         let outsource_sd = graph.add_node(jspnode!("outsource_sd", r"^[a-zA-Z0-9_.]+$")); //perms default 555
         let outsource_sdd = graph.add_node(
-            jspnode!( "outsource_sdd", r"[a-zA-Z0-9_.]+^$", r"^prod$")
+            jspnode!( "outsource_sdd", r"[a-zA-Z0-9_.]+^$", r"^prod$", "perms"=>"770")
         ); // 0770 (?!(\bprod\b))
-        let finals = graph.add_node(jspnode!("FINALS")); // 750
+        let finals = graph.add_node(jspnode!("FINALS", "perms"=>"750")); // 750
         let finals_sd = graph.add_node(jspnode!("finals_sd", r"[0-9_]+"));
         let conform = graph.add_node(jspnode!("CONFORM"));
         let conform_sd =graph.add_node(jspnode!("conform_sd", r"^[a-z0-9_]+$"));
         // conform can also have SHARED as subdir as well as user docs and prod
 
         let artdept = graph.add_node(jspnode!("ARTDEPT"));
-        let artdept_sd = graph.add_node(jspnode!("artdept_sd", r"^[a-zA-Z0-9_.-]+$")); //0770
+        let artdept_sd = graph.add_node(jspnode!("artdept_sd", r"^[a-zA-Z0-9_.-]+$", "perms"=>"770")); //0770
         let storyboard = graph.add_node(jspnode!("STORYBOARD"));
         let storyboard_sd = graph.add_node(
             jspnode!("storyboard_sd", r"^[0-9]{2}_[0-9]{4}$")

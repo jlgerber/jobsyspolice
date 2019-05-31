@@ -12,6 +12,8 @@ pub struct Node {
     entry_type: EntryType,
     #[serde(skip_serializing_if = "Option::is_none")]
     owner: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    perms: Option<String>,
 }
 
 impl Node {
@@ -28,8 +30,8 @@ impl Node {
     ///
     /// # Returns
     ///   A new instance of Node
-    pub fn new(identity: NodeType, entry_type: EntryType, owner: Option<String>) -> Self {
-        Self { identity, entry_type, owner }
+    pub fn new(identity: NodeType, entry_type: EntryType, owner: Option<String>, perms: Option<String>) -> Self {
+        Self { identity, entry_type, owner, perms }
     }
 
     /// Specialized constructor function which returns a Root node.
@@ -38,6 +40,7 @@ impl Node {
             identity: NodeType::Root,
             entry_type: EntryType::Root,
             owner: None,
+            perms: None,
         }
     }
 
@@ -51,6 +54,9 @@ impl Node {
             NodeType::Root => name.push_str("Root()"),
         }
         if let Some(ref n) = self.owner {
+            name.push_str(format!(" [{}]", n).as_str());
+        }
+        if let Some(ref n) = self.perms {
             name.push_str(format!(" [{}]", n).as_str());
         }
         name
@@ -95,6 +101,12 @@ impl Node {
         self
     }
 
+    /// Set the perms to be an Option<u32>
+    pub fn set_perms<I>(mut self, perms: I) -> Node where I:Into<String>  {
+        self.perms = Some(perms.into());
+        self
+    }
+
 }
 
 impl PartialEq<std::ffi::OsStr> for Node {
@@ -116,7 +128,7 @@ impl PartialEq<std::ffi::OsStr> for Node {
 
 impl std::default::Default for Node {
     fn default() -> Node {
-        Node::new(NodeType::Simple(s!("NONE")), EntryType::Directory, None)
+        Node::new(NodeType::Simple(s!("NONE")), EntryType::Directory, None, None)
     }
 }
 
@@ -128,6 +140,7 @@ macro_rules!  jspnode {
         Node::new(
             NodeType::Simple(String::from($name)),
             EntryType::Directory,
+            None,
             None
         )
     );
@@ -136,11 +149,18 @@ macro_rules!  jspnode {
         let mut n = Node::new(
             NodeType::Simple(String::from($name)),
             EntryType::Directory,
-            None
+            None,
+            None,
         );
         $(
             match $key {
                 "owner" => {n = n.set_owner($val);}
+                "perms" | "permissions" => {
+                        let conv = $val.parse::<u32>();
+                        if conv.is_ok(){
+                            n = n.set_perms($val);
+                        }
+                    }
                 _ => ()
             }
         )+
@@ -154,6 +174,7 @@ macro_rules!  jspnode {
             exclude: None,
         },
         EntryType::Directory,
+        None,
         None));
     ($name:expr, $regex:expr, $($key:expr => $val:expr),+) => ({
         let mut n = Node::new(
@@ -163,10 +184,17 @@ macro_rules!  jspnode {
             exclude: None,
         },
         EntryType::Directory,
+        None,
         None);
         $(
             match $key {
                 "owner" => {n = n.set_owner($val);}
+                "perms" | "permissions" => {
+                        let conv = $val.parse::<u32>();
+                        if conv.is_ok(){
+                            n = n.set_perms($val);
+                        }
+                }
                 _ => ()
             }
         )+
@@ -180,6 +208,7 @@ macro_rules!  jspnode {
                 exclude: Some(Regexp::new($exclude).unwrap()),
             },
             EntryType::Directory,
+            None,
             None
         )
     );
@@ -191,11 +220,18 @@ macro_rules!  jspnode {
                 exclude: Some(Regexp::new($exclude).unwrap()),
             },
             EntryType::Directory,
+            None,
             None
         );
         $(
             match $key {
                 "owner" => {n = n.set_owner($val);}
+                "perms" | "permissions" => {
+                        let conv = $val.parse::<u32>();
+                        if conv.is_ok(){
+                            n = n.set_perms($val);
+                        }
+                }
                 _ => ()
             }
         )+
@@ -217,7 +253,8 @@ mod tests {
         let expected = Node {
             identity: NodeType::Root,
             entry_type: EntryType::Root,
-            owner: None
+            owner: None,
+            perms: None
         };
         assert_eq!(root, expected);
     }
@@ -235,7 +272,7 @@ mod tests {
         let simple = Node::new(
             NodeType::Simple(s!("foobar")),
             EntryType::Directory,
-            None
+            None, None
         );
 
         let osstr = OsStr::new("foobar");
@@ -251,7 +288,7 @@ mod tests {
                 exclude: None,
             },
             EntryType::Directory,
-            None
+            None, None
         );
         let osstr = OsStr::new("AD1A");
         assert_eq!(re, *osstr);
@@ -266,7 +303,7 @@ mod tests {
                 exclude: Some(Regexp::new(r"^(SHARED|etc)$").unwrap()),
             },
             EntryType::Directory,
-            None
+            None, None
         );
         let osstr = OsStr::new("SHARE");
         assert_eq!(re, *osstr);
@@ -281,7 +318,7 @@ mod tests {
                 exclude: Some(Regexp::new(r"^(SHARED|etc)$").unwrap()),
             },
             EntryType::Directory,
-            None
+            None, None
         );
         let osstr = OsStr::new("SHARED");
         assert_ne!(re, *osstr);
@@ -296,7 +333,7 @@ mod tests {
                 exclude: None,
             },
             EntryType::Directory,
-            None
+            None, None
         );
         // the 1 on the front should make the pattern match fail
         let osstr = OsStr::new("1AD1A");
@@ -308,7 +345,7 @@ mod tests {
         let re = Node::new(
             NodeType::Root,
             EntryType::Root,
-            None
+            None, None
         );
         assert_eq!(re.display_name(), s!("Root()"));
     }
@@ -322,7 +359,7 @@ mod tests {
                 exclude: None,
             },
             EntryType::Directory,
-            None
+            None, None
         );
         assert_eq!(re.display_name(), s!("sequence regex: '^[A-Z]+[A-Z 0-9]*$'"));
     }
@@ -336,7 +373,7 @@ mod tests {
                 exclude: None,
             },
             EntryType::Volume,
-            None
+            None, None
         );
         assert_eq!(re.display_name(), s!("sequence regex: '^[A-Z]+[A-Z 0-9]*$'"));
     }
@@ -350,7 +387,7 @@ mod tests {
                 exclude: Some(Regexp::new(r"^(SHARED|etc)$").unwrap()),
             },
             EntryType::Volume,
-            None
+            None, None
         );
         assert_eq!(re.display_name(), s!("sequence regex: '^[A-Z]+[A-Z 0-9]*$' exclude: '^(SHARED|etc)$'"));
     }
@@ -360,7 +397,7 @@ mod tests {
         let re = Node::new(
             NodeType::Simple(s!("DEV01")),
             EntryType::Directory,
-            None
+            None, None
         );
         assert_eq!(re.display_name(), s!("DEV01"));
     }
@@ -370,9 +407,16 @@ mod tests {
         let re = Node::new(
             NodeType::Simple(s!("DEV01")),
             EntryType::Volume,
-            None
+            None, None
         );
         assert_eq!(re.display_name(), s!("DEV01"));
+    }
+
+
+    #[test]
+    fn macro_simple_name_for_vol_simple() {
+        let re = jspnode!("DEV01", "perms" => "777");
+        assert_eq!(re.display_name(), s!("DEV01 [777]"));
     }
 
 }

@@ -48,6 +48,9 @@ fn main() {
 
     if args.output.is_some() {
         if let Some(mut output) = args.output {
+            if args.input.is_some() {
+                log::warn!("INPUT not compatible with --file argument. It will be ignored");
+            }
             write_template(&mut output, &graph);
         }
     } else if args.dot.is_some() {
@@ -175,7 +178,6 @@ fn _get_graph(graph: Option<PathBuf>) -> JGraph {
 
 #[inline]
 fn write_template(output: &mut PathBuf, graph: &JGraph) {
-    log::warn!("INPUT not compatible with --file argument. It will be ignored");
 
     // if we are writing out the template, we use the internal definition
     //let graph = graph::testdata::build_graph();
