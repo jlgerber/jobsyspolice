@@ -1,6 +1,7 @@
 use crate::Node;
 use crate::NIndex;
 use crate::JGraph;
+use crate::JSPError;
 
 /// The NodePath stores a path of nodes in the JGraph. The nodes
 /// are represented internally as `NIndex`s. One may generate an
@@ -14,9 +15,38 @@ pub struct NodePath<'a> {
 
 impl<'a> NodePath<'a> {
     /// Moves all the elements of other into Self, leaving other empty.
-    pub fn append(&mut self, other: &mut Vec<NIndex>) {
+    pub fn append_unchecked(&mut self, other: &mut Vec<NIndex>) {
         self.nodes.append(other);
     }
+
+    /// Moves all the elements of other into Self, leaving other empty, assuming
+    /// all the NIndexes in other exist in self.graph. If that isn't the case,
+    /// append bails early.
+    ///
+    /// # Parameters
+    /// * `other` - a mutable reference to a vector of NIndex which we wish to append
+    ///             to self.
+    /// # Returns
+    ///   bool indicating success / failure
+    ///
+    /// # Examples
+    /// ```
+    /// let mut graph = JGraph::new();
+    /// let node = Node::new_root();
+    /// let idx = graph.add_node(node);
+    /// let idxvec = vec![idx];
+    /// let np = NodePath::new(&graph).append(np);
+    ///
+    pub fn append(mut self, other: &mut Vec<NIndex>) -> Result<Self, JSPError> {
+        for nd in other.iter() {
+            if !self.graph.node_indices().any(|x| &x == nd) {
+                return Err(JSPError::MissingIndex(nd.clone()));
+            }
+        }
+        self.nodes.append(other);
+        Ok(self)
+    }
+
     /// Removes all nodes from the NodePath
     pub fn clear(&mut self) {
         self.nodes.clear();
@@ -48,14 +78,14 @@ impl<'a> NodePath<'a> {
         self
     }
 
-    pub fn replace_nodes(&mut self, n: Vec<NIndex>) -> bool {
+    pub fn replace_nodes(mut self, n: Vec<NIndex>) -> Result<Self, JSPError> {
         for nd in &n {
             if !self.graph.node_indices().any(|x| &x == nd) {
-                return false;
+                return Err(JSPError::MissingIndex(nd.clone()));
             }
         }
         self.nodes = n;
-        true
+        Ok(self)
     }
 
     /// Add an NIndex into the nodeindex. This method does not
@@ -89,12 +119,12 @@ impl<'a> NodePath<'a> {
     /// let n = NIndex::new(0);
     /// assert_eq!(np.push(n), false);
     /// ```
-    pub fn push(&mut self, node: NIndex) -> bool {
+    pub fn push(&mut self, node: NIndex) -> Result<(), JSPError> {
         if !self.graph.node_indices().any(|x| x == node) {
-            return false;
+            return Err(JSPError::MissingIndex(node));
         }
         self.nodes.push(node);
-        true
+        Ok(())
     }
 
     ///
@@ -210,10 +240,10 @@ mod tests {
         let n1 = Node::new_root();
         let n1idx = graph.add_node(n1);
         let niv = vec![n1idx];
-        let mut np = NodePath::new(&graph);
-        np.replace_nodes(niv);
+        let np = NodePath::new(&graph).replace_nodes(niv).unwrap();
         assert_eq!(np.count(), 1);
     }
+
     #[test]
     fn can_push_unchecked() {
         let mut graph = JGraph::new();
@@ -230,7 +260,7 @@ mod tests {
         let graph = build_graph();
         let mut np = NodePath::new(&graph);
         for x in graph.node_indices() {
-            np.push(x);
+            np.push(x).unwrap();
         }
         for x in np.iter() {
             println!("{:?}", x);

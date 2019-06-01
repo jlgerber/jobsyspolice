@@ -44,7 +44,8 @@ impl Node {
         }
     }
 
-    /// Return a simple name for the node
+    /// Return a simplified name for the node.
+    // TODO: add a simplename: Option<RefCell<String>> to Node to cache the simple name
     pub fn display_name(&self) -> String {
         let mut name = String::new();
         match &self.identity {

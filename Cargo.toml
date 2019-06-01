@@ -18,3 +18,4 @@ dotenv = "0.14.1"
 shellexpand = "1.0.0"
 ascii = "0.9.1"
 xnixperms = { git = "https://github.com/jlgerber/xnixperms.git" }
+failure = "0.1.5"
