@@ -1,4 +1,6 @@
 use crate::Node;
+use crate::NIndex;
+use crate::JGraph;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct NodePath {
