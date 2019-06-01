@@ -244,9 +244,10 @@ fn report_success(vals: Rc<std::cell::RefCell<Vec<NIndex>>>, graph: &JGraph) {
                 .unwrap()
                 .into_inner();
 
-    for n in vals.into_iter().rev() {
-        eprintln!("{:?}", graph[n].display_name());
+    for n in NodePath::new(graph).replace_nodes_unchecked(vals).iter() {
+        eprintln!("{:?}", n.display_name());
     }
+
     println!("");
 }
 
