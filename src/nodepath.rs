@@ -215,16 +215,18 @@ impl<'a> NodePath<'a> {
         self.nodes.pop()
     }
 
+    /// Return the number of nodes in the NodePath.
     pub fn len(&self) -> usize {
         self.nodes.len()
     }
 
-    /// Return the number of nodes in the NodePath
+    /// Return the number of nodes in the NodePath. Sure there is len, but
+    /// why choose?
     pub fn count(&self) -> usize {
         self.nodes.len()
     }
 
-    /// NodePathIntoIterator consumes NodePath
+    /// NodePathIntoIterator consumes NodePath.
     pub fn into_iter(&'a mut self) -> NodePathIntoIterator<'a> {
         NodePathIntoIterator{nodepath: self, index: 0}
     }
@@ -265,6 +267,7 @@ impl<'a> NodePath<'a> {
     }
 }
 
+/// NodePath IntoIterator, iterates over owned Nodes in NodePath
 pub struct NodePathIntoIterator<'a> {
     nodepath: &'a mut NodePath<'a>,
     index: usize,
@@ -284,7 +287,7 @@ impl<'a> Iterator for NodePathIntoIterator<'a> {
     }
 }
 
-
+/// NodePath Iterator, iterates over Node references in the NodePath
 pub struct NodePathIterator<'a> {
     nodepath: &'a  NodePath<'a>,
     index: usize,
