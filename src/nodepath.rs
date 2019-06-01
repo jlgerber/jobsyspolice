@@ -34,8 +34,8 @@ impl<'a> NodePath<'a> {
     /// let mut graph = JGraph::new();
     /// let node = Node::new_root();
     /// let idx = graph.add_node(node);
-    /// let idxvec = vec![idx];
-    /// let np = NodePath::new(&graph).append_unchecked(np);
+    /// let mut idxvec = vec![idx];
+    /// let np = NodePath::new(&graph).append_unchecked(&mut idxvec);
     ///```
     pub fn append_unchecked(&mut self, other: &mut Vec<NIndex>) {
         self.nodes.append(other);
@@ -53,12 +53,12 @@ impl<'a> NodePath<'a> {
     ///
     /// # Examples
     /// ```
-    /// use jsp::{ JGraph, Node, jspnode, NodePath };
+    /// use jsp::{ JGraph, Node, NodePath };
     /// let mut graph = JGraph::new();
     /// let node = Node::new_root();
     /// let idx = graph.add_node(node);
-    /// let idxvec = vec![idx];
-    /// let np = NodePath::new(&graph).append(np);
+    /// let mut idxvec = vec![idx];
+    /// let np = NodePath::new(&graph).append(&mut idxvec).unwrap();
     /// ```
     pub fn append(mut self, other: &mut Vec<NIndex>) -> Result<Self, JSPError> {
         for nd in other.iter() {
@@ -79,8 +79,8 @@ impl<'a> NodePath<'a> {
     /// let mut graph = JGraph::new();
     /// let node = Node::new_root();
     /// let idx = graph.add_node(node);
-    /// let idxvec = vec![idx];
-    /// let mut np = NodePath::new(&graph).append(np);
+    /// let mut idxvec = vec![idx];
+    /// let mut np = NodePath::new(&graph).append(&mut idxvec).unwrap();
     /// assert_eq!(np.count(), 1);
     ///
     /// np.clear();
@@ -119,10 +119,14 @@ impl<'a> NodePath<'a> {
     /// # Examples
     ///
     /// ```
-    /// use jsp::{ JGraph, Node, NodePath };
+    /// use jsp::{ JGraph, Node, NIndex, jspnode, NodeType, EntryType, NodePath };
+    ///
     /// let mut graph = JGraph::new();
-    /// let niv = vec![Node::new_root()];
-    /// let mut np = NodePath::new(&graph).replace_nodes_unchecked(niv);
+    /// let mut niv = vec![Node::new_root(),jspnode!("FOO"), jspnode!("BAR")];
+    /// let mut idx = niv.drain(0..niv.len()).map(|x| graph.add_node(x)).collect::<Vec<NIndex>>();
+    /// idx.pop();
+    ///
+    /// let np = NodePath::new(&graph).replace_nodes_unchecked(idx);
     /// ```
     pub fn replace_nodes_unchecked(mut self, n: Vec<NIndex>) -> Self {
         self.nodes = n;
@@ -145,12 +149,11 @@ impl<'a> NodePath<'a> {
     /// # Examples
     ///
     /// ```
-    /// use jsp::{ JGraph, Node, jspnode, NodePath, NodeType };
+    /// use jsp::{ JGraph, Node, jspnode, NIndex, NodePath, EntryType, NodeType };
     /// let mut graph = JGraph::new();
     /// let mut niv = vec![Node::new_root(), jspnode!("grb"), jspnode!("shows"), jspnode!("FLUF"), jspnode!("FLARG")];
-    /// let mut ids = Vec::new();
-    /// let ids = vec.drain().map(|x| ids.push(graph.add_node(x))).collect::<Vec<NIndex>>();
-    /// let mut np = NodePath::new(&graph).replace_nodes_unchecked(ids);
+    /// let ids = niv.drain(0..niv.len()).map(|x| graph.add_node(x)).collect::<Vec<NIndex>>();
+    /// let mut np = NodePath::new(&graph).replace_nodes(ids);
     /// ```
     pub fn replace_nodes(mut self, n: Vec<NIndex>) -> Result<Self, JSPError> {
         for nd in &n {
@@ -189,11 +192,14 @@ impl<'a> NodePath<'a> {
     /// # Examples
     ///
     /// ```
-    /// use jsp::{ JGraph, Node, NodePath };
-    /// let graph = JGraph::new();
+    /// use jsp::{ JGraph, jspnode, Node, NodeType, EntryType, NodePath };
+    /// let mut graph = JGraph::new();
+    /// let node = jspnode!("FOO");
+    /// let idx = graph.add_node(node);
+    ///
     /// let mut np = NodePath::new(&graph);
-    /// let n = NIndex::new(0);
-    /// assert_eq!(np.push(n), false);
+    /// let result = np.push(idx);
+    /// assert_eq!(result.is_ok(), true);
     /// ```
     pub fn push(&mut self, node: NIndex) -> Result<(), JSPError> {
         if !self.graph.node_indices().any(|x| x == node) {
@@ -228,6 +234,8 @@ impl<'a> NodePath<'a> {
     /// # Examples
     ///
     /// ```
+    /// use jsp::{JGraph, NodePath};
+    ///
     /// let graph = JGraph::new();
     /// let np = NodePath::new(&graph);
     /// assert!(np.is_empty());

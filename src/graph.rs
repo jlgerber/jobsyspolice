@@ -17,7 +17,8 @@ pub type JGraph = petgraph::Graph<Node, ()>;
 ///             representing the valid paths within the Jobsystem.
 ///
 /// # Returns
-///     `bool` indicating whether or not `path` is valid based on
+///
+/// `bool` indicating whether or not `path` is valid based on
 /// the schema described by the input `graph`.
 pub fn is_valid(path: &str, graph: &JGraph) -> ReturnValue {
     let mut it = std::path::Path::new(path).iter();
