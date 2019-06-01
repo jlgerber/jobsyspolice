@@ -14,7 +14,29 @@ pub struct NodePath<'a> {
 }
 
 impl<'a> NodePath<'a> {
+
     /// Moves all the elements of other into Self, leaving other empty.
+    /// `append_unchecked` does this without checking the internal `JGraph`
+    /// to ensure that the `NIndex`s are known to the `JGraph` instance.
+    /// Usage of this method should be done with care, as subsequent iteration
+    /// over the NodePath will panic if we encounter an unknown NIndex. For
+    /// untrusted cases, there is `append`.
+    ///
+    /// # Parameters
+    ///
+    /// * `other` - A mutable reference to a vector of `NIndex` which we wish to
+    ///             append to our NodePath's existing `NIndex`s.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use jsp::{ JGraph, Node, jspnode, NodePath };
+    /// let mut graph = JGraph::new();
+    /// let node = Node::new_root();
+    /// let idx = graph.add_node(node);
+    /// let idxvec = vec![idx];
+    /// let np = NodePath::new(&graph).append_unchecked(np);
+    ///```
     pub fn append_unchecked(&mut self, other: &mut Vec<NIndex>) {
         self.nodes.append(other);
     }
@@ -31,12 +53,13 @@ impl<'a> NodePath<'a> {
     ///
     /// # Examples
     /// ```
+    /// use jsp::{ JGraph, Node, jspnode, NodePath };
     /// let mut graph = JGraph::new();
     /// let node = Node::new_root();
     /// let idx = graph.add_node(node);
     /// let idxvec = vec![idx];
     /// let np = NodePath::new(&graph).append(np);
-    ///
+    /// ```
     pub fn append(mut self, other: &mut Vec<NIndex>) -> Result<Self, JSPError> {
         for nd in other.iter() {
             if !self.graph.node_indices().any(|x| &x == nd) {
@@ -48,11 +71,38 @@ impl<'a> NodePath<'a> {
     }
 
     /// Removes all nodes from the NodePath
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use jsp::{ JGraph, Node, jspnode, NodePath };
+    /// let mut graph = JGraph::new();
+    /// let node = Node::new_root();
+    /// let idx = graph.add_node(node);
+    /// let idxvec = vec![idx];
+    /// let mut np = NodePath::new(&graph).append(np);
+    /// assert_eq!(np.count(), 1);
+    ///
+    /// np.clear();
+    /// assert_eq!(np.count(), 0);
+    /// ```
     pub fn clear(&mut self) {
         self.nodes.clear();
     }
 
     /// New up a nodepath
+    ///
+    /// # Parameters
+    ///
+    /// * `graph` - reference to a `JGraph`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use jsp::{ JGraph, NodePath };
+    /// let mut graph = JGraph::new();
+    /// let np = NodePath::new(&graph);
+    /// ```
     pub fn new(graph: &'a JGraph) -> Self {
         Self {
             graph,
@@ -69,6 +119,7 @@ impl<'a> NodePath<'a> {
     /// # Examples
     ///
     /// ```
+    /// use jsp::{ JGraph, Node, NodePath };
     /// let mut graph = JGraph::new();
     /// let niv = vec![Node::new_root()];
     /// let mut np = NodePath::new(&graph).replace_nodes_unchecked(niv);
@@ -78,6 +129,29 @@ impl<'a> NodePath<'a> {
         self
     }
 
+    /// Replace internal NIndex nodes with vector of new nodes. This is useful
+    /// for instance when updating the path represented by NodePath. This
+    /// method validates that the `NIndex`s are all known by the internal `JGraph`.
+    ///
+    /// # Parameters
+    ///
+    /// * `n` - a vector of `NIndex`s
+    ///
+    /// # Returns
+    ///
+    /// A Result wrapping Self if all `NIndex`s are known to the `JGraph`, or
+    /// JSPError::MissingIndex if any `NIndex`s are not known to the `JGraph`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use jsp::{ JGraph, Node, jspnode, NodePath, NodeType };
+    /// let mut graph = JGraph::new();
+    /// let mut niv = vec![Node::new_root(), jspnode!("grb"), jspnode!("shows"), jspnode!("FLUF"), jspnode!("FLARG")];
+    /// let mut ids = Vec::new();
+    /// let ids = vec.drain().map(|x| ids.push(graph.add_node(x))).collect::<Vec<NIndex>>();
+    /// let mut np = NodePath::new(&graph).replace_nodes_unchecked(ids);
+    /// ```
     pub fn replace_nodes(mut self, n: Vec<NIndex>) -> Result<Self, JSPError> {
         for nd in &n {
             if !self.graph.node_indices().any(|x| &x == nd) {
@@ -95,6 +169,7 @@ impl<'a> NodePath<'a> {
     ///
     /// # Examples
     /// ```
+    /// use jsp::{ JGraph, Node, NodePath };
     /// let mut graph = JGraph::new();
     /// let ni = Node::new_root();
     /// let idx = graph.add_node(ni);
@@ -114,6 +189,7 @@ impl<'a> NodePath<'a> {
     /// # Examples
     ///
     /// ```
+    /// use jsp::{ JGraph, Node, NodePath };
     /// let graph = JGraph::new();
     /// let mut np = NodePath::new(&graph);
     /// let n = NIndex::new(0);
@@ -127,7 +203,8 @@ impl<'a> NodePath<'a> {
         Ok(())
     }
 
-    ///
+    /// Remove the last node index from the NodePath and
+    /// return it as an Option. If NodePath is empty, return None.
     pub fn pop(&mut self) -> Option<NIndex> {
         self.nodes.pop()
     }
@@ -136,10 +213,12 @@ impl<'a> NodePath<'a> {
         self.nodes.len()
     }
 
+    /// Return the number of nodes in the NodePath
     pub fn count(&self) -> usize {
         self.nodes.len()
     }
-    // NodePathIntoIterator consumes NodePath
+
+    /// NodePathIntoIterator consumes NodePath
     pub fn into_iter(&'a mut self) -> NodePathIntoIterator<'a> {
         NodePathIntoIterator{nodepath: self, index: 0}
     }
@@ -160,6 +239,21 @@ impl<'a> NodePath<'a> {
     // NodePathIter returns reference to nodes
     pub fn iter(&self) -> NodePathIterator {
         NodePathIterator{nodepath: self, index: 0}
+    }
+
+    /// Validate that the node indices contained within
+    /// this NodePath instance are all recognized by the internal JGraph
+    ///
+    /// # Returns
+    ///
+    /// bool indicating the validity of the NodeGraph
+    pub fn validate(&self) -> bool {
+        for ni in self.nodes.iter() {
+            if !self.graph.node_indices().any(|x| &x == ni) {
+                return false;
+            }
+        }
+        true
     }
 }
 
@@ -242,6 +336,7 @@ mod tests {
         let niv = vec![n1idx];
         let np = NodePath::new(&graph).replace_nodes(niv).unwrap();
         assert_eq!(np.count(), 1);
+        assert_eq!(np.validate(), true);
     }
 
     #[test]
@@ -254,6 +349,81 @@ mod tests {
          np.push_unchecked(idx);
          assert_eq!(np.count(),1);
     }
+
+    #[test]
+    fn can_push() {
+        let mut graph = JGraph::new();
+        let ni = Node::new_root();
+        let idx = graph.add_node(ni);
+        let mut np = NodePath::new(&graph);
+
+        assert_eq!(np.push(idx).is_ok(), true);
+    }
+
+    #[test]
+    fn can_pop() {
+        let mut graph = JGraph::new();
+        let ni = Node::new_root();
+        let idx = graph.add_node(ni);
+        let mut np = NodePath::new(&graph);
+        np.push_unchecked(idx);
+        let result = np.pop();
+        assert_eq!(result.is_some(), true);
+    }
+
+    #[test]
+    fn can_pop_empty() {
+        let mut graph = JGraph::new();
+        let ni = Node::new_root();
+        let _idx = graph.add_node(ni);
+        let mut np = NodePath::new(&graph);
+        let result = np.pop();
+        assert_eq!(result.is_some(), false);
+    }
+
+    #[test]
+    fn can_replace_nodes_unchecked() {
+        use crate::{ jspnode, EntryType, NodeType };
+        let mut graph = JGraph::new();
+        let mut niv = vec![Node::new_root(), jspnode!("grb"), jspnode!("shows"), jspnode!("FLUF"), jspnode!("FLARG")];
+        let ids = niv.drain(0..niv.len()).map(|x| graph.add_node(x)).collect::<Vec<NIndex>>();
+        let np = NodePath::new(&graph).replace_nodes_unchecked(ids);
+        assert_eq!(np.count(), 5);
+    }
+
+    #[test]
+    fn can_replace_nodes() {
+        use crate::{ jspnode, EntryType, NodeType };
+        let mut graph = JGraph::new();
+        let mut niv = vec![Node::new_root(), jspnode!("grb"), jspnode!("shows"), jspnode!("FLUF"), jspnode!("FLARG")];
+        let ids = niv.drain(0..niv.len()).map(|x| graph.add_node(x)).collect::<Vec<NIndex>>();
+        let np = NodePath::new(&graph).replace_nodes_unchecked(ids);
+        assert_eq!(np.count(), 5);
+        assert_eq!(np.validate(), true);
+    }
+
+    #[test]
+    fn can_measure_count() {
+        use crate::{ jspnode, EntryType, NodeType };
+        let mut graph = JGraph::new();
+        let mut niv = vec![Node::new_root(), jspnode!("grb"), jspnode!("shows"), jspnode!("FLUF"), jspnode!("FLARG")];
+        let ids = niv.drain(0..niv.len()).map(|x| graph.add_node(x)).collect::<Vec<NIndex>>();
+        let np = NodePath::new(&graph).replace_nodes_unchecked(ids);
+        assert_eq!(np.count(), 5);
+    }
+
+    #[test]
+    fn is_empty_works() {
+        use crate::{ jspnode, EntryType, NodeType };
+        let mut graph = JGraph::new();
+        let mut niv = vec![Node::new_root(), jspnode!("grb"), jspnode!("shows"), jspnode!("FLUF"), jspnode!("FLARG")];
+        let ids = niv.drain(0..niv.len()).map(|x| graph.add_node(x)).collect::<Vec<NIndex>>();
+        let np = NodePath::new(&graph);
+        assert_eq!(np.is_empty(), true);
+        let np = np.replace_nodes_unchecked(ids);
+        assert_eq!(np.is_empty(), false);
+    }
+
 
     #[test]
     fn into_iter_works() {
