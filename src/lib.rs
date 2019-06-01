@@ -7,6 +7,9 @@ pub mod macros {
     }
 }
 
+pub mod errors;
+pub use errors::JSPError;
+
 pub mod regexp;
 pub use regexp::*;
 
