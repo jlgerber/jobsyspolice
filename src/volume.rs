@@ -51,6 +51,11 @@ pub mod local {
                         if !create_path.exists() {
                             fs::create_dir(&create_path)?;
                         }
+                        // perms
+                        if let Some(perms) = node.perms() {
+                            // err now we need to convert to perms. not happy
+                            // with the current rep. will need to readdress this
+                        }
                     }
                     &EntryType::Untracked => {
                         if !create_path.exists() {
