@@ -1,17 +1,19 @@
 use std::path::Path;
-use crate::{JGraph, JSPError };
+//use crate::{JGraph, is_valid, JSPError };
 
 pub trait MakeVolume {
     type ErrType;
     type OkType;
 
-    fn mk(path: impl AsRef<Path> ) -> Result<Self::OkType, Self::ErrType>;
+    fn mk(&self, path: impl AsRef<Path> ) -> Result<Self::OkType, Self::ErrType>;
     fn default_owner(&self) -> &str;
     fn default_perms(&self) -> u32;
 }
 
 pub mod local {
-    use super::{JGraph, JSPError, MakeVolume, Path};
+    use crate::{ JGraph, is_valid, JSPError, EntryType };
+    use super::{ MakeVolume, Path};
+    use std::{ path::PathBuf, fs };
 
     #[derive(Debug)]
     pub struct VolumeMaker<'a> {
@@ -35,12 +37,38 @@ pub mod local {
         type OkType = ();
         type ErrType = JSPError;
 
-        fn mk(path: impl AsRef<Path> ) -> Result<Self::OkType, Self::ErrType> {
+        fn mk(&self, path: impl AsRef<Path> ) -> Result<Self::OkType, Self::ErrType> {
             // step 1: validate
+            let path = path.as_ref();
+            let nodepath = is_valid(path, self.graph)?;
             // step 2: iterate: create, assign ownership, set perms
+            let mut create_path = PathBuf::new();
+            for (idx, item) in path.iter().enumerate() {
+                let node = &nodepath[idx];
+                create_path.push(item);
+                match node.entry_type() {
+                    &EntryType::Directory => {
+                        if !create_path.exists() {
+                            fs::create_dir(&create_path)?;
+                        }
+                    }
+                    &EntryType::Untracked => {
+                        if !create_path.exists() {
+                            fs::create_dir(&create_path)?;
+                        }
+                        // todo set default owner & perms
+                    }
+                    &EntryType::Volume => {
+                        if !create_path.exists() {
+                            fs::create_dir(&create_path)?;
+                        }
+                        // todo set default owner & perms
+                    }
+                    EntryType::Root => panic!("entry type root not supported"),
+                }
+            }
             // step 3: profit
-
-            Err(JSPError::Placeholder)
+            Ok(())
         }
 
         fn default_owner(&self) -> &str {
