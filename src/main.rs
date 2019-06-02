@@ -7,7 +7,6 @@ use log::{ LevelFilter, self };
 use serde_json;
 use std::{ env, io::{BufWriter, Write}, path::{ Path, PathBuf }, fs::File };
 use structopt::StructOpt;
-use std::rc::Rc;
 use std::ffi::OsString;
 
 #[derive(Debug, StructOpt)]
@@ -64,12 +63,13 @@ fn main() {
         }
     } else if let Some(input) = args.input {
         match is_valid(input.as_str(), &graph) {
-            ReturnValue::Success(vals) => {
-                report_success(vals, &graph);
+            Ok(nodepath) => {
+                report_success(nodepath);
             },
-            ReturnValue::Failure{entry, node, depth} => {
+            Err(JSPError::ValidationFailure{entry, node, depth}) => {
                 report_failure(input.as_str(), &entry, node, depth, &graph );
             }
+            Err(_) => panic!("JSPError type returned invalid")
         }
     } else {
         Opt::clap().print_help().unwrap();
@@ -238,13 +238,10 @@ fn get_graph(has_output: bool, graph: Option<PathBuf>) -> JGraph {
 }
 
 #[inline]
-fn report_success(vals: Rc<std::cell::RefCell<Vec<NIndex>>>, graph: &JGraph) {
+fn report_success(nodepath: NodePath) {
     eprintln!("\nSuccess\n");
-    let vals = Rc::try_unwrap(vals)
-                .unwrap()
-                .into_inner();
 
-    for n in NodePath::new(graph).replace_nodes_unchecked(vals).iter() {
+    for n in nodepath.iter() {
         eprintln!("{:?}", n.display_name());
     }
 

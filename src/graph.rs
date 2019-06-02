@@ -1,4 +1,4 @@
-pub use crate::{ Node, ReturnValue, NIndex };
+pub use crate::{ Node, ReturnValue, NIndex, NodePath, JSPError };
 use petgraph::{ graph::{ DefaultIx, NodeIndex}, visit::IntoNodeReferences };
 #[allow(unused_imports)]
 use log::{debug, trace};
@@ -20,13 +20,24 @@ pub type JGraph = petgraph::Graph<Node, ()>;
 ///
 /// `bool` indicating whether or not `path` is valid based on
 /// the schema described by the input `graph`.
-pub fn is_valid(path: &str, graph: &JGraph) -> ReturnValue {
+pub fn is_valid<'a>(path: &str, graph: &'a JGraph) -> Result<NodePath<'a>, JSPError> {
     let mut it = std::path::Path::new(path).iter();
     // we have to drop the first item, which is the first "/"
     it.next();
     let level: u8 = 0;
     let indices = Vec::new();
-    return _is_valid(it, &graph, graph.node_references().next().unwrap().0, level, Rc::new(RefCell::new(indices)));
+    let result = _is_valid(it, &graph, graph.node_references().next().unwrap().0, level, Rc::new(RefCell::new(indices)));
+    match result {
+        ReturnValue::Success(vals) => {
+            let vals = Rc::try_unwrap(vals)
+                          .unwrap()
+                          .into_inner();
+            Ok(NodePath::new(&graph).replace_nodes_unchecked(vals))
+        },
+        ReturnValue::Failure{entry, node, depth} => {
+            Err(JSPError::ValidationFailure{entry, node, depth})
+        }
+    }
 }
 
 // helper recursive function
@@ -284,7 +295,7 @@ mod tests {
     fn path_extends_beyond_graph() {
         let tgraph = build_graph();
         let p = "/dd/shows/DEV01/SHARED/MODEL/veh/model";
-        assert!(is_valid(p, &tgraph).is_success());
+        assert!(is_valid(p, &tgraph).is_ok());
     }
 
     #[test]
@@ -292,13 +303,13 @@ mod tests {
         let tgraph = build_graph();
         let p = "/dd/shows/DEV01/RD/9999/SHARED/MODEL";
 
-        assert!(is_valid(p, &tgraph).is_success());
+        assert!(is_valid(p, &tgraph).is_ok());
     }
 
     #[test]
     fn wrong_path_is_invalid_graph() {
         let tgraph = build_graph();
         let p = "/dd/shows/DEV01/RD/9999/FOO/SHARED/MODEL";
-        assert!(is_valid(p, &tgraph).is_failure());
+        assert!(is_valid(p, &tgraph).is_err());
     }
 }
