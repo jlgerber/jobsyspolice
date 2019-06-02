@@ -19,3 +19,4 @@ shellexpand = "1.0.0"
 ascii = "0.9.1"
 xnixperms = { git = "https://github.com/jlgerber/xnixperms.git" }
 failure = "0.1.5"
+lazy_static = "1.3.0"
