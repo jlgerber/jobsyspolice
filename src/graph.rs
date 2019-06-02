@@ -1,9 +1,8 @@
 pub use crate::{ Node, ReturnValue, NIndex, NodePath, JSPError };
-use petgraph::{ graph::{ DefaultIx, NodeIndex}, visit::IntoNodeReferences };
 #[allow(unused_imports)]
 use log::{debug, trace};
-use std::cell::RefCell;
-use std::rc::Rc;
+use petgraph::{ graph::{ DefaultIx, NodeIndex}, visit::IntoNodeReferences };
+use std::{ cell::RefCell, rc::Rc, path::Path };
 
 /// Define a type alias for the type of graph we will be using.
 /// JGraph is a Jobsystem Graph
@@ -12,7 +11,7 @@ pub type JGraph = petgraph::Graph<Node, ()>;
 /// Determine if the provided path is valid or not.NodeType
 ///
 /// # Parameters
-/// * `path` - a str reference representing a candidate path
+/// * `path` - a &str, String, Path, or PathBuf representing a candidate path
 /// * `graph` - a reference to a JGrapch, which is the graph
 ///             representing the valid paths within the Jobsystem.
 ///
@@ -20,8 +19,8 @@ pub type JGraph = petgraph::Graph<Node, ()>;
 ///
 /// `bool` indicating whether or not `path` is valid based on
 /// the schema described by the input `graph`.
-pub fn is_valid<'a>(path: &str, graph: &'a JGraph) -> Result<NodePath<'a>, JSPError> {
-    let mut it = std::path::Path::new(path).iter();
+pub fn is_valid<'a, I: AsRef<Path>>(path: I, graph: &'a JGraph) -> Result<NodePath<'a>, JSPError> {
+    let mut it = path.as_ref().iter();
     // we have to drop the first item, which is the first "/"
     it.next();
     let level: u8 = 0;
