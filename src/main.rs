@@ -68,7 +68,7 @@ fn main() {
 
     } else if let Some(input) = args.input {
         if args.make {
-            let volumemaker = local::VolumeMaker::new(&graph, String::from("jonathangerber"), 0o777);
+            let volumemaker = local::VolumeMaker::new(&graph, String::from("jonathangerber"), String::from("751"));
             match volumemaker.mk(input.as_str()) {
                 Ok(_) => println!("\nSuccess\n"),
                 Err(e) => println!("\nFailure\n{:?}", e),
