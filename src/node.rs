@@ -59,7 +59,7 @@ impl Node {
 
     /// Retrieve the permisssions
     pub fn perms(&self) -> Option<&str> {
-        if let Some(perms) = self.perms {
+        if let Some(perms) = &self.perms {
             return Some(&perms)
         } else {
             None
