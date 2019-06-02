@@ -30,3 +30,6 @@ pub use graph::{is_valid, JGraph};
 
 pub mod returnvalue;
 pub use returnvalue::{ ReturnValue, NIndex };
+
+pub mod volume;
+pub use volume::{MakeVolume, local};
