@@ -10,7 +10,6 @@ use crate::JSPError;
 pub struct NodePath<'a> {
     pub graph: &'a JGraph,
     pub nodes: Vec<NIndex>
-
 }
 
 impl<'a> NodePath<'a> {
