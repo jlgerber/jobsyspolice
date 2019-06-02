@@ -7,6 +7,7 @@ pub enum EntryType {
     Directory,
     Volume,
     Root,
+    Untracked,
 }
 
 impl Display for EntryType {
@@ -15,6 +16,7 @@ impl Display for EntryType {
             EntryType::Directory =>  write!(f, "Directory"),
             EntryType::Volume =>  write!(f, "Volume"),
             EntryType::Root =>  write!(f, "Root"),
+            EntryType::Untracked =>  write!(f, "Untracked"),
 
         }
     }

@@ -43,6 +43,15 @@ impl Node {
             perms: None,
         }
     }
+    /// Specialized constructor function which returns a Untraked node.
+    pub fn new_untracked() -> Self {
+        Self {
+            identity: NodeType::Untracked,
+            entry_type: EntryType::Untracked,
+            owner: None,
+            perms: None,
+        }
+    }
 
     /// Return a simplified name for the node.
     // TODO: add a simplename: Option<RefCell<String>> to Node to cache the simple name
@@ -53,6 +62,7 @@ impl Node {
             NodeType::RegEx{name:n, pattern: r, exclude: None} => { name.push_str(format!("{} regex: '{}'", n.as_str(), r.as_str()).as_str());},
             NodeType::RegEx{name:n, pattern: r, exclude: Some(excl)} => { name.push_str(format!("{} regex: '{}' exclude: '{}'", n.as_str(), r.as_str(), excl.as_str()).as_str());},
             NodeType::Root => name.push_str("Root()"),
+            NodeType::Untracked => name.push_str("Untracked()"),
         }
         if let Some(ref n) = self.owner {
             name.push_str(format!(" [{}]", n).as_str());
@@ -111,7 +121,6 @@ impl Node {
         self.perms = Some(perms.into());
         self
     }
-
 }
 
 impl PartialEq<std::ffi::OsStr> for Node {
@@ -123,6 +132,7 @@ impl PartialEq<std::ffi::OsStr> for Node {
 
         match &self.identity {
             NodeType::Root => false,
+            NodeType::Untracked => true,
             NodeType::Simple(strval) => strval.as_str() == other,
             NodeType::RegEx { name: _, pattern, exclude: None } => pattern.is_match(other.to_str().unwrap()),
             NodeType::RegEx { name: _, pattern, exclude: Some(exc) } => !exc.is_match(other.to_str().unwrap()) && pattern.is_match(other.to_str().unwrap()),
@@ -268,6 +278,13 @@ mod tests {
     #[should_panic]
     fn osstr_cmp_with_simple_nodetype_root() {
         let simple = Node::new_root();
+        let osstr = OsStr::new("foobar");
+        assert_eq!(simple, *osstr);
+    }
+
+    #[test]
+    fn osstr_cmp_with_simple_nodetype_untracked() {
+        let simple = Node::new_untracked();
         let osstr = OsStr::new("foobar");
         assert_eq!(simple, *osstr);
     }

@@ -2,6 +2,7 @@ use crate::Node;
 use crate::NIndex;
 use crate::JGraph;
 use crate::JSPError;
+use std::ops::Index;
 
 /// The NodePath stores a path of nodes in the JGraph. The nodes
 /// are represented internally as `NIndex`s. One may generate an
@@ -9,7 +10,8 @@ use crate::JSPError;
 #[derive(Debug)]
 pub struct NodePath<'a> {
     pub graph: &'a JGraph,
-    pub nodes: Vec<NIndex>
+    pub nodes: Vec<NIndex>,
+    untracked: Node,
 }
 
 impl<'a> NodePath<'a> {
@@ -105,7 +107,8 @@ impl<'a> NodePath<'a> {
     pub fn new(graph: &'a JGraph) -> Self {
         Self {
             graph,
-            nodes: Vec::new()
+            nodes: Vec::new(),
+            untracked: Node::new_untracked(),
         }
     }
 
@@ -265,6 +268,47 @@ impl<'a> NodePath<'a> {
         true
     }
 }
+
+/// Retrieve a &Node by index from the NodePath
+///
+/// # Examples
+///
+/// ```
+/// use jsp::{ JGraph, jspnode, Node, NodeType, EntryType, NodePath };
+/// let mut graph = JGraph::new();
+/// let root = Node::new_root();
+/// let node = jspnode!("FOO");
+///
+/// let root = graph.add_node(root);
+/// let node = graph.add_node(node);
+///
+/// graph.extend_with_edges(&[(root, node)]);
+///
+/// let mut np = NodePath::new(&graph);
+/// let result = np.push(node);
+///
+/// let node = &np[0];
+/// ```
+impl<'a> Index<usize> for NodePath<'a> {
+    type Output = Node;
+    /// Retrieve a Node reference based on index. If the index is out
+    /// of bounds, we return a reference to an untracked node.
+    fn index(&self, idx: usize) -> &Self::Output {
+        // if we are out of bounds, rather than panicing
+        // we return a reference to an untracked node. The untracked
+        // node is meant to signify a node outside of the policing
+        // responsibilities of the system.
+        if idx >= self.nodes.len() {
+            return &self.untracked;
+        }
+
+        &self.graph[self.nodes[idx]]
+    }
+}
+
+//---------------------//
+//      Iterators      //
+//---------------------//
 
 /// NodePath IntoIterator, iterates over owned Nodes in NodePath
 pub struct NodePathIntoIterator<'a> {
@@ -435,6 +479,38 @@ mod tests {
         assert_eq!(np.is_empty(), false);
     }
 
+    #[test]
+    fn can_access_node_by_index() {
+        use crate::{ JGraph, jspnode, Node, NodeType, EntryType, NodePath };
+        let mut graph = JGraph::new();
+        let root = Node::new_root();
+        let node = jspnode!("FOO");
+
+        graph.add_node(root);
+        let idx = graph.add_node(node);
+
+        let mut np = NodePath::new(&graph);
+        np.push(idx).unwrap();
+        let node_r = &np[0];
+        assert_eq!(&jspnode!("FOO"), node_r);
+    }
+
+
+    #[test]
+    fn can_access_node_by_out_of_bounds_index() {
+        use crate::{ JGraph, jspnode, Node, NodeType, EntryType, NodePath };
+        let mut graph = JGraph::new();
+        let root = Node::new_root();
+        let node = jspnode!("FOO");
+
+        graph.add_node(root);
+        let idx = graph.add_node(node);
+
+        let mut np = NodePath::new(&graph);
+        np.push(idx).unwrap();
+        let node_r = &np[10];
+        assert_eq!(&Node::new_untracked() , node_r);
+    }
 
     #[test]
     fn iter_works() {

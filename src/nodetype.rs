@@ -17,6 +17,7 @@ use serde::{ Deserialize, Serialize };
 #[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Clone, Serialize, Deserialize)]
 pub enum NodeType {
     Root,
+    Untracked, // used to handle directories outside of the graph
     Simple(String),
     RegEx {
         name: String,
@@ -33,6 +34,7 @@ impl Display for NodeType {
             NodeType::RegEx{name, pattern, exclude: Some(neg_pattern) } =>  write!(f, "RegEx{{'{}', '{}', '{}'}}", name, pattern.as_str(), neg_pattern.as_str()),
             NodeType::Simple(name) =>  write!(f, "Simple('{}')",name),
             NodeType::Root =>  write!(f, "Root"),
+            NodeType::Untracked => write!(f, "Untracked"),
         }
     }
 }
