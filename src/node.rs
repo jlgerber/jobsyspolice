@@ -56,6 +56,16 @@ impl Node {
     pub fn entry_type(&self) -> &EntryType {
         &self.entry_type
     }
+
+    /// Retrieve the permisssions
+    pub fn perms(&self) -> Option<&str> {
+        if let Some(perms) = self.perms {
+            return Some(&perms)
+        } else {
+            None
+        }
+    }
+
     /// Return a simplified name for the node.
     // TODO: add a simplename: Option<RefCell<String>> to Node to cache the simple name
     pub fn display_name(&self) -> String {
