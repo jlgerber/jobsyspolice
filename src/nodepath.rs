@@ -227,7 +227,7 @@ impl<'a> NodePath<'a> {
     }
 
     /// NodePathIntoIterator consumes NodePath.
-    pub fn into_iter(&'a mut self) -> NodePathIntoIterator<'a> {
+    pub fn into_iter(self) -> NodePathIntoIterator<'a> {
         NodePathIntoIterator{nodepath: self, index: 0}
     }
 
@@ -269,7 +269,7 @@ impl<'a> NodePath<'a> {
 
 /// NodePath IntoIterator, iterates over owned Nodes in NodePath
 pub struct NodePathIntoIterator<'a> {
-    nodepath: &'a mut NodePath<'a>,
+    nodepath: NodePath<'a>,
     index: usize,
 }
 
@@ -280,6 +280,7 @@ impl<'a> Iterator for NodePathIntoIterator<'a> {
         if self.index >= self.nodepath.len() {
             return None;
         }
+
         let idx = self.nodepath.nodes[self.index];
         let result = self.nodepath.graph[idx].clone();
         self.index += 1;
@@ -437,7 +438,7 @@ mod tests {
 
 
     #[test]
-    fn into_iter_works() {
+    fn iter_works() {
         let graph = build_graph();
         let mut np = NodePath::new(&graph);
         for x in graph.node_indices() {
@@ -446,6 +447,24 @@ mod tests {
         for x in np.iter() {
             println!("{:?}", x);
         }
-        assert!(true);
+        assert!(np.count() > 0);
+    }
+
+
+    #[test]
+    fn into_iter_works() {
+        let graph = build_graph();
+        let mut np = NodePath::new(&graph);
+        for x in graph.node_indices() {
+            np.push(x).unwrap();
+        }
+        let np_len = np.len();
+        let mut nodes = Vec::new();
+        // we are consuming nodes as we go
+        for x in np.into_iter() {
+           // println!("{:?}", x);
+            nodes.push(x);
+        }
+        assert_eq!(nodes.len(), np_len);
     }
 }
