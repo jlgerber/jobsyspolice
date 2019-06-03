@@ -6,7 +6,7 @@ use std::{
     fmt::{self, Display, Formatter},
 };
 
-#[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Serialize, Deserialize, Clone)]
 #[serde(tag = "type")]
 pub enum User {
     Me,
@@ -46,6 +46,19 @@ impl User {
     }
 }
 
+
+impl From<String> for User {
+    fn from(name: String) -> Self {
+        User::Named(name)
+    }
+}
+
+impl From<&str> for User {
+    fn from(name: &str) -> Self {
+        User::Named(name.to_string())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -69,5 +82,32 @@ mod tests {
         let usr = User::new("fred");
         let usr_str = format!("{}", usr);
         assert_eq!(usr_str, String::from("fred"));
+    }
+
+    #[test]
+    fn can_convert_from_string() {
+        let name = String::from("fred");
+        let usr = User::from(name);
+        assert_eq!(usr, User::Named(String::from("fred")));
+    }
+
+    #[test]
+    fn can_convert_from_string_into_user() {
+        let name = String::from("fred");
+        let usr: User = name.into();
+        assert_eq!(usr, User::Named(String::from("fred")));
+    }
+
+    #[test]
+    fn can_convert_from_str() {
+        let usr = User::from("fred");
+        assert_eq!(usr, User::Named(String::from("fred")));
+    }
+
+    #[test]
+    fn can_convert_from_str_into_user() {
+        let name = "fred";
+        let usr: User = name.into();
+        assert_eq!(usr, User::Named(String::from("fred")));
     }
 }
