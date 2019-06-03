@@ -1,4 +1,4 @@
-use crate::{ EntryType, NodeType};
+use crate::{ EntryType, NodeType, User};
 use serde::{ Deserialize, Serialize, self };
 
 /// The Node caries information about a specific
@@ -11,7 +11,7 @@ pub struct Node {
     identity: NodeType,
     entry_type: EntryType,
     #[serde(skip_serializing_if = "Option::is_none")]
-    owner: Option<String>,
+    owner: Option<User>,
     #[serde(skip_serializing_if = "Option::is_none")]
     perms: Option<String>,
 }
@@ -30,7 +30,7 @@ impl Node {
     ///
     /// # Returns
     ///   A new instance of Node
-    pub fn new(identity: NodeType, entry_type: EntryType, owner: Option<String>, perms: Option<String>) -> Self {
+    pub fn new(identity: NodeType, entry_type: EntryType, owner: Option<User>, perms: Option<String>) -> Self {
         Self { identity, entry_type, owner, perms }
     }
 
@@ -103,7 +103,7 @@ impl Node {
     /// let node = jspnode!("FOO");
     /// let node = node.set_owner("ddinst");
     /// ```
-    pub fn set_owner<I>(mut self, owner: I ) -> Node where I: Into<String> {
+    pub fn set_owner<I>(mut self, owner: I ) -> Node where I: Into<User> {
         self.owner = Some(owner.into());
         self
     }
