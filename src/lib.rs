@@ -35,3 +35,8 @@ pub mod diskutils;
 
 pub mod volume;
 pub use volume::{MakeVolume, local};
+
+pub mod user;
+pub use user::User;
+
+pub mod constants;
