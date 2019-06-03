@@ -2,13 +2,12 @@ use chrono;
 use dotenv::dotenv;
 use fern::{ colors::{Color, ColoredLevelConfig}, self} ;
 use jsp::*;
-use petgraph;
 use log::{ LevelFilter, self };
 use serde_json;
-use std::{ env, io::{BufWriter, Write}, path::{ Path, PathBuf }, fs::File };
+use std::{ env,  path::{ Path, PathBuf }, fs::File };
 use structopt::StructOpt;
-use std::ffi::OsString;
 
+const JSP_PATH: &'static str = "JSP_PATH";
 
 #[derive(Debug, StructOpt)]
 #[structopt( name = "jspmk", about = "
@@ -91,8 +90,6 @@ fn setup_cli() -> (Opt, log::LevelFilter) {
     (args, level)
 }
 
-const JSP_PATH: &'static str = "JSP_PATH";
-const JSP_NAME: &'static str = "jstemplate.json";
 
 #[inline]
 fn _get_template_from_env() -> Result<PathBuf, env::VarError> {
@@ -152,63 +149,10 @@ fn _get_graph(graph: Option<PathBuf>) -> JGraph {
 }
 
 #[inline]
-fn write_template(output: &mut PathBuf, graph: &JGraph) {
-
-    // if we are writing out the template, we use the internal definition
-    //let graph = graph::testdata::build_graph();
-
-    // test to see if buffer is a directory. if it is apply the standard name
-    if output.is_dir() {
-        output.push(JSP_NAME);
-    }
-    let j = serde_json::to_string_pretty(&graph).unwrap();
-    let file = match File::create(output) {
-        Ok(out) => {
-            log::debug!("attempting to write to {:?}", out);
-            out},
-        Err(e) => {
-            eprintln!("{}", e);
-            std::process::exit(1);
-        }
-    };
-    let mut f = BufWriter::new(file);
-    f.write_all(j.as_bytes()).expect("Unable to write data");
-}
-
-
-#[inline]
 fn get_graph(has_output: bool, graph: Option<PathBuf>) -> JGraph {
     if has_output {
         graph::testdata::build_graph()
     } else {
          _get_graph(graph)
     }
-}
-
-#[inline]
-fn report_success(nodepath: NodePath) {
-    eprintln!("\nSuccess\n");
-
-    for n in nodepath.iter() {
-        eprintln!("{:?}", n.display_name());
-    }
-
-    println!("");
-}
-
-#[inline]
-fn report_failure(input: &str, entry: &OsString, node: NIndex, depth: u8, graph: &JGraph ) {
-    let path = Path::new(input)
-                .iter()
-                .take((depth+1) as usize)
-                .fold(PathBuf::new(), |mut p, v| {p.push(v); p});
-
-    let neighbors = graph.neighbors(node);
-    eprintln!("\nFailure\n");
-    eprintln!("Failed to match {:?} in {:?} against:", entry, path);
-    for n in neighbors {
-        eprintln!("{}", graph[n].display_name());
-    }
-    eprintln!("");
-    std::process::exit(1);
 }
