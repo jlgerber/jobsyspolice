@@ -32,11 +32,12 @@ pub mod returnvalue;
 pub use returnvalue::{ ReturnValue, NIndex };
 
 pub mod diskutils;
+//pub use diskutils::DiskUtils;
 
 pub mod volume;
 pub use volume::{MakeVolume, local};
 
 pub mod user;
-pub use user::User;
+pub use user::{User, get_default_user};
 
 pub mod constants;

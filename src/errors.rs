@@ -1,8 +1,7 @@
-use failure::Fail;
 use crate::NIndex;
-use std::ffi::OsString;
-use std::io;
-use std::num;
+use failure::Fail;
+use nix;
+use std::{ffi::OsString, io, num };
 
 #[derive(Debug, Fail)]
 pub enum JSPError {
@@ -16,17 +15,25 @@ pub enum JSPError {
     IoError(#[cause] io::Error),
     #[fail(display = "{}", _0)]
     ParseIntError(#[cause] num::ParseIntError),
+    #[fail(display = "{}", _0)]
+    NixError(#[cause] nix::Error),
 }
 
 
 impl From<io::Error> for JSPError {
-  fn from(error: io::Error) -> Self {
+    fn from(error: io::Error) -> Self {
         JSPError::IoError(error)
     }
 }
 
 impl From<num::ParseIntError> for JSPError {
-  fn from(error: num::ParseIntError) -> Self {
+    fn from(error: num::ParseIntError) -> Self {
         JSPError::ParseIntError(error)
+    }
+}
+
+impl From<nix::Error> for JSPError {
+    fn from(error: nix::Error) -> Self {
+        JSPError::NixError(error)
     }
 }

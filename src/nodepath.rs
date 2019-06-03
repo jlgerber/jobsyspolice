@@ -301,8 +301,10 @@ impl<'a> Index<usize> for NodePath<'a> {
         if idx >= self.nodes.len() {
             return &self.untracked;
         }
-
-        &self.graph[self.nodes[idx]]
+        log::debug!("retreiving node {}", idx);
+        let indx = self.nodes[idx];
+        log::debug!("node index: {:?}", indx);
+        &self.graph[indx]
     }
 }
 

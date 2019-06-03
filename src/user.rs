@@ -41,6 +41,20 @@ impl User {
     pub fn new<S: Into<User>>(name: S) -> User {
         name.into()
     }
+
+    pub fn to_string(&self) -> String {
+        match self {
+            User::Me => match env::var(constants::USER_ENV_VAR) {
+                Ok(u) => u,
+                Err(_) => {
+                    log::warn!("unable to look up current user from environment!");
+                    get_default_user()
+                }
+            },
+
+            User::Named(n) =>  n.clone(),
+        }
+    }
 }
 
 

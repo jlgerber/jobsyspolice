@@ -28,9 +28,11 @@ pub fn is_valid<'a, I: AsRef<Path>>(path: I, graph: &'a JGraph) -> Result<NodePa
     let result = _is_valid(it, &graph, graph.node_references().next().unwrap().0, level, Rc::new(RefCell::new(indices)));
     match result {
         ReturnValue::Success(vals) => {
-            let vals = Rc::try_unwrap(vals)
+            let mut vals = Rc::try_unwrap(vals)
                           .unwrap()
                           .into_inner();
+            //log::debug!("vals: {:?}", vals);
+            vals.reverse();
             Ok(NodePath::new(&graph).replace_nodes_unchecked(vals))
         },
         ReturnValue::Failure{entry, node, depth} => {
