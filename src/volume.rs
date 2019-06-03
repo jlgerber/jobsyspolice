@@ -54,7 +54,6 @@ pub mod local {
                 if idx == 0 {continue;}
                 // idx 0 is / so we have to subtract one
                 let node = &nodepath[idx - 1];
-
                 match node.entry_type() {
                     &EntryType::Directory => {
                         if !create_path.exists() {
@@ -66,7 +65,7 @@ pub mod local {
                         }
 
                         let tmp = node.owner().clone();
-                        //log::debug!("node: {:?} type:{:?}", &node, &node.entry_type());
+                        log::debug!("node: {:?} type:{:?}", &node, &node.entry_type());
                         owner = tmp.unwrap_or(owner);
                         diskutils::set_path_owner(create_path.clone(), &owner)?;
 

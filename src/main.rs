@@ -28,10 +28,6 @@ struct Opt {
     #[structopt( short = "f", long = "file", parse(from_os_str) )]
     output: Option<PathBuf>,
 
-    /// make the path supplied by the user
-    #[structopt( short = "m", long = "mk" )]
-    make: bool,
-
     /// Read the graph from a specified template file. Normally, we identify
     /// the template from the JSP_PATH environment variable
     #[structopt( short = "i", long = "input", parse(from_os_str) )]
@@ -40,6 +36,19 @@ struct Opt {
     /// Jobsystem path to validate (eg /dd/shows/FOOBAR)
     #[structopt(name="INPUT")]
     input: Option<String>,
+
+    #[structopt(subcommand)]
+    mk: Option<Subcommand>
+}
+
+#[derive(StructOpt, Debug)]
+enum Subcommand {
+    /// Jobsystem path to create (eg /dd/shows/FOOBAR)
+    #[structopt(name = "mk")]
+    Mk {
+        #[structopt(name="INPUT")]
+        input: String,
+    }
 }
 
 fn main() {
@@ -66,24 +75,23 @@ fn main() {
             println!("{:#?}",  petgraph::dot::Dot::with_config(&graph, &[petgraph::dot::Config::EdgeNoLabel]));
         }
 
-    } else if let Some(input) = args.input {
-        if args.make {
-            let volumemaker = local::VolumeMaker::new(&graph, String::from("jonathangerber"), String::from("751"));
-            match volumemaker.mk(input.as_str()) {
-                Ok(_) => println!("\nSuccess\n"),
-                Err(e) => println!("\nFailure\n{:?}", e),
-            }
-        } else {
-            match is_valid(input.as_str(), &graph) {
-                Ok(nodepath) => {
-                    report_success(nodepath);
-                },
-                Err(JSPError::ValidationFailure{entry, node, depth}) => {
-                    report_failure(input.as_str(), &entry, node, depth, &graph );
-                }
-                Err(_) => panic!("JSPError type returned invalid")
-            }
+    } else if let Some(Subcommand::Mk{input}) = args.mk {
+        let volumemaker = local::VolumeMaker::new(&graph, String::from("jonathangerber"), String::from("751"));
+        match volumemaker.mk(input.as_str()) {
+            Ok(_) => println!("\nSuccess\n"),
+            Err(e) => println!("\nFailure\n{:?}", e),
         }
+    } else if let Some(input) = args.input {
+        match is_valid(input.as_str(), &graph) {
+            Ok(nodepath) => {
+                report_success(nodepath);
+            },
+            Err(JSPError::ValidationFailure{entry, node, depth}) => {
+                report_failure(input.as_str(), &entry, node, depth, &graph );
+            }
+            Err(_) => panic!("JSPError type returned invalid")
+        }
+
     } else {
         Opt::clap().print_help().unwrap();
     }
