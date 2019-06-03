@@ -6,6 +6,7 @@ use log::{ LevelFilter, self };
 use serde_json;
 use std::{ env,  path::{ Path, PathBuf }, fs::File };
 use structopt::StructOpt;
+use std::ffi::OsString;
 
 const JSP_PATH: &'static str = "JSP_PATH";
 
@@ -42,6 +43,9 @@ fn main() {
         let volumemaker = local::VolumeMaker::new(&graph, String::from("jonathangerber"), String::from("751"));
         match volumemaker.mk(input.as_str()) {
             Ok(_) => println!("\nSuccess\n"),
+            Err(JSPError::ValidationFailure{entry, node, depth}) => {
+                report_failure(input.as_str(), &entry, node, depth, &graph );
+            },
             Err(e) => println!("\nFailure\n{:?}", e),
         }
 
@@ -155,4 +159,22 @@ fn get_graph(has_output: bool, graph: Option<PathBuf>) -> JGraph {
     } else {
          _get_graph(graph)
     }
+}
+
+
+#[inline]
+fn report_failure(input: &str, entry: &OsString, node: NIndex, depth: u8, graph: &JGraph ) {
+    let path = Path::new(input)
+                .iter()
+                .take((depth+1) as usize)
+                .fold(PathBuf::new(), |mut p, v| {p.push(v); p});
+
+    let neighbors = graph.neighbors(node);
+    eprintln!("\nFailure\n");
+    eprintln!("Failed to match {:?} in {:?} against:", entry, path);
+    for n in neighbors {
+        eprintln!("{}", graph[n].display_name());
+    }
+    eprintln!("");
+    std::process::exit(1);
 }

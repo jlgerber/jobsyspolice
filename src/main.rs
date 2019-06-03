@@ -79,6 +79,9 @@ fn main() {
         let volumemaker = local::VolumeMaker::new(&graph, String::from("jonathangerber"), String::from("751"));
         match volumemaker.mk(input.as_str()) {
             Ok(_) => println!("\nSuccess\n"),
+            Err(JSPError::ValidationFailure{entry, node, depth}) => {
+                report_failure(input.as_str(), &entry, node, depth, &graph );
+            },
             Err(e) => println!("\nFailure\n{:?}", e),
         }
     } else if let Some(input) = args.input {
