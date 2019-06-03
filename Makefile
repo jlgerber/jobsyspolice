@@ -8,10 +8,18 @@ build-debug:
 	cargo build
 
 install:
+ifneq (,$(wildcard ~/bin/${target}))
+	rm ~/bin/${target}
+endif
 	cp target/release/${target} ~/bin/.
+	chmod g+w ~/bin/${target}
 
 install-debug:
+ifneq (,$(wildcard ~/bin/${target}-debug))
+	rm ~/bin/${target}-debug
+endif
 	cp target/debug/${target} ~/bin/${target}-debug
+	chmod g+w ~/bin/${target}-debug
 
 install-env-file:
 	cp ${envfile} ~/.
