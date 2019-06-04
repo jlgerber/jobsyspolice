@@ -4,10 +4,15 @@ use log;
 use lazy_static::lazy_static;
 // wah!!! I don't like these deps
 use nix::{ unistd::{chown, Uid}, NixPath };
-use users::get_user_by_name;
+use users::{ get_user_by_name };
 
 lazy_static! {
     static ref ROOT_PATH: PathBuf = Path::new("/").to_path_buf();
+}
+
+/// retrieve the uid from a user
+pub fn get_uid(user: &str) -> Result<u32, JSPError> {
+    Ok(get_user_by_name(&user).ok_or( JSPError::InvalidUserName(user.to_string()))?.uid())
 }
 
 /// Set permissions on a path.
@@ -45,7 +50,7 @@ pub fn set_path_owner<P>(path: P, owner: &User ) -> Result<(), JSPError>
             };
             // get uid
             //log::debug!("setting path {:?} owner to Me {}",&path, &user);
-            let uid = get_user_by_name(&user).ok_or( JSPError::Placeholder)?;
+            let uid = get_user_by_name(&user).ok_or( JSPError::InvalidUserName(user.to_string()))?;
             //log::debug!("uid of me {:?}", uid);
             return Ok(chown(&path, Some(Uid::from_raw(uid.uid())), None )?);
         }
