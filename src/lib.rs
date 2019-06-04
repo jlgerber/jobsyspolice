@@ -34,8 +34,8 @@ pub use returnvalue::{ ReturnValue, NIndex };
 pub mod diskutils;
 //pub use diskutils::DiskUtils;
 
-pub mod volume;
-pub use volume::{MakeVolume, local};
+pub mod disk;
+pub use disk::{Disk, local, get_disk_service, DiskType};
 
 pub mod user;
 pub use user::{User, get_default_user};

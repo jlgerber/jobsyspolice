@@ -1,7 +1,7 @@
 use chrono;
 use dotenv::dotenv;
 use fern::{ colors::{Color, ColoredLevelConfig}, self} ;
-use jsp::*;
+use jsp::{Disk, DiskType, get_disk_service, graph, is_valid, JGraph, JSPError, NodePath, NIndex };
 use petgraph;
 use log::{ LevelFilter, self };
 use serde_json;
@@ -76,8 +76,10 @@ fn main() {
         }
 
     } else if let Some(Subcommand::Mk{input}) = args.mk {
-        let volumemaker = local::VolumeMaker::new(&graph, String::from("jonathangerber"), String::from("751"));
-        match volumemaker.mk(input.as_str()) {
+
+        let diskservice = get_disk_service(DiskType::Local, &graph);
+
+        match diskservice.mk(Path::new(input.as_str())) {
             Ok(_) => println!("\nSuccess\n"),
             Err(JSPError::ValidationFailure{entry, node, depth}) => {
                 report_failure(input.as_str(), &entry, node, depth, &graph );
