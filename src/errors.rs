@@ -11,6 +11,8 @@ pub enum JSPError {
     ValidationFailure{ entry: OsString, node: NIndex, depth: u8 },
     #[fail(display = "Placeholder error")]
     Placeholder,
+    #[fail(display = "Invalid User Name '{}'", _0)]
+    InvalidUserName(String),
     #[fail(display = "{}", _0)]
     IoError(#[cause] io::Error),
     #[fail(display = "{}", _0)]
