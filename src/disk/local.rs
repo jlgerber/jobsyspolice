@@ -21,6 +21,11 @@ impl<'a> DiskService<'a> {
             perms,
         }
     }
+
+    fn set_owner(&self, path: &Path) -> Result<(), JSPError> {
+
+        Err(JSPError::Placeholder)
+    }
 }
 
 impl<'a> Disk for DiskService<'a> {
@@ -52,8 +57,8 @@ impl<'a> Disk for DiskService<'a> {
                         let tmp = node.owner().clone();
                         log::trace!("node: {:?} type:{:?}", &node, &node.entry_type());
                         owner = tmp.unwrap_or(owner);
-                        diskutils::set_path_owner(create_path.clone(), &owner)?;
                         diskutils::set_path_perms(&create_path, &gperms)?;
+                        diskutils::set_path_owner(create_path.clone(), &owner)?;
                     }
 
                 }
@@ -68,8 +73,8 @@ impl<'a> Disk for DiskService<'a> {
                         let tmp = node.owner().clone();
                         //log::debug!("node: {:?} type:{:?}", &node, &node.entry_type());
                         owner = tmp.unwrap_or(owner);
-                        diskutils::set_path_owner(create_path.clone(), &owner)?;
                         diskutils::set_path_perms(&create_path, &gperms)?;
+                        diskutils::set_path_owner(create_path.clone(), &owner)?;
                     }
 
                 }
@@ -78,8 +83,8 @@ impl<'a> Disk for DiskService<'a> {
                     if !create_path.exists() {
                         fs::create_dir(&create_path)?;
                         log::debug!("Untracked type");
-                        diskutils::set_path_owner(create_path.clone(), &owner)?;
                         diskutils::set_path_perms(&create_path, &gperms)?;
+                        diskutils::set_path_owner(create_path.clone(), &owner)?;
                     }
                 }
 
