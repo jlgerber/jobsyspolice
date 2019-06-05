@@ -45,7 +45,10 @@ impl User {
     pub fn to_string(&self) -> String {
         match self {
             User::Me => match env::var(constants::USER_ENV_VAR) {
-                Ok(u) => u,
+                Ok(u) => {
+                    log::debug!("looked up user from env: {}", u);
+                    u
+                },
                 Err(_) => {
                     log::warn!("unable to look up current user from environment!");
                     get_default_user()

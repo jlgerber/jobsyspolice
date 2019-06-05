@@ -40,6 +40,17 @@ fn main() {
     let graph = get_graph(false, args.graph);
 
     if let Some(input) = args.input {
+
+        let diskservice = get_disk_service(DiskType::Local, &graph);
+
+        match diskservice.mk(Path::new(input.as_str())) {
+            Ok(_) => println!("\nSuccess\n"),
+            Err(JSPError::ValidationFailure{entry, node, depth}) => {
+                report_failure(input.as_str(), &entry, node, depth, &graph );
+            },
+            Err(e) => println!("\nFailure\n{:?}", e),
+        }
+        /*
         let volumemaker = local::DiskService::new(&graph, String::from("jonathangerber"), String::from("751"));
         match volumemaker.mk(Path::new(input.as_str())) {
             Ok(_) => println!("\nSuccess\n"),
@@ -48,7 +59,7 @@ fn main() {
             },
             Err(e) => println!("\nFailure\n{:?}", e),
         }
-
+        */
     } else {
         Opt::clap().print_help().unwrap();
     }

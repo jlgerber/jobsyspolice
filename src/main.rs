@@ -1,7 +1,7 @@
 use chrono;
 use dotenv::dotenv;
 use fern::{ colors::{Color, ColoredLevelConfig}, self} ;
-use jsp::{Disk, DiskType, get_disk_service, graph, is_valid, JGraph, JSPError, NodePath, NIndex };
+use jsp::{ DiskType, get_disk_service, graph, is_valid, JGraph, JSPError, NodePath, NIndex };
 use petgraph;
 use log::{ LevelFilter, self };
 use serde_json;
@@ -17,7 +17,7 @@ Interact with the jstemplate.json file. \
 This command may be used to validate candidate paths, create the template, etc" )]
 struct Opt {
     /// Set logging level to one of trace, debug, info, warn, error
-    #[structopt( short = "l", long = "level", default_value = "info" )]
+    #[structopt( short = "l", long = "level", default_value = "warn" )]
     level: String,
 
     /// Generate a Graphviz dot file of the jstemplate and print it to stdout

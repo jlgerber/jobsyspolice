@@ -2,6 +2,7 @@
 use crate::{ diskutils, JGraph, is_valid, JSPError, EntryType, User, constants };
 use super::{ Disk, Path };
 use std::{ path::PathBuf, fs };
+use log;
 
 /// local::DiskService is, as it sounds, an implementation of Disk that
 /// works for local filesystems.
@@ -21,12 +22,10 @@ impl<'a> DiskService<'a> {
             perms,
         }
     }
-
-    fn set_owner(&self, path: &Path) -> Result<(), JSPError> {
-
-        Err(JSPError::Placeholder)
-    }
 }
+
+// requires coreutils be installed. mac only right now. sudo port install coreutils
+
 
 impl<'a> Disk for DiskService<'a> {
 
@@ -48,43 +47,49 @@ impl<'a> Disk for DiskService<'a> {
             let node = &nodepath[idx - 1];
             match node.entry_type() {
                 &EntryType::Directory => {
+                    log::info!("EntryType::Directory");
+
+                    let tmp = node.owner().clone();
+                    log::trace!("node: {:?} type:{:?}", &node, &node.entry_type());
+                    owner = tmp.unwrap_or(owner);
+
                     if !create_path.exists() {
                         fs::create_dir(&create_path)?;
                         // perms
                         if let Some(perms) = node.perms() {
                             gperms = perms
                         }
-                        let tmp = node.owner().clone();
-                        log::trace!("node: {:?} type:{:?}", &node, &node.entry_type());
-                        owner = tmp.unwrap_or(owner);
-                        diskutils::set_path_perms(&create_path, &gperms)?;
-                        diskutils::set_path_owner(create_path.clone(), &owner)?;
-                    }
 
+                        diskutils::set_path_perms(&create_path, &gperms)?;
+                        diskutils::chown_owner(create_path.clone(), &owner)?;
+                    }
                 }
 
                 &EntryType::Volume => {
+                    log::info!("EntryType::Volume");
+
+                    let tmp = node.owner().clone();
+                    log::trace!("node: {:?} type:{:?}", &node, &node.entry_type());
+                    owner = tmp.unwrap_or(owner);
+
                     if !create_path.exists() {
                         fs::create_dir(&create_path)?;
                         if let Some(perms) = node.perms() {
                             gperms = perms
                         }
-
-                        let tmp = node.owner().clone();
-                        //log::debug!("node: {:?} type:{:?}", &node, &node.entry_type());
-                        owner = tmp.unwrap_or(owner);
                         diskutils::set_path_perms(&create_path, &gperms)?;
-                        diskutils::set_path_owner(create_path.clone(), &owner)?;
+                        diskutils::chown_owner(create_path.clone(), &owner)?;
                     }
 
                 }
 
                 &EntryType::Untracked => {
+                    log::info!("EntryType::Untracked");
                     if !create_path.exists() {
                         fs::create_dir(&create_path)?;
                         log::debug!("Untracked type");
                         diskutils::set_path_perms(&create_path, &gperms)?;
-                        diskutils::set_path_owner(create_path.clone(), &owner)?;
+                        diskutils::chown_owner(create_path.clone(), &owner)?;
                     }
                 }
 

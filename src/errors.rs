@@ -13,6 +13,8 @@ pub enum JSPError {
     Placeholder,
     #[fail(display = "Invalid User Name '{}'", _0)]
     InvalidUserName(String),
+     #[fail(display = "Boxed Error '{}'", _0)]
+    BoxedError(String),
     #[fail(display = "{}", _0)]
     IoError(#[cause] io::Error),
     #[fail(display = "{}", _0)]
@@ -37,5 +39,11 @@ impl From<num::ParseIntError> for JSPError {
 impl From<nix::Error> for JSPError {
     fn from(error: nix::Error) -> Self {
         JSPError::NixError(error)
+    }
+}
+
+impl From<std::boxed::Box<dyn std::error::Error>> for JSPError {
+    fn from(error: std::boxed::Box<dyn std::error::Error> ) -> Self {
+        JSPError::BoxedError(error.to_string())
     }
 }

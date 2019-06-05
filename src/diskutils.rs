@@ -5,6 +5,8 @@ use lazy_static::lazy_static;
 // wah!!! I don't like these deps
 use nix::{ unistd::{chown, Uid}, NixPath };
 use users::{ get_user_by_name };
+use shellfn::shell;
+use std::error::Error;
 
 lazy_static! {
     static ref ROOT_PATH: PathBuf = Path::new("/").to_path_buf();
@@ -50,9 +52,30 @@ pub fn set_path_owner<P>(path: P, owner: &User ) -> Result<(), JSPError>
             };
             // get uid
             //log::debug!("setting path {:?} owner to Me {}",&path, &user);
+            if user == "root" {panic!("Attempt to change ownership to root not allowed");}
             let uid = get_user_by_name(&user).ok_or( JSPError::InvalidUserName(user.to_string()))?;
             //log::debug!("uid of me {:?}", uid);
             return Ok(chown(&path, Some(Uid::from_raw(uid.uid())), None )?);
         }
     }
 }
+
+// Sets the owner for a path
+pub fn chown_owner(path: PathBuf, owner: &User) -> Result<(), JSPError> {
+    let owner_id = get_uid(owner.to_string().as_str())?;
+    let euid = Uid::effective().as_raw();
+    log::debug!("owner: {:?}, id: {}, euid: {}", owner, owner_id, euid);
+    if owner_id != euid {
+        log::info!("owner id ({}) and euid ({}) differ. Chowning {:?} to {}", owner_id, euid, &path, owner);
+        let _result = _chown(path.to_str().unwrap(), owner_id)?;
+    } else {
+        ;
+        set_path_owner(path, owner)?;
+    }
+    Ok(())
+}
+
+#[shell]
+fn _chown(dir: &str, owner: u32 ) -> Result<String, Box<Error>> { r#"
+    sudo chown $OWNER $DIR
+"# }

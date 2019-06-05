@@ -1,5 +1,6 @@
 use crate::{ EntryType, NodeType, User};
 use serde::{ Deserialize, Serialize, self };
+use log;
 
 /// The Node caries information about a specific
 /// directory or file within the candidate jobsystem
@@ -107,7 +108,9 @@ impl Node {
     /// let node = node.set_owner("ddinst");
     /// ```
     pub fn set_owner<I>(mut self, owner: I ) -> Node where I: Into<User> {
+        log::trace!("set_owner before {:?}", self.owner);
         self.owner = Some(owner.into());
+        log::trace!("set owwer after {:?}", self.owner);
         self
     }
 
