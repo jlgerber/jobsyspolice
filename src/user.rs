@@ -6,6 +6,22 @@ use std::{
     fmt::{self, Display, Formatter},
 };
 
+trait RemoveFirstAscii {
+    fn remove_first(&self) -> String;
+}
+
+impl RemoveFirstAscii for String {
+    fn remove_first(&self) -> String {
+        self[1..].to_string()
+    }
+}
+
+impl RemoveFirstAscii for &str {
+    fn remove_first(&self) -> String {
+        self[1..].to_string()
+    }
+}
+
 /// The User enum encompasses both static and dynamic users (specifically the current user as
 /// recorded in the environment).
 #[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Serialize, Deserialize, Clone)]
@@ -13,6 +29,7 @@ use std::{
 pub enum User {
     Me,
     Named(String),
+    Captured(String),
 }
 /// Looks up the default user
 pub fn get_default_user() -> String {
@@ -29,7 +46,7 @@ impl Display for User {
                     write!(f, "{}", get_default_user())
                 }
             },
-
+            User::Captured(n) =>write!(f, "${}", n),
             User::Named(n) => write!(f, "{}", n),
         }
     }
@@ -54,7 +71,7 @@ impl User {
                     get_default_user()
                 }
             },
-
+            User::Captured(n) =>  n.clone(),
             User::Named(n) =>  n.clone(),
         }
     }
@@ -63,8 +80,10 @@ impl User {
 
 impl From<String> for User {
     fn from(name: String) -> Self {
-        if &name == "$user" || &name == "$USER" {
+        if &name == "$me" || &name == "$ME" {
             User::Me
+        } else if name.starts_with('$') {
+            User::Captured(name.remove_first())
         } else {
             User::Named(name)
         }
@@ -73,7 +92,14 @@ impl From<String> for User {
 
 impl From<&str> for User {
     fn from(name: &str) -> Self {
-        User::from(name.to_string())
+       // User::from(name.to_string())
+       if name == "$me" || name == "$ME" {
+            User::Me
+        } else if name.starts_with('$') {
+            User::Captured(name.remove_first())
+        } else {
+            User::Named(name.to_string())
+        }
     }
 }
 
@@ -111,12 +137,22 @@ mod tests {
 
     #[test]
     fn can_convert_from_string_to_me() {
+        let name = String::from("$me");
+        let usr = User::from(name);
+        assert_eq!(usr, User::Me);
+        let name = String::from("$ME");
+        let usr = User::from(name);
+        assert_eq!(usr, User::Me);
+    }
+
+    #[test]
+    fn can_convert_from_string_to_captured() {
         let name = String::from("$user");
         let usr = User::from(name);
-        assert_eq!(usr, User::Me);
+        assert_eq!(usr, User::Captured(String::from("user")));
         let name = String::from("$USER");
         let usr = User::from(name);
-        assert_eq!(usr, User::Me);
+        assert_eq!(usr, User::Captured(String::from("USER")));
     }
 
     #[test]
@@ -128,9 +164,16 @@ mod tests {
 
     #[test]
     fn can_convert_from_string_into_user_me() {
-        let name = String::from("$USER");
+        let name = String::from("$ME");
         let usr: User = name.into();
         assert_eq!(usr, User::Me);
+    }
+
+    #[test]
+    fn can_convert_from_string_into_user_captured() {
+        let name = String::from("$USER");
+        let usr: User = name.into();
+        assert_eq!(usr, User::Captured(String::from("USER")));
     }
 
     #[test]
@@ -141,9 +184,9 @@ mod tests {
 
     #[test]
     fn can_convert_from_str_to_user() {
-        let usr = User::from("$USER");
+        let usr = User::from("$ME");
         assert_eq!(usr, User::Me);
-        let usr = User::from("$user");
+        let usr = User::from("$me");
         assert_eq!(usr, User::Me);
     }
 
@@ -156,7 +199,7 @@ mod tests {
 
     #[test]
     fn can_convert_from_str_into_user_me() {
-        let name = "$user";
+        let name = "$me";
         let usr: User = name.into();
         assert_eq!(usr, User::Me);
     }

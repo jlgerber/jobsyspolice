@@ -57,6 +57,9 @@ pub fn set_path_owner<P>(path: P, owner: &User ) -> Result<(), JSPError>
             //log::debug!("uid of me {:?}", uid);
             return Ok(chown(&path, Some(Uid::from_raw(uid.uid())), None )?);
         }
+        &User::Captured(_name) => {
+            unimplemented!();
+        }
     }
 }
 
