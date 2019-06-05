@@ -43,31 +43,29 @@ impl<'a> Disk for DiskService<'a> {
             let node = &nodepath[idx - 1];
             match node.entry_type() {
                 &EntryType::Directory => {
+                    let tmp = node.owner().clone();
+                    log::trace!("node: {:?} type:{:?}", &node, &node.entry_type());
+                    owner = tmp.unwrap_or(owner);
                     if !create_path.exists() {
                         fs::create_dir(&create_path)?;
                         // perms
                         if let Some(perms) = node.perms() {
                             gperms = perms
                         }
-                        let tmp = node.owner().clone();
-                        log::trace!("node: {:?} type:{:?}", &node, &node.entry_type());
-                        owner = tmp.unwrap_or(owner);
                         diskutils::set_path_perms(&create_path, &gperms)?;
                         diskutils::set_path_owner(create_path.clone(), &owner)?;
                     }
-
                 }
 
                 &EntryType::Volume => {
+                    let tmp = node.owner().clone();
+                    //log::debug!("node: {:?} type:{:?}", &node, &node.entry_type());
+                    owner = tmp.unwrap_or(owner);
                     if !create_path.exists() {
                         fs::create_dir(&create_path)?;
                         if let Some(perms) = node.perms() {
                             gperms = perms
                         }
-
-                        let tmp = node.owner().clone();
-                        //log::debug!("node: {:?} type:{:?}", &node, &node.entry_type());
-                        owner = tmp.unwrap_or(owner);
                         diskutils::set_path_perms(&create_path, &gperms)?;
                         diskutils::set_path_owner(create_path.clone(), &owner)?;
                     }
