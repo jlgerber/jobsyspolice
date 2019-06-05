@@ -59,7 +59,6 @@ impl<'a> Disk for DiskService<'a> {
                         if let Some(perms) = node.perms() {
                             gperms = perms
                         }
-
                         diskutils::set_path_perms(&create_path, &gperms)?;
                         diskutils::chown_owner(create_path.clone(), &owner)?;
                     }
