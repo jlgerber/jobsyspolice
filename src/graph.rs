@@ -154,7 +154,7 @@ pub mod testdata {
         let prod = graph.add_node(jspnode!("prod", "perms"=>"755")); // 755
         let docs = graph.add_node(jspnode!("docs", "perms"=>"771")); // 0771
         let user = graph.add_node(jspnode!("user", "perms"=>"751").set_volume()); //751
-        let work = graph.add_node(jspnode!("work", r"^work\.[a-z]+$", "owner"=> "$USER", "perms"=>"770")); // 0770 default 0555
+        let work = graph.add_node(jspnode!("work", r"^work\.(?P<user>[a-z]+)$", "owner"=> "$user", "perms"=>"770")); // 0770 default 0555
         let outsource = graph.add_node(jspnode!("OUTSOURCE").set_volume());
         let outsource_sd = graph.add_node(jspnode!("outsource_sd", r"^[a-zA-Z0-9_.]+$")); //perms default 555
         let outsource_sdd = graph.add_node(
