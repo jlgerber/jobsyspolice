@@ -75,7 +75,7 @@ pub fn set_path_owner<P>(path: P, owner: &User, node: &Node) -> Result<(), JSPEr
         &User::Named(name) => {
             log::info!("User::Named({})", name);
             // attempt to get name
-            let uid = get_user_by_name(&name).ok_or( JSPError::Placeholder)?;
+            let uid = get_user_by_name(&name).ok_or( JSPError::UidLookupFailed(name.to_string()))?;
             log::info!("chowing  {:?}", &path);
             return Ok(chown(&path, Some(Uid::from_raw(uid.uid())), None )?);
         }
@@ -124,7 +124,12 @@ pub fn set_path_owner_id<P>(path: P, id: u32) -> Result<(), JSPError>
 pub fn chown_owner(path: PathBuf, owner: &User, node: &Node) -> Result<(), JSPError> {
     log::info!("chown_owner(path: {:?}, owner: {:?}, node: {:?})", path, &owner, node);
 
-    let dirname = path.as_path().file_name().ok_or(JSPError::Placeholder)?.to_str().ok_or(JSPError::Placeholder)?;
+    let dirname = path.as_path()
+                    .file_name()
+                    .ok_or(JSPError::FilenameFromPathFailed(path.clone()))?
+                    .to_str()
+                    .ok_or(JSPError::PathBufConvertToStrFailed(path.clone()))?;
+
     let owner_id = get_uid_for_owner(owner, node, dirname)?;
     let euid = Uid::effective().as_raw();
     log::debug!("effective id of process: {}", euid);
@@ -132,7 +137,6 @@ pub fn chown_owner(path: PathBuf, owner: &User, node: &Node) -> Result<(), JSPEr
         log::info!("owner id ({}) and euid ({}) differ. suproccessing via _chown {:?} to {}", owner_id, euid, &path, owner);
         let _result = _chown(path.to_str().unwrap(), owner_id)?;
     } else {
-
         set_path_owner_id(path, owner_id)?
     }
     Ok(())
