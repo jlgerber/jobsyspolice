@@ -42,7 +42,7 @@ fn _create_path(create_path: &Path, gperms: &str, owner: &User, node: &Node ) ->
         Ok(_) => (),
         Err(e) => {
             log::error!("{}", e);
-            log::error!("Changing owner failed. Attempting to roll back creation of '{:?}'",
+            log::error!("Changing ownership of directory failed. Attempting to roll back creation of '{:?}'",
                         create_path);
 
             fs::remove_dir(&create_path)?;
