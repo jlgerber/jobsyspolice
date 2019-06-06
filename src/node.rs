@@ -70,6 +70,11 @@ impl Node {
     pub fn owner(&self) -> &Option<User> {
         &self.owner
     }
+
+    pub fn identity(&self) -> &NodeType {
+        &self.identity
+    }
+
     /// Return a simplified name for the node.
     // TODO: add a simplename: Option<RefCell<String>> to Node to cache the simple name
     pub fn display_name(&self) -> String {

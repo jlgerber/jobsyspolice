@@ -1,5 +1,5 @@
 use std::{env, fmt::Debug, fs, os::unix::fs::PermissionsExt, path::Path, path::PathBuf };
-use crate::{JSPError, User, constants, get_default_user};
+use crate::{JSPError, User, constants, get_default_user, Node, NodeType};
 use log;
 use lazy_static::lazy_static;
 // wah!!! I don't like these deps
@@ -31,7 +31,7 @@ pub fn set_path_perms<P: AsRef<Path> + Debug>(path: P, perms: &str) -> Result<()
     Ok(())
 }
 
-pub fn set_path_owner<P>(path: P, owner: &User ) -> Result<(), JSPError>
+pub fn set_path_owner<P>(path: P, owner: &User, node: &Node) -> Result<(), JSPError>
     where P: NixPath + Debug
 {
     match &owner {
@@ -57,14 +57,23 @@ pub fn set_path_owner<P>(path: P, owner: &User ) -> Result<(), JSPError>
             //log::debug!("uid of me {:?}", uid);
             return Ok(chown(&path, Some(Uid::from_raw(uid.uid())), None )?);
         }
-        &User::Captured(_name) => {
-            unimplemented!();
+        &User::Captured(key) => {
+            if let NodeType::RegEx{name: _, pattern, exclude: _} = node.identity() {
+                let caps = pattern.captures(key).ok_or(JSPError::MissingOwnerInRegex)?;
+                let owner = caps.name(key).ok_or(JSPError::MissingOwnerInRegex)?.as_str();
+                log::debug!("Owner from regex '{}'", owner);
+                let uid = get_user_by_name(owner).ok_or( JSPError::Placeholder)?;
+                //log::debug!("uid is {:?}", uid);
+                Ok(chown(&path, Some(Uid::from_raw(uid.uid())), None )?)
+            } else {
+                Err(JSPError::MissingOwnerInRegex)
+            }
         }
     }
 }
 
 // Sets the owner for a path
-pub fn chown_owner(path: PathBuf, owner: &User) -> Result<(), JSPError> {
+pub fn chown_owner(path: PathBuf, owner: &User, node: &Node) -> Result<(), JSPError> {
     let owner_id = get_uid(owner.to_string().as_str())?;
     let euid = Uid::effective().as_raw();
     log::debug!("owner: {:?}, id: {}, euid: {}", owner, owner_id, euid);
@@ -72,8 +81,7 @@ pub fn chown_owner(path: PathBuf, owner: &User) -> Result<(), JSPError> {
         log::info!("owner id ({}) and euid ({}) differ. Chowning {:?} to {}", owner_id, euid, &path, owner);
         let _result = _chown(path.to_str().unwrap(), owner_id)?;
     } else {
-        ;
-        set_path_owner(path, owner)?;
+        set_path_owner(path, owner, node)?;
     }
     Ok(())
 }

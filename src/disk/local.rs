@@ -60,7 +60,7 @@ impl<'a> Disk for DiskService<'a> {
                             gperms = perms
                         }
                         diskutils::set_path_perms(&create_path, &gperms)?;
-                        diskutils::chown_owner(create_path.clone(), &owner)?;
+                        diskutils::chown_owner(create_path.clone(), &owner, &node)?;
                     }
                 }
 
@@ -77,7 +77,7 @@ impl<'a> Disk for DiskService<'a> {
                             gperms = perms
                         }
                         diskutils::set_path_perms(&create_path, &gperms)?;
-                        diskutils::chown_owner(create_path.clone(), &owner)?;
+                        diskutils::chown_owner(create_path.clone(), &owner, &node)?;
                     }
 
                 }
@@ -88,7 +88,7 @@ impl<'a> Disk for DiskService<'a> {
                         fs::create_dir(&create_path)?;
                         log::debug!("Untracked type");
                         diskutils::set_path_perms(&create_path, &gperms)?;
-                        diskutils::chown_owner(create_path.clone(), &owner)?;
+                        diskutils::chown_owner(create_path.clone(), &owner, &node)?;
                     }
                 }
 
