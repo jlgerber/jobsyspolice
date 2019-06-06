@@ -15,10 +15,10 @@ const JSP_PATH: &'static str = "JSP_PATH";
 Job System Police make command
 
 Interact with the jstemplate.json file. \
-This command may be used to validate candidate paths, create the template, etc" )]
+This command may be used to make filepaths" )]
 struct Opt {
     /// Set logging level to one of trace, debug, info, warn, error
-    #[structopt( short = "l", long = "level", default_value = "info" )]
+    #[structopt( short = "l", long = "level", default_value = "warn" )]
     level: String,
 
     /// Read the graph from a specified template file. Normally, we identify
@@ -48,18 +48,8 @@ fn main() {
             Err(JSPError::ValidationFailure{entry, node, depth}) => {
                 report_failure(input.as_str(), &entry, node, depth, &graph );
             },
-            Err(e) => println!("\nFailure\n{:?}", e),
+            Err(e) => println!("\nFailure\n\n{}", e.to_string()),
         }
-        /*
-        let volumemaker = local::DiskService::new(&graph, String::from("jonathangerber"), String::from("751"));
-        match volumemaker.mk(Path::new(input.as_str())) {
-            Ok(_) => println!("\nSuccess\n"),
-            Err(JSPError::ValidationFailure{entry, node, depth}) => {
-                report_failure(input.as_str(), &entry, node, depth, &graph );
-            },
-            Err(e) => println!("\nFailure\n{:?}", e),
-        }
-        */
     } else {
         Opt::clap().print_help().unwrap();
     }
