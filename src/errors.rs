@@ -1,7 +1,7 @@
 use crate::NIndex;
 use failure::Fail;
 use nix;
-use std::{ffi::OsString, io, num };
+use std::{ffi::OsString, io, num, path::PathBuf };
 use regex;
 
 #[derive(Debug, Fail)]
@@ -9,13 +9,22 @@ pub enum JSPError {
     #[fail(display = "missing NIndex: {:?}", _0)]
     MissingIndex (NIndex),
 
+    #[fail(display = "Uid Lookup failed for '{}'", _0)]
+    UidLookupFailed (String),
+
     #[fail(display = "Validation Failure: {:?}, index: {:?} depth: {}", entry, node, depth)]
     ValidationFailure{ entry: OsString, node: NIndex, depth: u8 },
 
     #[fail(display = "Placeholder error")]
     Placeholder,
 
-    #[fail(display = "Invalid User Name '{}'", _0)]
+    #[fail(display = "Unable to get filename from path: {:?}", _0)]
+    FilenameFromPathFailed(PathBuf),
+
+    #[fail(display = "Unable to convert PathBuf to str: {:?}", _0)]
+    PathBufConvertToStrFailed(PathBuf),
+
+    #[fail(display = "Invalid User Name: {}", _0)]
     InvalidUserName(String),
 
     #[fail(display = "Missing Owner in regex")]
