@@ -12,14 +12,20 @@ lazy_static! {
     static ref ROOT_PATH: PathBuf = Path::new("/").to_path_buf();
 }
 
-/*
-/// retrieve the uid from a user
-pub fn get_uid(user: &str) -> Result<u32, JSPError> {
-    log::info!("get_uid(user: {})", user);
-    Ok(get_user_by_name(&user).ok_or( JSPError::InvalidUserName(user.to_string()))?.uid())
-}
-*/
-
+/// Retrieve the user id for the supplied owner. If the owner is of type User::Captured,
+/// this method attempts to extract the user name from the path using the regex supplied
+/// by the node parameter, which is expected to have a named regex capture whose name corresponds
+/// with the String owned by User::Capture(name)
+///
+/// # Parameters
+///
+/// * `owner` - reference to User
+/// * `node` - reference to Node which the request relates to. This is used if the owner is of type User::Captured
+/// * `dir` - &str of the directory this relates to. This is used if the owner is of type User::Captured.
+///
+/// # Results
+///
+/// u32 uid if successful, or a JSPError, otherwise
 pub fn get_uid_for_owner(owner: &User, node: &Node, dir: &str) -> Result<u32, JSPError> {
 
     log::info!("get_uid_for_owner(owner: {:?}, node: {:?}, dir: {})", owner, node, dir);
@@ -68,52 +74,7 @@ pub fn set_path_perms<P: AsRef<Path> + Debug>(path: P, perms: &str) -> Result<()
     fs::set_permissions(&path, perms)?;
     Ok(())
 }
-/*
-pub fn set_path_owner<P>(path: P, owner: &User, node: &Node) -> Result<(), JSPError>
-    where P: NixPath + Debug
-{
-    log::info!("set_path_owner(path: {:?}, owner: {:?}, node: {:?})", &path, &owner, &node);
-    match &owner {
-        &User::Named(name) => {
-            log::info!("User::Named({})", name);
-            // attempt to get name
-            let uid = get_user_by_name(&name).ok_or( JSPError::UidLookupFailed(name.to_string()))?;
-            log::info!("chowing  {:?}", &path);
-            return Ok(chown(&path, Some(Uid::from_raw(uid.uid())), None )?);
-        }
-        &User::Me => {
-            log::info!("User::Me");
-            let user = match env::var(constants::USER_ENV_VAR) {
-                Ok(u) => u,
-                Err(_) => {
-                    log::warn!("unable to look up current user from environment!");
-                    get_default_user()
-                }
-            };
-            // get uid
-            if user == "root" {panic!("Attempt to change ownership to root not allowed");}
-            let uid = get_user_by_name(&user).ok_or( JSPError::InvalidUserName(user.to_string()))?;
-            log::info!("chowing  {:?}", &path);
-            return Ok(chown(&path, Some(Uid::from_raw(uid.uid())), None )?);
-        }
-        &User::Captured(key) => {
-            log::info!("User::Captured({})", key);
 
-            if let NodeType::RegEx{name: _, pattern, exclude: _} = node.identity() {
-                let caps = pattern.captures(key).ok_or(JSPError::MissingOwnerInRegex)?;
-                let owner = caps.name(key).ok_or(JSPError::MissingOwnerInRegex)?.as_str();
-                log::debug!("Owner from regex '{}'", owner);
-                let uid = get_user_by_name(owner).ok_or( JSPError::Placeholder)?;
-                //log::debug!("uid is {:?}", uid);
-                log::info!("chowing  {:?}", &path);
-                Ok(chown(&path, Some(Uid::from_raw(uid.uid())), None )?)
-            } else {
-                Err(JSPError::MissingOwnerInRegex)
-            }
-        }
-    }
-}
-*/
 pub fn set_path_owner_id<P>(path: P, id: u32) -> Result<(), JSPError>
     where P: NixPath + Debug
 {
