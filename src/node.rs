@@ -44,7 +44,7 @@ impl Node {
             perms: None,
         }
     }
-    /// Specialized constructor function which returns a Untraked node.
+    /// Specialized constructor function which returns an Untracked node.
     pub fn new_untracked() -> Self {
         Self {
             identity: NodeType::Untracked,

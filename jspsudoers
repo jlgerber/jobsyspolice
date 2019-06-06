@@ -1,0 +1,1 @@
+jobsys ALL=(ALL) NOPASSWD: /usr/sbin/chown

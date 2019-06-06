@@ -46,5 +46,7 @@ ownership:
 	sudo chmod u+s ~/bin/${target}
 	sudo chmod u+s ~/bin/${target2}
 
+sudoers:
+	@sudo visudo -c -q -f jspsudoers && sudo chmod 600 jspsudoers && sudo cp jspsudoers /etc/sudoers.d/jspsudoers
 test:
 	cargo test --release --lib
