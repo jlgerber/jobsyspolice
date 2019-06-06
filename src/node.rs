@@ -1,6 +1,7 @@
 use crate::{ EntryType, NodeType, User};
 use serde::{ Deserialize, Serialize, self };
 use log;
+use std::fmt::{ Display, Formatter, self };
 
 /// The Node caries information about a specific
 /// directory or file within the candidate jobsystem
@@ -15,6 +16,19 @@ pub struct Node {
     owner: Option<User>,
     #[serde(skip_serializing_if = "Option::is_none")]
     perms: Option<String>,
+}
+
+impl Display for Node {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(
+            f,
+            "Node{{identity: {}, entry_type: {}, owner: {:?}, perms: {:?} }}",
+            self.identity,
+            self.entry_type,
+            self.owner,
+            self.perms
+        )
+    }
 }
 
 impl Node {
