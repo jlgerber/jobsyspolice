@@ -12,11 +12,13 @@ lazy_static! {
     static ref ROOT_PATH: PathBuf = Path::new("/").to_path_buf();
 }
 
+/*
 /// retrieve the uid from a user
 pub fn get_uid(user: &str) -> Result<u32, JSPError> {
     log::info!("get_uid(user: {})", user);
     Ok(get_user_by_name(&user).ok_or( JSPError::InvalidUserName(user.to_string()))?.uid())
 }
+*/
 
 pub fn get_uid_for_owner(owner: &User, node: &Node, dir: &str) -> Result<u32, JSPError> {
 
@@ -66,7 +68,7 @@ pub fn set_path_perms<P: AsRef<Path> + Debug>(path: P, perms: &str) -> Result<()
     fs::set_permissions(&path, perms)?;
     Ok(())
 }
-
+/*
 pub fn set_path_owner<P>(path: P, owner: &User, node: &Node) -> Result<(), JSPError>
     where P: NixPath + Debug
 {
@@ -111,7 +113,7 @@ pub fn set_path_owner<P>(path: P, owner: &User, node: &Node) -> Result<(), JSPEr
         }
     }
 }
-
+*/
 pub fn set_path_owner_id<P>(path: P, id: u32) -> Result<(), JSPError>
     where P: NixPath + Debug
 {
