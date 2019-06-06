@@ -52,6 +52,7 @@ enum Subcommand {
 }
 
 fn main() {
+    // Slurp in env vars from .env files in the path.
     dotenv().ok();
     let (args, level) = setup_cli();
     setup_logger(level).unwrap();
@@ -84,7 +85,7 @@ fn main() {
             Err(JSPError::ValidationFailure{entry, node, depth}) => {
                 report_failure(input.as_str(), &entry, node, depth, &graph );
             },
-            Err(e) => println!("\nFailure\n{:?}", e),
+            Err(e) => println!("\nFailure\n\n{}", e.to_string()),
         }
     } else if let Some(input) = args.input {
         match is_valid(input.as_str(), &graph) {
