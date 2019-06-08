@@ -1,7 +1,7 @@
 
-use crate::{ diskutils, JGraph, is_valid, JSPError, EntryType, Node, User, constants };
+use crate::{ diskutils, JGraph, is_valid, JSPError, EntryType, User, constants };
 use super::{ Disk, Path };
-use std::{ path::PathBuf, fs };
+use std::{ path::PathBuf };
 use log;
 
 /// local::DiskService is, as it sounds, an implementation of Disk that
@@ -24,100 +24,82 @@ impl<'a> DiskService<'a> {
     }
 }
 
-fn _create_path(create_path: &Path, gperms: &str, owner: &User, node: &Node ) -> Result<(), JSPError> {
-    log::info!("_create_path(\n\tcreate_path: {:?},\n\tgperms: {},\n\towner: {},\n\tnode: {}\n)", create_path, gperms, owner, node);
-    match diskutils::set_path_perms(create_path, gperms) {
-        Ok(_) => (),
-        Err(e) => {
-            log::error!("{}", e.to_string());
-            log::error!("updating path permissions failed. Attempting to roll back creation of '{:?}'",
-                        create_path);
-
-            fs::remove_dir(&create_path)?;
-            return Err(e);
-        }
-    };
-    log::trace!("calling diksutils::chown_owner");
-    match diskutils::chown_owner(PathBuf::from(create_path), owner, node){
-        Ok(_) => (),
-        Err(e) => {
-            log::error!("{}", e);
-            log::error!("Changing ownership of directory failed. Attempting to roll back creation of '{:?}'",
-                        create_path);
-
-            fs::remove_dir(&create_path)?;
-            return Err(e);
-        },
-    };
-    Ok(())
-}
 // requires coreutils be installed. mac only right now. sudo port install coreutils
 impl<'a> Disk for DiskService<'a> {
 
     fn mk(&self, path: &Path ) -> Result<(), JSPError> {
         log::info!("local::Disk.mk(path: {:?})", path);
-        //let path = path.as_ref();
-        let nodepath = is_valid(path, self.graph)?;
-        let mut gperms: &str = &self.perms;
 
+        let nodepath = is_valid(path, self.graph)?;
+        // we need to stash information when we reach the last node
+        // that is in the template for a given path. So we store the
+        // length of the nodepath, which we use to match against the
+        // loop count later, when we are looping over the supplied path.
+        let last_managed_node = nodepath.len(); // we don't subtract one because idx 0 == "/"
+
+        let mut gperms: &str = &self.perms;
+        let mut uperms = u32::from_str_radix(&gperms,8).expect("couldnt convert gperms to perms");
         let mut owner = User::from(constants::DEFAULT_USER);
 
         // step 2: iterate: create, assign ownership, set perms
         let mut create_path = PathBuf::new();
+
         for (idx, item) in path.iter().enumerate() {
             log::trace!("path iter pass {}", idx);
             create_path.push(item);
             if idx == 0 {continue;}
             // idx 0 is / so we have to subtract one
             let node = &nodepath[idx - 1];
+
+            // update permissions if they have changed
+            if let Some(perms) = node.perms() {
+                gperms = perms;
+                uperms = u32::from_str_radix(&gperms,8).expect("couldnt convert gperms to perms");
+            }
+
             match node.entry_type() {
-                &EntryType::Directory => {
+                &EntryType::Directory | &EntryType::Volume => {
                     log::debug!("local::DiskService EntryType::Directory");
 
-                    let tmp = node.owner().clone();
+                    // we need the owner to look up the uid
+                    let tmp_owner = node.owner().clone();
                     log::trace!("node: {} type:{:?}", &node, &node.entry_type());
-                    owner = tmp.unwrap_or(owner);
+                    owner = tmp_owner.unwrap_or(owner);
+
+                    let uid = diskutils::get_uid_for_owner(
+                        &owner,
+                        &node,
+                        item.to_str().expect("unable to convert osstr to str")
+                    )?;
 
                     if !create_path.exists() {
-                        fs::create_dir(&create_path)?;
-                        // perms
-                        if let Some(perms) = node.perms() {
-                            gperms = perms
-                        }
-                        _create_path(&create_path, &gperms, &owner, &node )?;
+                        diskutils::create_dir(&create_path, uid, uperms)?
+
+                    } else if idx == last_managed_node {
+                        log::debug!("local::DiskService last_managed_node");
+                        // stash the uid from the recently created path as a User::Uid()
+                        // this will be used by Untracked to assign ownership.
+                        owner = diskutils::get_owner_for_path(&create_path)?;
+                        log::debug!("local::DiskService last_managed_node owner : {:?} for path {:?}",
+                                    owner, &create_path);
                     }
-                }
-
-                &EntryType::Volume => {
-                    log::debug!("local::DiskService EntryType::Volume");
-
-                    let tmp = node.owner().clone();
-                    log::trace!("node: {} type:{:?}", &node, &node.entry_type());
-                    owner = tmp.unwrap_or(owner);
-
-                    if !create_path.exists() {
-                        fs::create_dir(&create_path)?;
-                        if let Some(perms) = node.perms() {
-                            gperms = perms
-                        }
-                        _create_path(&create_path, &gperms, &owner, &node )?;
-                    }
-
                 }
 
                 &EntryType::Untracked => {
                     log::debug!("local::DiskService EntryType::Untracked");
                     if !create_path.exists() {
-                        fs::create_dir(&create_path)?;
-                        log::debug!("Untracked type");
-                        _create_path(&create_path, &gperms, &owner, &node )?;
+                        if let User::Uid(id) = owner {
+                            diskutils::create_dir(&create_path, id, uperms)?;
+                        } else {
+                            panic!("unexpected. Unable to get Uid from owner in ENtryType::Untracked");
+                            //return Err(JSPError::Placeholder)?;
+                        }
                     }
                 }
 
                 &EntryType::Root => panic!("entry type root not supported"),
             }
         }
-        // step 3: profit
         Ok(())
     }
 
@@ -129,3 +111,4 @@ impl<'a> Disk for DiskService<'a> {
         &self.perms
     }
 }
+
