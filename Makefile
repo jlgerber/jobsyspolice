@@ -1,6 +1,8 @@
 target := jsp
 target2 := jspmk
 envfile := ./.env
+# Location of the install target (by default your home dire)
+location ?=~/bin
 
 build:
 	cargo build --release
@@ -9,44 +11,43 @@ build-debug:
 	cargo build
 
 install:
-ifneq (,$(wildcard ~/bin/${target}))
-	rm ~/bin/${target}
+ifneq (,$(wildcard $(location)/${target}))
+	rm $(location)/${target}
 endif
-ifneq (,$(wildcard ~/bin/${target2}))
-	rm ~/bin/${target2}
+ifneq (,$(wildcard $(location)/${target2}))
+	rm $(location)/${target2}
 endif
-	cp target/release/${target} ~/bin/.
-	cp target/release/${target2} ~/bin/.
-	chmod g+w ~/bin/${target}
-	chmod g+w ~/bin/${target2}
+	cp target/release/${target} $(location)/.
+	cp target/release/${target2} $(location)/.
+	chmod g+w $(location)/${target}
+	chmod g+w $(location)/${target2}
 	@echo ""
 	@echo "REMEMBER TO CHMOD AND CHOWN JSP TO THE SERVICE ACCOUNT"
 	@echo ""
 
 install-debug:
-ifneq (,$(wildcard ~/bin/${target}-debug))
-	rm ~/bin/${target}-debug
+ifneq (,$(wildcard $(location)/${target}-debug))
+	rm $(location)/${target}-debug
 endif
-	cp target/debug/${target} ~/bin/${target}-debug
-	chmod g+w ~/bin/${target}-debug
+	cp target/debug/${target} $(location)/${target}-debug
+	chmod g+w $(location)/${target}-debug
 	@echo ""
 	@echo "REMEMBER TO CHMOD AND CHOWN JSP TO THE SERVICE ACCOUNT"
 	@echo ""
 
 install-env-file:
-	cp ${envfile} ~/.
+	cp ${envfile} $(location)/.
 
 all: build install install-env-file
 
 all-debug: build-debug install-debug install-env-file
 
 ownership:
-	sudo chown jobsys ~/bin/${target}
-	sudo chown jobsys ~/bin/${target2}
-	sudo chmod u+s ~/bin/${target}
-	sudo chmod u+s ~/bin/${target2}
+	sudo chown root $(location)/${target}
+	sudo chown root $(location)/${target2}
+	sudo chmod u+s $(location)/${target}
+	sudo chmod u+s $(location)/${target2}
 
-sudoers:
-	@sudo visudo -c -q -f jspsudoers && sudo chmod 600 jspsudoers && sudo cp jspsudoers /etc/sudoers.d/jspsudoers
+
 test:
 	cargo test --release --lib
