@@ -8,8 +8,9 @@ The jobsystem Template may provide other useful metadata in addition to the name
 The ability to create directories and volumes is provided by the Disk trait. Implementations may be found in the `disk` directory in th src, mapping to the `disk` submodule. These implmentations are responsible for handling the reqiurements imposed by particular disk systems (eg Netapp, Isilon, etc). By default, local storage is configured. Local Storage makes no affordance for Volumes, handling them the same as any other directory.
 
 # Local Disk
-The local::DiskService implementation relies on sudo and the sudoers file to handle passwordless chowning of files from a service account (by default, `jobsys`) to other accounts, excluding root. This implies that one must set up the service account thusly:
+The local::DiskService implementation relies on setuid to handle creation of directories for specified owners with speicfic permissions.
 
-```
-jobsys ALL=(ALL) NOPASSWRD: /usr/sbin/chown
-```
+In order to install appropriately, once must change the owner of `jsp` and `jspmk` to root, and set their setuid bits.
+(chmod u+s).
+
+The Makefile provides this facility provided you have appropriate sudo permissions
