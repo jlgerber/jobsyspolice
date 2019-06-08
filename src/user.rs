@@ -1,4 +1,4 @@
-use crate::constants;
+use crate::{constants};
 use log;
 use serde::{self, Deserialize, Serialize};
 use std::{
@@ -30,7 +30,9 @@ pub enum User {
     Me,
     Named(String),
     Captured(String),
+    Uid(u32),
 }
+
 /// Looks up the default user
 pub fn get_default_user() -> String {
     String::from(constants::DEFAULT_USER)
@@ -48,6 +50,7 @@ impl Display for User {
             },
             User::Captured(n) =>write!(f, "${}", n),
             User::Named(n) => write!(f, "{}", n),
+            User::Uid(n) => write!(f, "Uid({})", n),
         }
     }
 }
@@ -73,10 +76,10 @@ impl User {
             },
             User::Captured(n) =>  n.clone(),
             User::Named(n) =>  n.clone(),
+            User::Uid(n) =>n.to_string(),
         }
     }
 }
-
 
 impl From<String> for User {
     fn from(name: String) -> Self {
