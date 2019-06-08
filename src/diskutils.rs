@@ -1,15 +1,41 @@
-use std::{env, fmt::Debug, fs, os::unix::fs::PermissionsExt, path::Path, path::PathBuf };
 use crate::{JSPError, User, constants, get_default_user, Node, NodeType};
 use log;
 use lazy_static::lazy_static;
-// wah!!! I don't like these deps
-use nix::{ unistd::{chown, Uid}, NixPath };
+use nix::{ unistd::{chown, Uid, Gid }};
+use std::{
+    env,
+    fs,
+    os::unix::{
+        fs::{MetadataExt},
+    },
+    path::Path,
+    path::PathBuf,
+};
 use users::{ get_user_by_name };
-use shellfn::shell;
-use std::error::Error;
 
 lazy_static! {
     static ref ROOT_PATH: PathBuf = Path::new("/").to_path_buf();
+}
+
+/// Given a path, owner, and permissions, create the supplied directory with
+/// appropriate metadata
+///
+/// # Parameters
+/// * `path` A reference to a std::path::Path
+/// * `owner_id` A u32 representing the path owner's id
+/// * `perms` A u32 representing file permissions
+///
+/// # Returns
+/// A Unit or JSPError
+pub fn create_dir(path: &Path, owner_id: u32, perms: u32) -> Result<(), JSPError> {
+    log::info!("create_dir() called");
+    fs::create_dir(path)?;
+    chown(
+        path,
+        Some(Uid::from_raw(owner_id)),
+        Some(Gid::from_raw( perms )),
+    )?;
+    Ok(())
 }
 
 /// Retrieve the user id for the supplied owner. If the owner is of type User::Captured,
@@ -56,56 +82,22 @@ pub fn get_uid_for_owner(owner: &User, node: &Node, dir: &str) -> Result<u32, JS
                 return Err(JSPError::MissingOwnerInRegex);
             }
         }
+        &User::Uid(uid) => {
+            return Ok(*uid);
+        }
     };
     Ok(get_user_by_name(&owner).ok_or( JSPError::InvalidUserName(owner.to_string()))?.uid())
 }
 
-/// Set permissions on a path.
-pub fn set_path_perms<P: AsRef<Path> + Debug>(path: P, perms: &str) -> Result<(), JSPError> {
-    let path = path.as_ref();
-    if path == ROOT_PATH.as_path() { return Ok(()); }
-
-    log::info!("set_path_perms(path: {:?}, perms: {})", &path, perms);
-
-    let perms_u32 = u32::from_str_radix(&perms, 8)?;
-    let mut perms = fs::metadata(path)?.permissions();
-    perms.set_mode(perms_u32);
-    //log::debug!("fs::set_permissions(path: {:?}, perms: {:?}", path, &perms);
-    fs::set_permissions(&path, perms)?;
-    Ok(())
+/// given a path, retrieve the owner of the path
+///
+/// # Parameters
+/// * `path` - &std::path::Path
+///
+/// # Returns
+///
+/// A User::Uid or a JSPError
+pub fn get_owner_for_path(path: &Path) -> Result<User, JSPError> {
+    let metadata = std::fs::metadata(path)?;
+    Ok(User::Uid(metadata.uid()))
 }
-
-pub fn set_path_owner_id<P>(path: P, id: u32) -> Result<(), JSPError>
-    where P: NixPath + Debug
-{
-        log::info!("set_path_owner_id(path: {:?}, id: {})", &path, id);
-
-        return Ok(chown(&path, Some(Uid::from_raw(id)), None )?);
-}
-
-// Sets the owner for a path
-pub fn chown_owner(path: PathBuf, owner: &User, node: &Node) -> Result<(), JSPError> {
-    log::info!("chown_owner(path: {:?}, owner: {:?}, node: {:?})", path, &owner, node);
-
-    let dirname = path.as_path()
-                    .file_name()
-                    .ok_or(JSPError::FilenameFromPathFailed(path.clone()))?
-                    .to_str()
-                    .ok_or(JSPError::PathBufConvertToStrFailed(path.clone()))?;
-
-    let owner_id = get_uid_for_owner(owner, node, dirname)?;
-    let euid = Uid::effective().as_raw();
-    log::debug!("effective id of process: {}", euid);
-    if owner_id != euid {
-        log::info!("owner id ({}) and euid ({}) differ. suproccessing via _chown {:?} to {}", owner_id, euid, &path, owner);
-        let _result = _chown(path.to_str().unwrap(), owner_id)?;
-    } else {
-        set_path_owner_id(path, owner_id)?
-    }
-    Ok(())
-}
-
-#[shell]
-fn _chown(dir: &str, owner: u32 ) -> Result<String, Box<Error>> { r#"
-    sudo chown $OWNER $DIR
-"# }
