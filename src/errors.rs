@@ -12,6 +12,12 @@ pub enum JSPError {
     #[fail(display = "Uid Lookup failed for '{}'", _0)]
     UidLookupFailed (String),
 
+    #[fail(display = "Unable to Chown '{}'", _0)]
+    ChownFailure (String),
+
+    #[fail(display = "Unable to make directory: '{}'", _0)]
+    MkdirFailure(String),
+
     #[fail(display = "Validation Failure: {:?}, index: {:?} depth: {}", entry, node, depth)]
     ValidationFailure{ entry: OsString, node: NIndex, depth: u8 },
 
