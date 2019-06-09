@@ -1,5 +1,5 @@
-use crate::{ JGraph, JSPError, NodePath, NodeType, NIndex,  Node};
-use std::{ cell::RefCell, rc::Rc, path::Path };
+use crate::{ JGraph, JSPError, NodePath, NodeType, NIndex};
+use std::{ cell::RefCell, rc::Rc, collections::VecDeque };
 use log;
 use petgraph::{visit::IntoNodeReferences};
 
@@ -19,7 +19,7 @@ impl FindValue {
     }
 }
 /// Find a NodePath given a vector of criteria
-pub fn find<'a>(criteria: Vec<String>, graph: &'a JGraph) -> Result<NodePath<'a>, JSPError> {
+pub fn find<'a>(criteria: VecDeque<String>, graph: &'a JGraph) -> Result<NodePath<'a>, JSPError> {
     let idx = graph.node_references().next().unwrap().0;
     let  np = vec![idx];
     let vec_nodes = Rc::new(RefCell::new(np));
@@ -38,7 +38,7 @@ pub fn find<'a>(criteria: Vec<String>, graph: &'a JGraph) -> Result<NodePath<'a>
 }
 
 fn find_recurse<'a>(
-    criteria: Rc<RefCell<Vec<String>>> ,
+    criteria: Rc<RefCell<VecDeque<String>>> ,
     nodepath: Rc<RefCell<Vec<NIndex>>>,
     graph: &'a JGraph,
 ) -> FindValue {
@@ -54,7 +54,7 @@ fn find_recurse<'a>(
     let component;
     {
         let mut criteria_borrow = criteria.borrow_mut();
-        component = criteria_borrow.pop();
+        component = criteria_borrow.pop_front();
         log::info!("find_recurse component {:?}", component);
     }
     match component {
@@ -96,7 +96,7 @@ fn find_recurse<'a>(
                         {
                             nodepath.borrow_mut().push(nindex);
                             // we were not able to find
-                            criteria.borrow_mut().push(val.clone());
+                            criteria.borrow_mut().push_front(val.clone());
                         }
                         let r = find_recurse(criteria.clone(), nodepath.clone(), graph);
                         if r.is_success() {
@@ -106,7 +106,7 @@ fn find_recurse<'a>(
                             log::debug!("find_recurse unsuccessful");
                             {
                                 nodepath.borrow_mut().pop();
-                                criteria.borrow_mut().pop();
+                                criteria.borrow_mut().pop_front();
                             }
                         }
                     },
@@ -138,13 +138,24 @@ mod tests {
         let _ = env_logger::builder().is_test(true).try_init();
     }
 
+
     #[test]
-    fn can_find() {
-        env::set_var("RUST_LOG", "debug");
+    fn can_find_single() {
+        env::set_var("RUST_LOG", "error");
+        //env_logger::init();
+        init();
+        let graph = build_graph();
+        let  search =  VecDeque::from(vec!["show".to_string()]);
+        let result = find(search, &graph);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn can_find_multi() {
+        env::set_var("RUST_LOG", "error");
         env_logger::init();
         let graph = build_graph();
-        let mut search =  vec!["show".to_string(), "sequence".to_string(), "shot".to_string()];
-        search.reverse();
+        let  search =  VecDeque::from(vec!["show".to_string(), "sequence".to_string(), "shot".to_string()]);
         let result = find(search, &graph);
         assert!(result.is_ok());
     }
