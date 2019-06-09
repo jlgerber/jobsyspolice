@@ -48,7 +48,7 @@ fn find_recurse<'a>(
     {
         let criteria_borrow = criteria.borrow();
         if criteria_borrow.len() == 0 {
-            return FindValue::Success(nodepath.clone());
+            return FindValue::Success(nodepath);
         }
     }
     let component;
@@ -83,7 +83,7 @@ fn find_recurse<'a>(
                              }
                             let r = find_recurse(criteria.clone(), nodepath.clone(), graph);
                             if r.is_success() {
-                                return FindValue::Success(nodepath.clone());
+                                return FindValue::Success(nodepath);
                             } else {
                                 nodepath.borrow_mut().pop();
                             }
@@ -101,7 +101,7 @@ fn find_recurse<'a>(
                         let r = find_recurse(criteria.clone(), nodepath.clone(), graph);
                         if r.is_success() {
                             log::debug!("find_recurse successful");
-                            return FindValue::Success(nodepath.clone());
+                            return FindValue::Success(nodepath);
                         } else {
                             log::debug!("find_recurse unsuccessful");
                             {
@@ -119,10 +119,10 @@ fn find_recurse<'a>(
             }
             // made it through all of the children without returning
             // a successful match, so we must be in a failure state.
-            return FindValue::Failure(nodepath.clone());
+            return FindValue::Failure(nodepath);
         }
         None => {
-            return FindValue::Failure(nodepath.clone());
+            return FindValue::Failure(nodepath);
         }
     }
 }
@@ -138,7 +138,6 @@ mod tests {
         let _ = env_logger::builder().is_test(true).try_init();
     }
 
-
     #[test]
     fn can_find_single() {
         env::set_var("RUST_LOG", "error");
@@ -153,10 +152,22 @@ mod tests {
     #[test]
     fn can_find_multi() {
         env::set_var("RUST_LOG", "error");
-        env_logger::init();
+        //env_logger::init();
+        init();
         let graph = build_graph();
         let  search =  VecDeque::from(vec!["show".to_string(), "sequence".to_string(), "shot".to_string()]);
         let result = find(search, &graph);
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn will_not_find_bs() {
+        env::set_var("RUST_LOG", "error");
+        //env_logger::init();
+        init();
+        let graph = build_graph();
+        let  search =  VecDeque::from(vec!["bs".to_string(), "sequence".to_string(), "shot".to_string()]);
+        let result = find(search, &graph);
+        assert!(result.is_err());
     }
 }
