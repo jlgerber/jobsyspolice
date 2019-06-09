@@ -250,9 +250,10 @@ impl<'a> NodePath<'a> {
     }
 
     /// Return an iterator over the nodepath tip's children
-    pub fn neighbors(&self) -> Neighbors<()> {
+    pub fn neighbors(&self) -> Option<Neighbors<()>> {
         let sz = self.count();
-        self.graph.neighbors(self.nodes[sz])
+        if sz == 0 { return None; }
+        Some(self.graph.neighbors(self.nodes[sz-1]))
     }
 
     /// Retrieve a reference to the node at the supplied index
