@@ -2,8 +2,10 @@ use crate::Node;
 use crate::NIndex;
 use crate::JGraph;
 use crate::JSPError;
-use std::ops::Index;
-
+use std::{ops::Index, cmp::PartialEq};
+#[allow(unused_imports)]
+use log::{debug, trace};
+use petgraph::{ graph::{ DefaultIx, NodeIndex, Neighbors, WalkNeighbors}, visit::IntoNodeReferences };
 /// The NodePath stores a path of nodes in the JGraph. The nodes
 /// are represented internally as `NIndex`s. One may generate an
 /// iterator from the NodePath.
@@ -13,6 +15,14 @@ pub struct NodePath<'a> {
     pub nodes: Vec<NIndex>,
     untracked: Node,
 }
+
+impl<'a> PartialEq for NodePath<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        self.nodes == other.nodes
+    }
+}
+
+impl<'a> Eq for NodePath<'a> {}
 
 impl<'a> NodePath<'a> {
 
@@ -231,6 +241,23 @@ impl<'a> NodePath<'a> {
     /// NodePathIntoIterator consumes NodePath.
     pub fn into_iter(self) -> NodePathIntoIterator<'a> {
         NodePathIntoIterator{nodepath: self, index: 0}
+    }
+
+    /// Return an iterator over the nodepath tip's children
+    pub fn walk_neighbors(&self) -> WalkNeighbors<u32> {
+        let sz = self.count();
+        self.graph.neighbors(self.nodes[sz]).detach()
+    }
+
+    /// Return an iterator over the nodepath tip's children
+    pub fn neighbors(&self) -> Neighbors<()> {
+        let sz = self.count();
+        self.graph.neighbors(self.nodes[sz])
+    }
+
+    /// Retrieve a reference to the node at the supplied index
+    pub fn node_for(&self, idx: NIndex) -> &'a Node {
+        &self.graph[idx]
     }
 
     /// Returns true if the vector contains no elements.
