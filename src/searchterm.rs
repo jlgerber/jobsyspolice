@@ -7,7 +7,7 @@ pub struct SearchTerm {
 impl SearchTerm {
     pub fn new<I>(key: I, value: I) -> Self 
     where
-        I: Into<String> + Debug 
+        I: Into<String> + std::fmt::Debug 
     {
         Self {
             key: key.into(),
