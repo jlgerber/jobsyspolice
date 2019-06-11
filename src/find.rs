@@ -2,7 +2,8 @@ use crate::{ JGraph, JSPError, NodePath, NodeType, NIndex, Search};
 use std::{ cell::RefCell, rc::Rc, collections::VecDeque, path::PathBuf };
 use log;
 use petgraph::{visit::IntoNodeReferences};
-
+use regex::Regex;
+use lazy_static::lazy_static;
 
 /// Given a Search reference and a JGraph reference, Find the PathBuf represented
 /// by the search, or return an error if unsuccessful.
@@ -10,7 +11,81 @@ pub fn find_path(search: &Search, graph: &JGraph) -> Result<PathBuf, JSPError> {
     
     let keys = search.keys_owned();
     let nodepath = find(keys, graph)?;
-    Err(JSPError::Placeholder)
+    let mut values = search.values_owned();
+    let mut path = PathBuf::new();
+
+    for node in nodepath.iter() {
+        match node.identity() {
+            NodeType::RegEx{name, pattern, exclude} => {
+                if let Some(ref value) = values.pop_front() {
+                    if pattern.is_match(value) {
+                        // check to see if we are supposed to be expluding as well
+                        if let Some(exclude_re) = exclude {
+                            if !exclude_re.is_match(value) {
+                                path.push(value);
+                            } else {
+                                return Err(JSPError::Placeholder);
+                            }
+                        } else {
+                            path.push(value);
+                        } 
+                    // reminder. capture_names()[0] is full regex. 1st actual capture
+                    // starts on index 1. Hence why we are checking for a count of 2. 
+                    // count() == 2 should yield only a single capture group
+                    } else if pattern.capture_names().count() == 2 {
+                        
+                        let replacement = replace_capture_group(pattern.as_str(), name, value);
+                        if replacement.is_some() {
+                            path.push(replacement.unwrap());
+                        } else {
+                            log::error!("capture group does not match {}", name);
+                            return Err(JSPError::Placeholder);
+                        }
+                    } else {
+                        let cnt = pattern.capture_names().count(); 
+                        if cnt < 2 {
+                            log::error!("no capture groups");
+                            return Err(JSPError::Placeholder);
+                        } else {
+                            log::error!("too many capture groups. we should have only 1 capture group");
+                            return Err(JSPError::Placeholder);
+                        }
+                    } 
+                }
+            },
+            NodeType::Simple(name) => {
+                path.push(name);
+            },
+            NodeType::Root => {
+                path.push("/");
+            },
+            _ => panic!("unexpected value")
+        }
+    }
+    Ok(path)
+}
+
+// replace the named capture group with the name key, with a replacement
+fn replace_capture_group(regstr: &str, key: &str, replacement: &str) -> Option<String> {
+    //let re_reg =  r"\(\?P<([a-zA-Z_\-0-9]+)>.+\)";
+    //let re_repl = r"\(\?P<[a-zA-Z_\-0-9]+>.+\)";
+    lazy_static!{
+        static ref RE: Regex = Regex::new(r"\(\?P<([a-zA-Z_\-0-9]+)>.+\)").unwrap();
+    }
+    let first = RE.captures(regstr);
+    if first.is_some() && first.unwrap().get(1).unwrap().as_str() == key {
+        log::debug!("replace_capture_group(...) match");
+        lazy_static!{
+        static ref RE2: Regex = regex::Regex::new(r"\(\?P<[a-zA-Z_\-0-9]+>.+\)").unwrap();
+        static ref STRIP_REF: Regex = regex::Regex::new(r"[\^\$]+").unwrap();
+
+        }
+        let tmp = RE2.replace_all(regstr, "@@");
+        let tmp = STRIP_REF.replace_all(tmp.as_ref(), "");
+        Some(tmp.replace("@@", replacement).replace(r#"\"#,""))
+    } else {
+       None
+    }
 }
 /// Find a NodePath given a vector of criteria Strings and a JGraph reference
 ///
@@ -176,12 +251,22 @@ impl FindValue {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::graph::testdata::build_graph;
+    use crate::{graph::testdata::build_graph, SearchTerm};
     use env_logger;
     use std::env;
 
     fn init() {
         let _ = env_logger::builder().is_test(true).try_init();
+    }
+
+    #[test]
+    fn replace_capture_group_works() {
+        let regexstr = r"^work\.(?P<user>[a-z]+)$";
+        let key = "user";
+        let replacement = "jgerber";
+        let result = replace_capture_group(regexstr, key, replacement);
+        assert!(result.is_some());
+        assert_eq!(result.unwrap(), "work.jgerber".to_owned());
     }
 
     #[test]
@@ -215,5 +300,21 @@ mod tests {
         let  search =  VecDeque::from(vec!["bs".to_string(), "sequence".to_string(), "shot".to_string()]);
         let result = find(search, &graph);
         assert!(result.is_err());
+    }
+
+
+    #[test]
+    fn will_find_multiple_path() {
+        env::set_var("RUST_LOG", "warn");
+        init();
+        let graph = build_graph();
+        let  mut search =  Search::new();//VecDeque::from(vec!["show".to_string(), "sequence".to_string(), "shot".to_string()]);
+        search.push_back(SearchTerm::new("show", "DEV01"));
+        search.push_back(SearchTerm::new("sequence", "RD"));
+
+        let result = find_path(&search, &graph).unwrap();
+        log::warn!("{:?}", result);
+        assert_eq!(result, PathBuf::from("/dd/shows/DEV01/RD"));
+
     }
 }
