@@ -1,9 +1,17 @@
-use crate::{ JGraph, JSPError, NodePath, NodeType, NIndex};
-use std::{ cell::RefCell, rc::Rc, collections::VecDeque };
+use crate::{ JGraph, JSPError, NodePath, NodeType, NIndex, Search};
+use std::{ cell::RefCell, rc::Rc, collections::VecDeque, path::PathBuf };
 use log;
 use petgraph::{visit::IntoNodeReferences};
 
 
+/// Given a Search reference and a JGraph reference, Find the PathBuf represented
+/// by the search, or return an error if unsuccessful.
+pub fn find_path(search: &Search, graph: &JGraph) -> Result<PathBuf, JSPError> {
+    
+    let keys = search.keys_owned();
+    let nodepath = find(keys, graph)?;
+    Err(JSPError::Placeholder)
+}
 /// Find a NodePath given a vector of criteria Strings and a JGraph reference
 ///
 /// # Parameters
