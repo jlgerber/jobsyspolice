@@ -1,7 +1,7 @@
 use chrono;
 use dotenv::dotenv;
 use fern::{ colors::{Color, ColoredLevelConfig}, self} ;
-use jsp::{ DiskType, get_disk_service, graph, is_valid, JGraph, JSPError, NodePath, NIndex };
+use jsp::{ DiskType, get_disk_service, graph, is_valid, JGraph, JSPError, NodePath, NIndex, SearchTerm, Search, find_path};
 use petgraph;
 use log::{ LevelFilter, self };
 use serde_json;
@@ -38,7 +38,7 @@ struct Opt {
     input: Option<String>,
 
     #[structopt(subcommand)]
-    mk: Option<Subcommand>
+    subcmd: Option<Subcommand>,
 }
 
 #[derive(StructOpt, Debug)]
@@ -48,8 +48,14 @@ enum Subcommand {
     Mk {
         #[structopt(name="INPUT")]
         input: String,
+    },
+    #[structopt(name = "go")]
+    Go {
+        #[structopt(name="TERMS")]
+        terms: Vec<SearchTerm>,
     }
 }
+
 
 fn main() {
     // Slurp in env vars from .env files in the path.
@@ -76,7 +82,7 @@ fn main() {
             println!("{:#?}",  petgraph::dot::Dot::with_config(&graph, &[petgraph::dot::Config::EdgeNoLabel]));
         }
 
-    } else if let Some(Subcommand::Mk{input}) = args.mk {
+    } else if let Some(Subcommand::Mk{input}) = args.subcmd {
 
         let diskservice = get_disk_service(DiskType::Local, &graph);
 
@@ -87,6 +93,11 @@ fn main() {
             },
             Err(e) => println!("\nFailure\n\n{}", e.to_string()),
         }
+    }  else if let Some(Subcommand::Go{terms}) = args.subcmd {
+        match find_path_from_terms(terms, &graph){
+            Ok(path) => println!("{:?}", path),
+            Err(e) => eprintln!("{}", e.to_string()),
+        };
     } else if let Some(input) = args.input {
         match is_valid(input.as_str(), &graph) {
             Ok(nodepath) => {
@@ -127,6 +138,7 @@ fn setup_logger(level: log::LevelFilter) -> Result<(), fern::InitError> {
         .apply()?;
     Ok(())
 }
+
 
 #[inline]
 fn setup_cli() -> (Opt, log::LevelFilter) {
@@ -262,6 +274,15 @@ fn get_graph(has_output: bool, graph: Option<PathBuf>) -> JGraph {
     } else {
          _get_graph(graph)
     }
+}
+
+#[inline]
+fn find_path_from_terms(terms: Vec<SearchTerm>, graph: &JGraph) -> Result<PathBuf, JSPError> {
+    let mut search = Search::new();
+    for term in terms {
+        search.push_back(term);
+    }
+    find_path(&search, graph)
 }
 
 #[inline]
