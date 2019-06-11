@@ -43,7 +43,7 @@ pub use user::{User, get_default_user};
 pub mod constants;
 
 pub mod find;
-pub use find::find;
+pub use find::{find, find_path};
 
 pub mod searchterm;
 pub use searchterm::{Search, SearchTerm};
