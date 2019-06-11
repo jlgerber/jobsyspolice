@@ -83,6 +83,21 @@ impl Search {
         self.terms.push_back(term);
     }
 
+    /// pop a term off of the front of the Search and
+    /// return it wrapped in an Option, meaning If Search 
+    /// is empty, pop_front returns None. Otherwise, it 
+    /// returns a Some(SearchTerm).
+    pub fn pop_front(&mut self) -> Option<SearchTerm> {
+        self.terms.pop_front()
+    }
+    /// pop off a term from back of the Search and
+    /// return it wrapped in an Option, meaning if Search
+    /// is empty, pop_back returns None. Otherwise it 
+    /// returns a Some(SearchTerm).
+    pub fn pop_back(&mut self) -> Option<SearchTerm> {
+        self.terms.pop_back()
+    }
+
     /// Retrieve the keys as a `Vec` of `&str`s
     pub fn keys(&self) -> Vec<&str> {
         self.terms.iter().map(|x| x.key()).collect::<Vec<&str>>()
@@ -103,11 +118,26 @@ impl Search {
         self.terms.iter().map(|x| x.value().to_string()).collect::<Vec<String>>()
     }
 
+    /// Return the number of SearchTerms within the Search.
     pub fn len(&self) -> usize {
         self.terms.len()
     }
+
+    /// Retrieve an Option wrapped reference to a SearchTerm, given
+    /// an index. Unlike using square bracket notation, this 
+    /// method will not crash when supplied with an out of bounds
+    /// index. Rather, it will simply return None.
+    pub fn get(&self, index: usize) -> Option<&SearchTerm> {
+        if index == self.len() {
+            None
+        } else {
+            Some(&self[index])
+        }
+    }
 }
 
+/// SearchTerm may be accessed by index. SearchTerm will
+/// panic if an index outside of its range is supplied.
 impl std::ops::Index<usize> for Search {
     type Output = SearchTerm;
 
@@ -155,7 +185,24 @@ mod tests {
         let mut search = Search::new();
         search.push_back(SearchTerm::new("show", "DEV01"));
         search.push_back(SearchTerm::new("sequence", "RD"));
-        assert_eq!(&search[0], &SearchTerm::new("show", "DEV01 "));
+        assert_eq!(&search[0], &SearchTerm::new("show", "DEV01"));
+    }
+
+
+    #[test]
+    fn search_can_pop_front() {
+        let mut search = Search::new();
+        search.push_front(SearchTerm::new("show", "DEV01"));
+        search.push_front(SearchTerm::new("sequence", "RD"));
+        assert_eq!(search.pop_front().unwrap(), SearchTerm::new("sequence", "RD"));
+    }
+
+    #[test]
+    fn search_can_pop_back() {
+        let mut search = Search::new();
+        search.push_back(SearchTerm::new("show", "DEV01"));
+        search.push_back(SearchTerm::new("sequence", "RD"));
+        assert_eq!(search.pop_back().unwrap(), SearchTerm::new("sequence", "RD"));
     }
 }
 
