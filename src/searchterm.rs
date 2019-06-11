@@ -106,23 +106,23 @@ impl Search {
     }
 
     /// Retrieve the keys as a `Vec` of `&str`s
-    pub fn keys(&self) -> Vec<&str> {
-        self.terms.iter().map(|x| x.key()).collect::<Vec<&str>>()
+    pub fn keys(&self) -> VecDeque<&str> {
+        self.terms.iter().map(|x| x.key()).collect::<VecDeque<&str>>()
     }
 
     /// Retrieve the values as a `Vec` of `&str`s
-    pub fn values(&self) -> Vec<&str> {
-        self.terms.iter().map(|x| x.value()).collect::<Vec<&str>>()
+    pub fn values(&self) -> VecDeque<&str> {
+        self.terms.iter().map(|x| x.value()).collect::<VecDeque<&str>>()
     }
 
     /// Retrieve the keys as a `Vec` of `String`s
-    pub fn keys_owned(&self) -> Vec<String> {
-        self.terms.iter().map(|x| x.key().to_string()).collect::<Vec<String>>()
+    pub fn keys_owned(&self) -> VecDeque<String> {
+        self.terms.iter().map(|x| x.key().to_string()).collect::<VecDeque<String>>()
     }
 
     /// Retrieve the values as a `Vec` of `String`s
-    pub fn values_owned(&self) -> Vec<String> {
-        self.terms.iter().map(|x| x.value().to_string()).collect::<Vec<String>>()
+    pub fn values_owned(&self) -> VecDeque<String> {
+        self.terms.iter().map(|x| x.value().to_string()).collect::<VecDeque<String>>()
     }
 
     /// Return the number of SearchTerms within the Search.
@@ -149,9 +149,8 @@ impl std::ops::Index<usize> for Search {
     type Output = SearchTerm;
 
     fn index(&self, index: usize) -> &Self::Output {
-        &self.terms[index]
+         &self.terms[index]
     }
-
 }
 
 #[cfg(test)]
@@ -210,14 +209,13 @@ mod tests {
         assert_eq!(search.pop_back().unwrap(), SearchTerm::new("sequence", "RD"));
     }
 
-
     #[test]
     fn can_retrieve_keys() {
         let mut search = Search::new();
         search.push_back(SearchTerm::new("show", "DEV01"));
         search.push_back(SearchTerm::new("sequence", "RD"));
         let keys = search.keys();
-        assert_eq!(keys,  vec!["show", "sequence"]);
+        assert_eq!(keys,  VecDeque::from(vec!["show", "sequence"]));
     }
 
     #[test]
@@ -226,7 +224,7 @@ mod tests {
         search.push_back(SearchTerm::new("show", "DEV01"));
         search.push_back(SearchTerm::new("sequence", "RD"));
         let values = search.values();
-        assert_eq!(values,  vec!["DEV01", "RD"]);
+        assert_eq!(values,  VecDeque::from(vec!["DEV01", "RD"]));
     }
 
     #[test]
@@ -235,7 +233,7 @@ mod tests {
         search.push_back(SearchTerm::new("show", "DEV01"));
         search.push_back(SearchTerm::new("sequence", "RD"));
         let keys = search.keys_owned();
-        assert_eq!(keys,  vec!["show".to_string(), "sequence".to_string()]);
+        assert_eq!(keys,  VecDeque::from(vec!["show".to_string(), "sequence".to_string()]));
     }
 
     #[test]
@@ -244,8 +242,37 @@ mod tests {
         search.push_back(SearchTerm::new("show", "DEV01"));
         search.push_back(SearchTerm::new("sequence", "RD"));
         let values = search.values_owned();
-        assert_eq!(values,  vec!["DEV01".to_owned(), "RD".to_owned()]);
+        assert_eq!(values, VecDeque::from(vec!["DEV01".to_owned(), "RD".to_owned()]));
     }
+
+    #[test]
+    fn can_retrieve_len_of_search() {
+        let mut search = Search::new();
+        search.push_back(SearchTerm::new("show", "DEV01"));
+        search.push_back(SearchTerm::new("sequence", "RD"));
+        search.push_back(SearchTerm::new("shot", "0001"));
+        assert_eq!(search.len(), 3);
+    }
+
+    #[test]
+    fn can_get_searchterm_from_search() {
+        let mut search = Search::new();
+        search.push_back(SearchTerm::new("show", "DEV01"));
+        search.push_back(SearchTerm::new("sequence", "RD"));
+        search.push_back(SearchTerm::new("shot", "0001"));
+        assert_eq!(search.get(2), Some(&SearchTerm::new("shot", "0001")));
+    }
+
+    #[test]
+    fn can_index_searchterm_from_search() {
+        let mut search = Search::new();
+        search.push_back(SearchTerm::new("show", "DEV01"));
+        search.push_back(SearchTerm::new("sequence", "RD"));
+        search.push_back(SearchTerm::new("shot", "0001"));
+        assert_eq!(search[2], SearchTerm::new("shot", "0001"));
+        assert_eq!(search.len() , 3);
+    }
+
 }
 
 
