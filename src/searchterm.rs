@@ -1,4 +1,5 @@
 use std::collections::VecDeque;
+use crate::JSPError;
 
 /// Struct which owns a search term used by find to match  
 /// a Node of `NodeType::Regex` within the JGraph, and suggest
@@ -50,6 +51,20 @@ impl SearchTerm {
     /// whose name is the `key` of the SearchTerm.
     pub fn value(&self) -> &str {
         &self.value
+    }
+}
+
+impl std::str::FromStr for SearchTerm {
+    type Err = JSPError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut pieces = s.split(":").map(|x| x.to_owned()).collect::<Vec<String>>();
+        if pieces.len() != 2 {
+            return Err(JSPError::SearchTermError(format!("Cannot construct SearchTerm from {}", s)));
+        }
+        let value = pieces.pop().unwrap();
+        let key = pieces.pop().unwrap();
+        Ok(SearchTerm::new(key, value))
     }
 }
 
@@ -154,7 +169,7 @@ impl std::ops::Index<usize> for Search {
 }
 
 #[cfg(test)]
-mod tests {
+mod searchterm_tests {
     use super::*;
 
     #[test]
@@ -176,6 +191,19 @@ mod tests {
         };
         assert_ne!(searchterm, expect);
     }
+
+    #[test]
+    fn can_be_constructed_fromstr() {
+        use std::str::FromStr;
+        let st = SearchTerm::from_str("foo:bar").unwrap();
+        let expect = SearchTerm::new("foo", "bar");
+        assert_eq!(st, expect);
+    }
+}
+
+#[cfg(test)]
+mod search_tests {
+    use super::*;
 
     #[test]
     fn search_can_push_front() {
