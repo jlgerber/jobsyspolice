@@ -332,10 +332,6 @@ mod tests {
         let  search =  VecDeque::from(vec!["show".to_string(), "sequence".to_string(), "shot".to_string(), "work".to_string()]);
         let result = find(search, &graph);
         assert!(result.is_ok());
-        let result = result.unwrap();
-       // for node in result.iter() {
-       //     log::warn!("{}", node);
-       // }
     }
 
     #[test]
@@ -360,8 +356,23 @@ mod tests {
         search.push_back(SearchTerm::new("sequence", "RD"));
 
         let result = find_path(&search, &graph).unwrap();
-        log::warn!("{:?}", result);
         assert_eq!(result, PathBuf::from("/dd/shows/DEV01/RD"));
+
+    }
+
+    #[test]
+    fn will_find_wrong_work() {
+        env::set_var("RUST_LOG", "warn");
+        init();
+        let graph = build_graph();
+        let  mut search =  Search::new();
+        search.push_back(SearchTerm::new("show", "DEV01"));
+        search.push_back(SearchTerm::new("work", "jgerber"));
+
+        let result = find_path(&search, &graph).unwrap();
+        // TODO: need a way of tagging Simple directories to group them with
+        // regexs so that we avoid ambiguity
+        assert_eq!(result, PathBuf::from("/dd/shows/DEV01/CONFORM/user/work.jgerber"));
 
     }
 
@@ -377,7 +388,6 @@ mod tests {
         search.push_back(SearchTerm::new("work", "jgerber"));
 
         let result = find_path(&search, &graph).unwrap();
-        log::warn!("{:?}", result);
         assert_eq!(result, PathBuf::from("/dd/shows/DEV01/RD/0001/user/work.jgerber"));
 
     }
