@@ -10,21 +10,46 @@ use lazy_static::lazy_static;
 pub fn find_path(search: &Search, graph: &JGraph) -> Result<PathBuf, JSPError> {
     
     let keys = search.keys_owned();
+    log::info!("Keys: {:?}", &keys);
     let nodepath = find(keys, graph)?;
     let mut values = search.values_owned();
     let mut path = PathBuf::new();
 
     for node in nodepath.iter() {
+        log::info!("");
+        log::info!("node in nodepath: {}", node);
         match node.identity() {
             NodeType::RegEx{name, pattern, exclude} => {
+                log::info!("NodeType::regex in match node.identity");
                 if let Some(ref value) = values.pop_front() {
-                    if pattern.is_match(value) {
+                    log::info!("NodeType::reged natching {}", value);
+                    if has_named_captures(pattern.as_str()) {
+                        if pattern.capture_names().count() == 2 {
+                            let replacement = replace_capture_group(pattern.as_str(), name, value);
+                            if replacement.is_some() {
+                                path.push(replacement.unwrap());
+                            } else {
+                                log::error!("capture group does not match {}", name);
+                                return Err(JSPError::FindFailure(format!("replace_capture_group failed for {}", pattern.as_str())));
+                            }
+                        } else {
+                            let cnt = pattern.capture_names().count(); 
+                            if cnt < 2 {
+                                log::error!("no capture groups");
+                                return Err(JSPError::FindFailure(format!("not capture groups for {}", pattern.as_str()) ));
+                            } else {
+                                log::error!("too many capture groups. we should have only 1 capture group");
+                                return Err(JSPError::FindFailure(format!("to many capture groups for {}", pattern.as_str())));
+                            }
+                        } 
+                    }else if pattern.is_match(value) {
+                        log::info!("pattern matching {}", value);
                         // check to see if we are supposed to be expluding as well
                         if let Some(exclude_re) = exclude {
                             if !exclude_re.is_match(value) {
                                 path.push(value);
                             } else {
-                                return Err(JSPError::Placeholder);
+                                return Err(JSPError::FindFailure(format!("candidate: {} was excluded from regex: '{}'",value, exclude_re.as_str() )));
                             }
                         } else {
                             path.push(value);
@@ -32,28 +57,13 @@ pub fn find_path(search: &Search, graph: &JGraph) -> Result<PathBuf, JSPError> {
                     // reminder. capture_names()[0] is full regex. 1st actual capture
                     // starts on index 1. Hence why we are checking for a count of 2. 
                     // count() == 2 should yield only a single capture group
-                    } else if pattern.capture_names().count() == 2 {
-                        
-                        let replacement = replace_capture_group(pattern.as_str(), name, value);
-                        if replacement.is_some() {
-                            path.push(replacement.unwrap());
-                        } else {
-                            log::error!("capture group does not match {}", name);
-                            return Err(JSPError::Placeholder);
-                        }
-                    } else {
-                        let cnt = pattern.capture_names().count(); 
-                        if cnt < 2 {
-                            log::error!("no capture groups");
-                            return Err(JSPError::Placeholder);
-                        } else {
-                            log::error!("too many capture groups. we should have only 1 capture group");
-                            return Err(JSPError::Placeholder);
-                        }
-                    } 
+                    }
+                } else {
+                    panic!("unable to pop value off of values VecDeque");
                 }
             },
             NodeType::Simple(name) => {
+                log::info!("Simple match {}", name);
                 path.push(name);
             },
             NodeType::Root => {
@@ -65,19 +75,33 @@ pub fn find_path(search: &Search, graph: &JGraph) -> Result<PathBuf, JSPError> {
     Ok(path)
 }
 
+
+fn has_named_captures(input: &str) -> bool {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"\(\?P<[a-zA-Z_\-0-9]+>.+\)")
+                               .expect("unable to compile RE regex in has_named_captures");
+    }
+
+    RE.is_match(input)
+}
+
 // replace the named capture group with the name key, with a replacement
 fn replace_capture_group(regstr: &str, key: &str, replacement: &str) -> Option<String> {
-    //let re_reg =  r"\(\?P<([a-zA-Z_\-0-9]+)>.+\)";
-    //let re_repl = r"\(\?P<[a-zA-Z_\-0-9]+>.+\)";
     lazy_static!{
-        static ref RE: Regex = Regex::new(r"\(\?P<([a-zA-Z_\-0-9]+)>.+\)").unwrap();
+        static ref RE: Regex = Regex::new(r"\(\?P<([a-zA-Z_\-0-9]+)>.+\)")
+                               .expect("unable to compile RE regex in replace_capture_group");
     }
     let first = RE.captures(regstr);
-    if first.is_some() && first.unwrap().get(1).unwrap().as_str() == key {
+    if first.is_some() && first.expect("unable to extract value from option")
+                               .get(1).expect("unable to get 1st match from capture")
+                               .as_str() == key {
         log::debug!("replace_capture_group(...) match");
         lazy_static!{
-        static ref RE2: Regex = regex::Regex::new(r"\(\?P<[a-zA-Z_\-0-9]+>.+\)").unwrap();
-        static ref STRIP_REF: Regex = regex::Regex::new(r"[\^\$]+").unwrap();
+        static ref RE2: Regex = regex::Regex::new(r"\(\?P<[a-zA-Z_\-0-9]+>.+\)")
+                                .expect("unable to compile RE2 regex in replace_capture_group");
+
+        static ref STRIP_REF: Regex = regex::Regex::new(r"[\^\$]+")
+                                      .expect("unable to compile STRIP_REF regex in replace_capture_group");
 
         }
         let tmp = RE2.replace_all(regstr, "@@");
@@ -159,27 +183,28 @@ fn find_recurse<'a>(
                 let np = nodepath.borrow();
                 last_node = np[np.len()-1];
             }
-            log::debug!("find_recurse(...) last node: {:?}. Iterating through last_node's children...", last_node);
+            log::debug!("find_recurse(...) last node: {:?}. Iterating through last_node's children... to match candidate {}", last_node, candidate_node_name);
             for nindex in graph.neighbors(last_node) {
                 let node = &graph[nindex];
                 log::debug!("find_recurse(...) for nindex in neighbors()... node: {:?}, nindex: {:?}", node, nindex);
                 match node.identity() {
                     NodeType::RegEx{name, pattern:_, exclude: _} =>  {
-                        log::debug!("find_recurse(...) NodeType::RegEx");
+                        log::debug!("NodeType::RegEx - find_recurse(...)");
                         if name == &candidate_node_name {
-                            log::debug!("find_recurse(...) {} == {}", name, &candidate_node_name);
+                            log::debug!("NodeType::RegEx - find_recurse(...) {} == {}", name, &candidate_node_name);
                              {
                                  nodepath.borrow_mut().push(nindex);
                              }
                             let r = find_recurse(criteria.clone(), nodepath.clone(), graph);
                             if r.is_success() {
-                                log::debug!("find_recurse(...) successful");
+                                log::debug!("NodeType::Regex - find_recurse(...) successful");
                                 return FindValue::Success(nodepath);
                             } else {
-                                nodepath.borrow_mut().pop();
+                                let val = nodepath.borrow_mut().pop();
+                                log::debug!("NodeType::Regex - find_recurse unsuccessful. popping {:?} off of nodepath", val);
                             }
                         } else {
-                            log::debug!("find_recurse(...) {} != {}", name, &candidate_node_name);
+                            log::debug!("NodeType::RegEx - find_recurse(...) {} != {}", name, &candidate_node_name);
                         }
                     },
                     NodeType::Simple(_) =>  {
@@ -190,23 +215,25 @@ fn find_recurse<'a>(
                         // We do this because we accept the Simple nodetype without a means
                         // test, unlike NodeType::RegEx.
                         {
+                            log::debug!("NodeType::Simple - pushing criteria: {}", candidate_node_name);
                             nodepath.borrow_mut().push(nindex);
                             criteria.borrow_mut().push_front(candidate_node_name.clone());
                         }
 
                         let r = find_recurse(criteria.clone(), nodepath.clone(), graph);
                         if r.is_success() {
-                            log::debug!("find_recurse successful");
+                            log::debug!("NodeType::Simple - find_recurse successful");
                             return FindValue::Success(nodepath);
                         } else {
-                            log::debug!("find_recurse unsuccessful");
+                            //log::debug!("find_recurse unsuccessful");
                             // If we did not find what we were looking for
                             // we pop off the last nodepath item, and we pop off the front
                             // of the criteria vector, both of which we added prior to calling
                             // the recursion
                             {
                                 nodepath.borrow_mut().pop();
-                                criteria.borrow_mut().pop_front();
+                                let front = criteria.borrow_mut().pop_front();
+                                log::debug!("Node::simple - find_recerse unsuccessful. poping {:?} from criteria", front);
                             }
                         }
                     },
@@ -218,6 +245,11 @@ fn find_recurse<'a>(
                     // If we have gone into untracked territory, then we know we have failed
                     NodeType::Untracked => {return FindValue::Failure(nodepath);},
                 }
+            }
+
+            {
+                // do i have to push front criteria back?
+                criteria.borrow_mut().push_front(candidate_node_name);
             }
             // made it through all of the children without returning
             // a successful match, so we must be in a failure state.
@@ -292,6 +324,21 @@ mod tests {
     }
 
     #[test]
+    fn will_find_the_multiple_criteria_work() {
+        env::set_var("RUST_LOG", "error");
+        //env_logger::init();
+        init();
+        let graph = build_graph();
+        let  search =  VecDeque::from(vec!["show".to_string(), "sequence".to_string(), "shot".to_string(), "work".to_string()]);
+        let result = find(search, &graph);
+        assert!(result.is_ok());
+        let result = result.unwrap();
+       // for node in result.iter() {
+       //     log::warn!("{}", node);
+       // }
+    }
+
+    #[test]
     fn will_not_succeed_when_given_unmatchable_criteria() {
         env::set_var("RUST_LOG", "error");
         //env_logger::init();
@@ -308,13 +355,30 @@ mod tests {
         env::set_var("RUST_LOG", "warn");
         init();
         let graph = build_graph();
-        let  mut search =  Search::new();//VecDeque::from(vec!["show".to_string(), "sequence".to_string(), "shot".to_string()]);
+        let  mut search =  Search::new();
         search.push_back(SearchTerm::new("show", "DEV01"));
         search.push_back(SearchTerm::new("sequence", "RD"));
 
         let result = find_path(&search, &graph).unwrap();
         log::warn!("{:?}", result);
         assert_eq!(result, PathBuf::from("/dd/shows/DEV01/RD"));
+
+    }
+
+    #[test]
+    fn will_find_multiple_path_with_work() {
+        env::set_var("RUST_LOG", "error");
+        init();
+        let graph = build_graph();
+        let  mut search =  Search::new();
+        search.push_back(SearchTerm::new("show", "DEV01"));
+        search.push_back(SearchTerm::new("sequence", "RD"));
+        search.push_back(SearchTerm::new("shot", "0001"));
+        search.push_back(SearchTerm::new("work", "jgerber"));
+
+        let result = find_path(&search, &graph).unwrap();
+        log::warn!("{:?}", result);
+        assert_eq!(result, PathBuf::from("/dd/shows/DEV01/RD/0001/user/work.jgerber"));
 
     }
 }
