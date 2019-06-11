@@ -39,10 +39,15 @@ impl SearchTerm {
         }
     }
 
+    /// Retrieve a reference to the key str, which represents the 
+    /// name of a NodeType::Regex Node within the JGraph instance. 
     pub fn key(&self) -> &str {
         &self.key
     }
 
+    /// Retrieve a reference to the value str, which is intended to 
+    /// represeent a valid (passing) value for the NodeType::Regex Node
+    /// whose name is the `key` of the SearchTerm.
     pub fn value(&self) -> &str {
         &self.value
     }
@@ -67,6 +72,7 @@ pub struct Search {
 }
 
 impl Search {
+
     /// New up the Search entity
     pub fn new() -> Self {
         Self {
@@ -90,6 +96,7 @@ impl Search {
     pub fn pop_front(&mut self) -> Option<SearchTerm> {
         self.terms.pop_front()
     }
+
     /// pop off a term from back of the Search and
     /// return it wrapped in an Option, meaning if Search
     /// is empty, pop_back returns None. Otherwise it 
@@ -144,6 +151,7 @@ impl std::ops::Index<usize> for Search {
     fn index(&self, index: usize) -> &Self::Output {
         &self.terms[index]
     }
+
 }
 
 #[cfg(test)]
@@ -160,9 +168,8 @@ mod tests {
         assert_eq!(searchterm, expect);
     }
 
-
     #[test]
-    fn nonequal_searchterms_may_be_tested_for_equality() {
+    fn nonequal_searchterms_may_be_tested_for_inequality() {
         let searchterm = SearchTerm::new("show", "DEV01");
         let expect = SearchTerm {
             key: "show".to_owned(),
@@ -179,7 +186,6 @@ mod tests {
         assert_eq!(&search[0], &SearchTerm::new("sequence", "RD"));
     }
 
-
     #[test]
     fn search_can_push_back() {
         let mut search = Search::new();
@@ -187,7 +193,6 @@ mod tests {
         search.push_back(SearchTerm::new("sequence", "RD"));
         assert_eq!(&search[0], &SearchTerm::new("show", "DEV01"));
     }
-
 
     #[test]
     fn search_can_pop_front() {
@@ -203,6 +208,43 @@ mod tests {
         search.push_back(SearchTerm::new("show", "DEV01"));
         search.push_back(SearchTerm::new("sequence", "RD"));
         assert_eq!(search.pop_back().unwrap(), SearchTerm::new("sequence", "RD"));
+    }
+
+
+    #[test]
+    fn can_retrieve_keys() {
+        let mut search = Search::new();
+        search.push_back(SearchTerm::new("show", "DEV01"));
+        search.push_back(SearchTerm::new("sequence", "RD"));
+        let keys = search.keys();
+        assert_eq!(keys,  vec!["show", "sequence"]);
+    }
+
+    #[test]
+    fn can_retrieve_values() {
+        let mut search = Search::new();
+        search.push_back(SearchTerm::new("show", "DEV01"));
+        search.push_back(SearchTerm::new("sequence", "RD"));
+        let values = search.values();
+        assert_eq!(values,  vec!["DEV01", "RD"]);
+    }
+
+    #[test]
+    fn can_retrieve_owned_keys() {
+        let mut search = Search::new();
+        search.push_back(SearchTerm::new("show", "DEV01"));
+        search.push_back(SearchTerm::new("sequence", "RD"));
+        let keys = search.keys_owned();
+        assert_eq!(keys,  vec!["show".to_string(), "sequence".to_string()]);
+    }
+
+    #[test]
+    fn can_retrieve_owned_values() {
+        let mut search = Search::new();
+        search.push_back(SearchTerm::new("show", "DEV01"));
+        search.push_back(SearchTerm::new("sequence", "RD"));
+        let values = search.values_owned();
+        assert_eq!(values,  vec!["DEV01".to_owned(), "RD".to_owned()]);
     }
 }
 
