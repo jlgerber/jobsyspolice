@@ -95,8 +95,16 @@ fn main() {
         }
     }  else if let Some(Subcommand::Go{terms}) = args.subcmd {
         match find_path_from_terms(terms, &graph){
-            Ok(path) => println!("{:?}", path),
-            Err(e) => eprintln!("{}", e.to_string()),
+            Ok(path) => { 
+                let path_str = path.to_str().expect("unable to convert path to str. Does it contain non-ascii chars?");
+                if path.is_dir() {
+                    println!("\n{}\n", path_str)
+                } else {
+                    eprintln!("\nError: Path does not exist: '{}'\n", path_str);
+                }
+                
+            },
+            Err(e) => eprintln!("\n{}\n", e.to_string()),
         };
     } else if let Some(input) = args.input {
         match is_valid(input.as_str(), &graph) {
