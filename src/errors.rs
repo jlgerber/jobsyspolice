@@ -18,6 +18,9 @@ pub enum JSPError {
     #[fail(display = "Unable to find '{}'", _0)]
     FindFailure (String),
 
+    #[fail(display = "SearchTerm Error '{}'", _0)]
+    SearchTermError(String),
+
     #[fail(display = "Unable to make directory: '{}'", _0)]
     MkdirFailure(String),
 
