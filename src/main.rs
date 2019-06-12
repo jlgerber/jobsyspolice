@@ -46,23 +46,29 @@ enum Subcommand {
     /// Jobsystem path to create (eg /dd/shows/FOOBAR)
     #[structopt(name = "mk")]
     Mk {
-        #[structopt(name="INPUT")]
-        input: String,
+        #[structopt(name="INPUT", parse(from_os_str))]
+        input: PathBuf,
     },
+    /// Navigation command
     #[structopt(name = "go")]
     Go {
+        /// one or more search tearms of the form key:value 
         #[structopt(name="TERMS")]
         terms: Vec<SearchTerm>,
+
+        /// output meant to be interpreted by the shell
+        #[structopt(short = "s", long = "shell")]
+        shell: bool,
     }
 }
 
 
-fn main() {
+fn main() -> Result<(), failure::Error>{
     // Slurp in env vars from .env files in the path.
     dotenv().ok();
     let (args, level) = setup_cli();
     setup_logger(level).unwrap();
-
+    
     let graph = get_graph(args.output.is_some(), args.graph);
 
     if args.output.is_some() {
@@ -82,25 +88,32 @@ fn main() {
             println!("{:#?}",  petgraph::dot::Dot::with_config(&graph, &[petgraph::dot::Config::EdgeNoLabel]));
         }
 
-    } else if let Some(Subcommand::Mk{input}) = args.subcmd {
-
+    } else if let Some(Subcommand::Mk{mut  input}) = args.subcmd {
+        // if we are dealing with a relative path..
+        if input.starts_with(".") || !input.starts_with("/") {
+            let curdir = env::current_dir()?;
+            input = curdir.join(input);
+        }
         let diskservice = get_disk_service(DiskType::Local, &graph);
 
-        match diskservice.mk(Path::new(input.as_str())) {
+        //match diskservice.mk(Path::new(input.as_str())) {
+        match diskservice.mk(input.as_path()) {
             Ok(_) => println!("\nSuccess\n"),
             Err(JSPError::ValidationFailure{entry, node, depth}) => {
-                report_failure(input.as_str(), &entry, node, depth, &graph );
+                report_failure(input.as_os_str().to_str().unwrap(), &entry, node, depth, &graph );
             },
             Err(e) => println!("\nFailure\n\n{}", e.to_string()),
         }
-    }  else if let Some(Subcommand::Go{terms}) = args.subcmd {
+    }  else if let Some(Subcommand::Go{terms, shell}) = args.subcmd {
         match find_path_from_terms(terms, &graph) {
             Ok(path) => { 
                 let path_str = path.to_str().expect("unable to convert path to str. Does it contain non-ascii chars?");
                 if path.is_dir() {
-                    println!("\n{}\n", path_str)
+                    print_go_success(path_str, shell);
+                    //println!("\n{}\n", path_str)
                 } else {
-                    eprintln!("\nError: Path does not exist: '{}'\n", path_str);
+                    print_go_failure(path_str, shell);
+                    //eprintln!("\nError: Path does not exist: '{}'\n", path_str);
                 }
             },
             Err(e) => eprintln!("\n{}\n", e.to_string()),
@@ -119,8 +132,27 @@ fn main() {
     } else {
         Opt::clap().print_help().unwrap();
     }
+
+    Ok(())
+}
+#[inline]
+fn print_go_success(path_str: &str, shell: bool) {
+    if shell == true {
+        println!("cd {};", path_str);
+    } else {
+        println!("\n{}\n", path_str)
+
+    }
 }
 
+#[inline]
+fn print_go_failure(path_str: &str, shell: bool) {
+    if shell == true {
+        println!("echo \nError: Path does not exist: {}\n", path_str);
+    } else {
+        eprintln!("\nError: Path does not exist: '{}'\n", path_str);
+    }
+}
 #[inline]
 fn setup_logger(level: log::LevelFilter) -> Result<(), fern::InitError> {
     let  colors = ColoredLevelConfig::new()
