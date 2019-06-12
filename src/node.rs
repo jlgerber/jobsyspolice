@@ -104,6 +104,7 @@ impl Node {
         name
     }
 
+    /*
     /// Set the owner to someone after instantiation.
     /// `set_owner` consumes self
     ///
@@ -128,7 +129,7 @@ impl Node {
         log::trace!("set owwer after {:?}", self.metadata().owner());
         self
     }
-
+*/
     /// Set the entry_type to EntryType::Volume
     /// set_volume consumes self and must be used thusly
     ///
@@ -155,11 +156,13 @@ impl Node {
         self
     }
 
+    /*
     /// Set the perms to be an Option<u32>
     pub fn set_perms<I>(mut self, perms: I) -> Node where I:Into<String>  {
         self.metadata.set_perms(Some(perms.into()));
         self
     }
+    */
 }
 
 impl PartialEq<std::ffi::OsStr> for Node {
