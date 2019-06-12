@@ -8,6 +8,7 @@ use serde_json;
 use std::{ env, io::{BufWriter, Write}, path::{ Path, PathBuf }, fs::File };
 use structopt::StructOpt;
 use std::ffi::OsString;
+use std::str::FromStr;
 
 #[derive(Debug, StructOpt)]
 #[structopt( name = "jsp", about = "
@@ -54,11 +55,15 @@ enum Subcommand {
     Go {
         /// one or more search tearms of the form key:value 
         #[structopt(name="TERMS")]
-        terms: Vec<SearchTerm>,
+        terms: Vec<String>,
 
         /// output meant to be interpreted by the shell
         #[structopt(short = "s", long = "shell")]
         shell: bool,
+
+        /// accept a fullpath instead of key:value pairs
+        #[structopt(short = "f", long = "fullpath")]
+        full_path: bool,
     }
 }
 
@@ -103,20 +108,41 @@ fn main() -> Result<(), failure::Error>{
             },
             Err(e) => println!("\nFailure\n\n{}", e.to_string()),
         }
-    }  else if let Some(Subcommand::Go{terms, shell}) = args.subcmd {
-        match find_path_from_terms(terms, &graph) {
-            Ok(path) => { 
-                let path_str = path.to_str().expect("unable to convert path to str. Does it contain non-ascii chars?");
-                if path.is_dir() {
-                    print_go_success(path_str, shell);
-                    //println!("\n{}\n", path_str)
-                } else {
-                    print_go_failure(path_str, shell);
-                    //eprintln!("\nError: Path does not exist: '{}'\n", path_str);
+    }  else if let Some(Subcommand::Go{mut terms, shell, full_path}) = args.subcmd {
+        if full_path == true {
+            let mut input = PathBuf::from(terms.pop().expect("uanble to unwrap"));
+            input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
+            match is_valid(&input, &graph) {
+                Ok(_nodepath) => {
+                    //report_success(nodepath);
+                    print_go_success(input.as_os_str().to_str().unwrap(), shell);
+                },
+                Err(JSPError::ValidationFailure{entry, node, depth}) => {
+                    report_failure(input.as_os_str(), &entry, node, depth, &graph );
                 }
-            },
-            Err(e) => eprintln!("\n{}\n", e.to_string()),
-        };
+                Err(_) => panic!("JSPError type returned invalid")
+            }
+        } else {
+            let terms: Vec<SearchTerm> = terms.into_iter().fold(Vec::new(), |mut acc, x| {
+                match SearchTerm::from_str(&x) {
+                    Ok(term) => acc.push(term),
+                    Err(e) => log::error!("{}", e.to_string()),
+                };
+                acc 
+            });
+            match find_path_from_terms(terms, &graph) {
+                Ok(path) => { 
+                    let path_str = path.to_str().expect("unable to convert path to str. Does it contain non-ascii chars?");
+                    if path.is_dir() {
+                        print_go_success(path_str, shell);
+                    } else {
+                        print_go_failure(path_str, shell);
+                    }
+                },
+                Err(e) => eprintln!("\n{}\n", e.to_string()),
+            };
+        }
+
     } else if let Some(mut input) = args.input {
         input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
         match is_valid(&input, &graph) {
