@@ -27,7 +27,7 @@ struct Opt {
 
     /// Write the graph out as json using an interally maintained definition
     #[structopt( short = "f", long = "file", parse(from_os_str) )]
-    output: Option<PathBuf>,
+    file: Option<PathBuf>,
 
     /// Read the graph from a specified template file. Normally, we identify
     /// the template from the JSP_PATH environment variable
@@ -68,22 +68,30 @@ enum Subcommand {
 }
 
 
-fn main() -> Result<(), failure::Error>{
+fn main() -> Result<(), failure::Error> {
+
     // Slurp in env vars from .env files in the path.
     dotenv().ok();
     let (args, level) = setup_cli();
     setup_logger(level).unwrap();
     
-    let graph = get_graph(args.output.is_some(), args.graph);
+    let graph = get_graph(args.file.is_some(), args.graph);
 
-    if args.output.is_some() {
-        if let Some(mut output) = args.output {
+    //
+    // Handle jstemplate file output in main command. 
+    // 
+    if args.file.is_some() {
+        if let Some(mut output) = args.file {
             if args.input.is_some() {
                 log::warn!("INPUT not compatible with --file argument. It will be ignored");
             }
             output = diskutils::convert_relative_pathbuf_to_absolute(output)?;
             write_template(&mut output, &graph);
         }
+    
+    //
+    // Handle Dot output in the main command. We are writing the template out as a dot file
+    //
     } else if args.dot.is_some() {
         if let Some(mut output) = args.dot {
             if args.input.is_some() {
@@ -95,6 +103,9 @@ fn main() -> Result<(), failure::Error>{
             println!("{:#?}",  petgraph::dot::Dot::with_config(&graph, &[petgraph::dot::Config::EdgeNoLabel]));
         }
 
+    //
+    // Handle Directory Creation via the mk subcommand
+    //
     } else if let Some(Subcommand::Mk{mut input}) = args.subcmd {
         // if we are dealing with a relative path..
         input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
@@ -108,8 +119,13 @@ fn main() -> Result<(), failure::Error>{
             },
             Err(e) => println!("\nFailure\n\n{}", e.to_string()),
         }
+
+    //   
+    // Handle Navigation via the Go subcommand
+    //
     }  else if let Some(Subcommand::Go{mut terms, shell, full_path}) = args.subcmd {
         if full_path == true {
+            // Parse the full path, as opposed to SearchTerms
             let mut input = PathBuf::from(terms.pop().expect("uanble to unwrap"));
             input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
             match is_valid(&input, &graph) {
@@ -122,7 +138,10 @@ fn main() -> Result<(), failure::Error>{
                 }
                 Err(_) => panic!("JSPError type returned invalid")
             }
+        // Parse SearchTerms 
         } else {
+            // fold over the input vector of Strings, discarding any Strings which cannot
+            // be converted to SearchTerms
             let terms: Vec<SearchTerm> = terms.into_iter().fold(Vec::new(), |mut acc, x| {
                 match SearchTerm::from_str(&x) {
                     Ok(term) => acc.push(term),
@@ -130,6 +149,7 @@ fn main() -> Result<(), failure::Error>{
                 };
                 acc 
             });
+
             match find_path_from_terms(terms, &graph) {
                 Ok(path) => { 
                     let path_str = path.to_str().expect("unable to convert path to str. Does it contain non-ascii chars?");
@@ -143,6 +163,9 @@ fn main() -> Result<(), failure::Error>{
             };
         }
 
+    //
+    // Validate supplied argument to determine whether it is a valid path or not
+    //
     } else if let Some(mut input) = args.input {
         input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
         match is_valid(&input, &graph) {
@@ -155,6 +178,9 @@ fn main() -> Result<(), failure::Error>{
             Err(_) => panic!("JSPError type returned invalid")
         }
 
+    //
+    // Don't know what you are thinking. I will print help and get out of your way
+    //
     } else {
         Opt::clap().print_help().unwrap();
     }
