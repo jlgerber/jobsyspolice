@@ -15,6 +15,8 @@ use users::{ get_user_by_name };
 
 lazy_static! {
     static ref ROOT_PATH: PathBuf = Path::new("/").to_path_buf();
+    static ref DOUBLEDOT: PathBuf = PathBuf::from("..");
+    static ref DOT: PathBuf = PathBuf::from(".");
 }
 
 /// Given a path, owner, and permissions, create the supplied directory with
@@ -100,4 +102,30 @@ pub fn get_uid_for_owner(owner: &User, node: &Node, dir: &str) -> Result<u32, JS
 pub fn get_owner_for_path(path: &Path) -> Result<User, JSPError> {
     let metadata = std::fs::metadata(path)?;
     Ok(User::Uid(metadata.uid()))
+}
+
+/// Given a relative pathbuf, convert it to an absolute pathbuf.
+pub fn convert_relative_pathbuf_to_absolute(path: PathBuf) -> Result<PathBuf, JSPError> {
+    let mut curdir = std::env::current_dir()?;
+    if path.starts_with(".") || !path.starts_with("/") {
+        let mut doit = false;
+        if path.starts_with("..") {
+            doit = true;
+        }
+        curdir = curdir.join(path);
+        if doit == true {
+            curdir = curdir.iter().fold(PathBuf::new(), |mut acc, x| {
+                if x == DOUBLEDOT.as_os_str() ||  x == DOT.as_os_str() {
+                    acc.pop();
+                } else {
+                    acc.push(x);
+                }
+                    acc
+                } 
+            );
+        }
+        log::info!("curdir {:?}", curdir);
+        return Ok(curdir);
+    }
+    Ok(path)
 }
