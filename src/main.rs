@@ -1,7 +1,7 @@
 use chrono;
 use dotenv::dotenv;
 use fern::{ colors::{Color, ColoredLevelConfig}, self} ;
-use jsp::{ DiskType, get_disk_service, graph, is_valid, JGraph, JSPError, NodePath, NIndex, SearchTerm, Search, find_path};
+use jsp::{ diskutils, DiskType, get_disk_service, graph, is_valid, JGraph, JSPError, NodePath, NIndex, SearchTerm, Search, find_path};
 use petgraph;
 use log::{ LevelFilter, self };
 use serde_json;
@@ -34,8 +34,8 @@ struct Opt {
     graph: Option<PathBuf>,
 
     /// Jobsystem path to validate (eg /dd/shows/FOOBAR)
-    #[structopt(name="INPUT")]
-    input: Option<String>,
+    #[structopt(name="INPUT", parse(from_os_str))]
+    input: Option<PathBuf>,
 
     #[structopt(subcommand)]
     subcmd: Option<Subcommand>,
@@ -76,31 +76,30 @@ fn main() -> Result<(), failure::Error>{
             if args.input.is_some() {
                 log::warn!("INPUT not compatible with --file argument. It will be ignored");
             }
+            output = diskutils::convert_relative_pathbuf_to_absolute(output)?;
             write_template(&mut output, &graph);
         }
     } else if args.dot.is_some() {
-        if let Some(output) = args.dot {
+        if let Some(mut output) = args.dot {
             if args.input.is_some() {
                 log::warn!("INPUT not compatible with --dot argument. It will be ignored");
             }
+            output = diskutils::convert_relative_pathbuf_to_absolute(output)?;
             write_template_as_dotfile(&output, &graph);
         } else {
             println!("{:#?}",  petgraph::dot::Dot::with_config(&graph, &[petgraph::dot::Config::EdgeNoLabel]));
         }
 
-    } else if let Some(Subcommand::Mk{mut  input}) = args.subcmd {
+    } else if let Some(Subcommand::Mk{mut input}) = args.subcmd {
         // if we are dealing with a relative path..
-        if input.starts_with(".") || !input.starts_with("/") {
-            let curdir = env::current_dir()?;
-            input = curdir.join(input);
-        }
+        input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
         let diskservice = get_disk_service(DiskType::Local, &graph);
 
         //match diskservice.mk(Path::new(input.as_str())) {
         match diskservice.mk(input.as_path()) {
             Ok(_) => println!("\nSuccess\n"),
             Err(JSPError::ValidationFailure{entry, node, depth}) => {
-                report_failure(input.as_os_str().to_str().unwrap(), &entry, node, depth, &graph );
+                report_failure(input.as_os_str(), &entry, node, depth, &graph );
             },
             Err(e) => println!("\nFailure\n\n{}", e.to_string()),
         }
@@ -118,13 +117,14 @@ fn main() -> Result<(), failure::Error>{
             },
             Err(e) => eprintln!("\n{}\n", e.to_string()),
         };
-    } else if let Some(input) = args.input {
-        match is_valid(input.as_str(), &graph) {
+    } else if let Some(mut input) = args.input {
+        input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
+        match is_valid(&input, &graph) {
             Ok(nodepath) => {
                 report_success(nodepath);
             },
             Err(JSPError::ValidationFailure{entry, node, depth}) => {
-                report_failure(input.as_str(), &entry, node, depth, &graph );
+                report_failure(input.as_os_str(), &entry, node, depth, &graph );
             }
             Err(_) => panic!("JSPError type returned invalid")
         }
@@ -132,9 +132,9 @@ fn main() -> Result<(), failure::Error>{
     } else {
         Opt::clap().print_help().unwrap();
     }
-
     Ok(())
 }
+
 #[inline]
 fn print_go_success(path_str: &str, shell: bool) {
     if shell == true {
@@ -336,7 +336,7 @@ fn report_success(nodepath: NodePath) {
 }
 
 #[inline]
-fn report_failure(input: &str, entry: &OsString, node: NIndex, depth: u8, graph: &JGraph ) {
+fn report_failure(input: &std::ffi::OsStr, entry: &OsString, node: NIndex, depth: u8, graph: &JGraph ) {
     let path = Path::new(input)
                 .iter()
                 .take((depth+1) as usize)
