@@ -1,4 +1,4 @@
-use crate::{ EntryType, NodeType, User};
+use crate::{ EntryType, NodeType, User, Metadata};
 use serde::{ Deserialize, Serialize, self };
 use log;
 use std::fmt::{ Display, Formatter, self };
@@ -12,21 +12,17 @@ use std::fmt::{ Display, Formatter, self };
 pub struct Node {
     identity: NodeType,
     entry_type: EntryType,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    owner: Option<User>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    perms: Option<String>,
+    metadata: Metadata
 }
 
 impl Display for Node {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(
             f,
-            "Node{{identity: {}, entry_type: {}, owner: {:?}, perms: {:?} }}",
+            "Node{{identity: {}, entry_type: {}, metadata: {:?} }}",
             self.identity,
             self.entry_type,
-            self.owner,
-            self.perms
+            self.metadata,
         )
     }
 }
@@ -46,7 +42,11 @@ impl Node {
     /// # Returns
     ///   A new instance of Node
     pub fn new(identity: NodeType, entry_type: EntryType, owner: Option<User>, perms: Option<String>) -> Self {
-        Self { identity, entry_type, owner, perms }
+        Self { 
+            identity, 
+            entry_type,
+            metadata:  Metadata::from_components(owner, perms)
+        }
     }
 
     /// Specialized constructor function which returns a Root node.
@@ -54,8 +54,7 @@ impl Node {
         Self {
             identity: NodeType::Root,
             entry_type: EntryType::Root,
-            owner: None,
-            perms: None,
+            metadata: Metadata::new(),
         }
     }
     /// Specialized constructor function which returns an Untracked node.
@@ -63,8 +62,7 @@ impl Node {
         Self {
             identity: NodeType::Untracked,
             entry_type: EntryType::Untracked,
-            owner: None,
-            perms: None,
+            metadata: Metadata::new()
         }
     }
 
@@ -72,17 +70,29 @@ impl Node {
         &self.entry_type
     }
 
+    /// Retrieve a reference to metadata
+    pub fn metadata(&self) -> &Metadata {
+        &self.metadata
+    }
+
+    /// return a mutable reference to metadata
+    pub fn metadata_mut(&mut self) -> &mut Metadata {
+        &mut self.metadata
+    }
+
     /// Retrieve the permisssions
-    pub fn perms(&self) -> Option<&str> {
-        if let Some(perms) = &self.perms {
-            return Some(&perms)
+    pub fn perms(&self) -> &Option<String> {
+        self.metadata.perms()
+        /*
+        if let Some(perms) = &self.metadata.perms() {
+            return Some(perms)
         } else {
             None
-        }
+        }*/
     }
 
     pub fn owner(&self) -> &Option<User> {
-        &self.owner
+        self.metadata.owner()
     }
 
     pub fn identity(&self) -> &NodeType {
@@ -100,10 +110,10 @@ impl Node {
             NodeType::Root => name.push_str("Root()"),
             NodeType::Untracked => name.push_str("Untracked()"),
         }
-        if let Some(ref n) = self.owner {
+        if let Some(ref n) = self.owner() {
             name.push_str(format!(" [{}]", n).as_str());
         }
-        if let Some(ref n) = self.perms {
+        if let Some(ref n) = self.perms() {
             name.push_str(format!(" [{}]", n).as_str());
         }
         name
@@ -127,9 +137,9 @@ impl Node {
     /// let node = node.set_owner("ddinst");
     /// ```
     pub fn set_owner<I>(mut self, owner: I ) -> Node where I: Into<User> {
-        log::trace!("set_owner before {:?}", self.owner);
-        self.owner = Some(owner.into());
-        log::trace!("set owwer after {:?}", self.owner);
+        log::trace!("set_owner before {:?}", self.owner());
+        self.metadata.set_owner(Some(owner.into()));
+        log::trace!("set owwer after {:?}", self.owner());
         self
     }
 
@@ -153,10 +163,15 @@ impl Node {
         self.entry_type = EntryType::Volume;
         self
     }
+    
+    pub fn set_metadata(mut self, metadata: Metadata) -> Node {
+        self.metadata = metadata;
+        self
+    }
 
     /// Set the perms to be an Option<u32>
     pub fn set_perms<I>(mut self, perms: I) -> Node where I:Into<String>  {
-        self.perms = Some(perms.into());
+        self.metadata.set_perms(Some(perms.into()));
         self
     }
 }
@@ -207,11 +222,11 @@ macro_rules!  jspnode {
         );
         $(
             match $key {
-                "owner" => {n = n.set_owner($val);}
+                "owner" => {n.metadata_mut().set_owner(Some(crate::User::from($val)));}
                 "perms" | "permissions" => {
                         let conv = $val.parse::<u32>();
                         if conv.is_ok(){
-                            n = n.set_perms($val);
+                            n.metadata_mut().set_perms(Some($val.to_owned()));
                         }
                     }
                 _ => ()
@@ -241,11 +256,11 @@ macro_rules!  jspnode {
         None);
         $(
             match $key {
-                "owner" => {n = n.set_owner($val);}
+                "owner" => {n.metadata_mut().set_owner(Some(crate::User::from($val)));}
                 "perms" | "permissions" => {
                         let conv = $val.parse::<u32>();
                         if conv.is_ok(){
-                            n = n.set_perms($val);
+                            n.metadata_mut().set_perms(Some($val.to_owned()));
                         }
                 }
                 _ => ()
@@ -278,11 +293,11 @@ macro_rules!  jspnode {
         );
         $(
             match $key {
-                "owner" => {n = n.set_owner($val);}
+                "owner" => {n.metadata_mut().set_owner(Some(crate::User::from($val)));}
                 "perms" | "permissions" => {
                         let conv = $val.parse::<u32>();
                         if conv.is_ok(){
-                            n = n.set_perms($val);
+                            n.metadata_mut().set_perms(Some($val.to_owned()));
                         }
                 }
                 _ => ()
@@ -306,8 +321,7 @@ mod tests {
         let expected = Node {
             identity: NodeType::Root,
             entry_type: EntryType::Root,
-            owner: None,
-            perms: None
+            metadata: Metadata::new()
         };
         assert_eq!(root, expected);
     }

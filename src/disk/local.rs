@@ -52,7 +52,7 @@ impl<'a> Disk for DiskService<'a> {
             let node = &nodepath[idx - 1];
 
             // update permissions if they have changed
-            if let Some(perms) = node.perms() {
+            if let Some(perms) = node.metadata().perms() {
                 gperms = perms;
                 uperms = u32::from_str_radix(&gperms,8).expect("couldnt convert gperms to perms");
             }
@@ -62,7 +62,7 @@ impl<'a> Disk for DiskService<'a> {
                     log::debug!("local::DiskService EntryType::Directory");
 
                     // we need the owner to look up the uid
-                    let tmp_owner = node.owner().clone();
+                    let tmp_owner = node.metadata().owner().clone();
                     log::trace!("node: {} type:{:?}", &node, &node.entry_type());
                     owner = tmp_owner.unwrap_or(owner);
 

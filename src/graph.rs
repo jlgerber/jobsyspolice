@@ -99,7 +99,7 @@ fn _is_valid(
 }
 
 pub mod testdata {
-    use crate::{ JGraph, Node, jspnode, Regexp, NodeType, EntryType };
+    use crate::{ JGraph, Node, jspnode, Regexp, NodeType, EntryType, Metadata };
 
     pub fn build_graph() -> JGraph {
         let mut graph = JGraph::new();

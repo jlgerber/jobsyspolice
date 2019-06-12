@@ -47,3 +47,6 @@ pub use find::{find, find_path};
 
 pub mod searchterm;
 pub use searchterm::{Search, SearchTerm};
+
+pub mod metadata;
+pub use metadata::Metadata;
