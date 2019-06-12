@@ -80,21 +80,6 @@ impl Node {
         &mut self.metadata
     }
 
-    /// Retrieve the permisssions
-    pub fn perms(&self) -> &Option<String> {
-        self.metadata.perms()
-        /*
-        if let Some(perms) = &self.metadata.perms() {
-            return Some(perms)
-        } else {
-            None
-        }*/
-    }
-
-    pub fn owner(&self) -> &Option<User> {
-        self.metadata.owner()
-    }
-
     pub fn identity(&self) -> &NodeType {
         &self.identity
     }
@@ -110,10 +95,10 @@ impl Node {
             NodeType::Root => name.push_str("Root()"),
             NodeType::Untracked => name.push_str("Untracked()"),
         }
-        if let Some(ref n) = self.owner() {
+        if let Some(ref n) = self.metadata().owner() {
             name.push_str(format!(" [{}]", n).as_str());
         }
-        if let Some(ref n) = self.perms() {
+        if let Some(ref n) = self.metadata().perms() {
             name.push_str(format!(" [{}]", n).as_str());
         }
         name
@@ -136,10 +121,11 @@ impl Node {
     /// let node = jspnode!("FOO");
     /// let node = node.set_owner("ddinst");
     /// ```
+    /// 
     pub fn set_owner<I>(mut self, owner: I ) -> Node where I: Into<User> {
-        log::trace!("set_owner before {:?}", self.owner());
+        log::trace!("set_owner before {:?}", self.metadata().owner());
         self.metadata.set_owner(Some(owner.into()));
-        log::trace!("set owwer after {:?}", self.owner());
+        log::trace!("set owwer after {:?}", self.metadata().owner());
         self
     }
 
