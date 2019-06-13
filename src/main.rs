@@ -135,7 +135,7 @@ fn main() -> Result<(), failure::Error> {
                     if !input.exists() {
                         eprintln!("\n{:?} does not exist\n", input);
                     } else {
-                        process_go_success(input, nodepath, shell, 0);
+                        process_go_success(input, nodepath, shell, true);
                     }
                 },
                 Err(JSPError::ValidationFailure{entry, node, depth}) => {
@@ -159,7 +159,7 @@ fn main() -> Result<(), failure::Error> {
                 Ok(( path,  nodepath)) => { 
                     let path_str = path.to_str().expect("unable to convert path to str. Does it contain non-ascii chars?");
                     if path.is_dir() {
-                        process_go_success(path, &nodepath, shell, 1);
+                        process_go_success(path, &nodepath, shell, false);
                         //print_go_success(path_str, shell);
                     } else {
                         print_go_failure(path_str, shell);
@@ -195,7 +195,7 @@ fn main() -> Result<(), failure::Error> {
 
 
 #[inline]
-fn process_go_success(path: PathBuf, nodepath: &NodePath, shell: bool, offset: usize) {
+fn process_go_success(path: PathBuf, nodepath: &NodePath, shell: bool, pop_root: bool) {
     log::info!("process_go_success(...)");
     let bash = Bash::new();
     
@@ -209,8 +209,10 @@ fn process_go_success(path: PathBuf, nodepath: &NodePath, shell: bool, offset: u
         }
     }).collect::<VecDeque<String>>();
     // we need to get rid of the front
-    let popped = components.pop_front();
-    log::debug!("popped off {:?}", popped);
+    if pop_root{
+        let popped = components.pop_front();
+        log::debug!("popped off {:?}", popped);
+    }
     
     let mut varnames: Vec<&str> = Vec::new();
 
@@ -225,7 +227,7 @@ fn process_go_success(path: PathBuf, nodepath: &NodePath, shell: bool, offset: u
         if n.metadata().has_varname() {
             let varname = n.metadata().varname_ref().unwrap();
             
-            print!("{}", &bash.set_env_var(varname, &components[idx - offset]));
+            print!("{}", &bash.set_env_var(varname, &components[idx]));
             varnames.push(varname);
         }
     }
