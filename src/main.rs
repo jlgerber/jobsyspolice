@@ -1,7 +1,7 @@
 use chrono;
 use dotenv::dotenv;
 use fern::{ colors::{Color, ColoredLevelConfig}, self} ;
-use jsp::{ constants, diskutils, DiskType, get_disk_service, graph, is_valid, JGraph, JSPError, NodePath, NIndex, SearchTerm, Search, find_path};
+use jsp::{ Bash, CachedEnvVars, ClearEnvVar, constants, diskutils, DiskType, get_disk_service, graph, is_valid, JGraph, JSPError, NodePath, NIndex, SearchTerm, Search, find_path};
 use petgraph;
 use log::{ LevelFilter, self };
 use serde_json;
@@ -129,11 +129,14 @@ fn main() -> Result<(), failure::Error> {
             // Parse the full path, as opposed to SearchTerms
             let mut input = PathBuf::from(terms.pop().expect("uanble to unwrap"));
             input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
+            
             match is_valid(&input, &graph) {
                 Ok(ref nodepath) => {
-                    //report_success(nodepath);
-                    process_go_success(input, nodepath, shell);
-                    //print_go_success(input.as_os_str().to_str().unwrap(), shell);
+                    if !input.exists() {
+                        eprintln!("\n{:?} does not exist\n", input);
+                    } else {
+                        process_go_success(input, nodepath, shell);
+                    }
                 },
                 Err(JSPError::ValidationFailure{entry, node, depth}) => {
                     report_failure(input.as_os_str(), &entry, node, depth, &graph );
@@ -190,7 +193,6 @@ fn main() -> Result<(), failure::Error> {
     Ok(())
 }
 
-
 #[inline]
 fn process_go_success(path: PathBuf, nodepath: &NodePath, shell: bool) {
 
@@ -210,7 +212,12 @@ fn process_go_success(path: PathBuf, nodepath: &NodePath, shell: bool) {
     let mut varnames: Vec<&str> = Vec::new();
 
     if shell == true {println!("");}
+    // generate string to clear previously cached variables
+    let cached = CachedEnvVars::new();
+    print!("{}", cached.clear(Bash::new()));
 
+    // generate code to export a variable
+    // TODO: make this part of the trait so that we can abstract over shell
     for (idx, n) in nodepath.iter().enumerate() {
         if n.metadata().has_varname() {
             let varname = n.metadata().varname_ref().unwrap();
@@ -218,8 +225,11 @@ fn process_go_success(path: PathBuf, nodepath: &NodePath, shell: bool) {
             varnames.push(varname);
         }
     }
+
     if varnames.len() > 0 {
         print!("export {}={};", constants::JSP_TRACKING_VAR, varnames.join(":"));
+    } else {
+        print!("unset {};", constants::JSP_TRACKING_VAR);
     }
     println!("cd {};", path.as_os_str().to_str().unwrap());
     if shell == true {println!("");}
