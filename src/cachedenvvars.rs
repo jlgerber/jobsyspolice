@@ -1,22 +1,35 @@
 use crate::{constants};
 use std::env;
+use crate::{ClearEnvVar};
 
-/// CachedEnvVars is an iterator for variables cached in the environment 
-/// by jspgo
+/// CachedEnvVars provides a means of looking up and iterating over the previously 
+/// set JSPVars in the environment
 #[derive(Debug)]
 pub struct CachedEnvVars(Vec<String>);
 
 impl CachedEnvVars {
-    /// new up a CachedVar
+
+    /// new up a CachedEnvVars
     pub fn new() -> Self {
         let var = env::var(constants::JSP_TRACKING_VAR).unwrap_or(String::from(""));
         let varnames = var.split(":").map(|x| x.to_owned()).collect::<Vec<String>>();
         Self(varnames)
     }
     
-    /// Return an iterator over cached vars
+    /// Return an iterator over CachedEvnVars
     pub fn iter<'a>(&'a self) -> IterCachedEnvVars<'a> {
         IterCachedEnvVars::new(self)
+    }
+
+    /// Produce a string that, when eval'ed by a shell (eg bash or tcsh) compatible
+    /// with the implementation of `ClearEnvVar by `clearer`, will blank out the
+    /// settings the supplied variables.
+    pub fn clear(&self, clearer: impl ClearEnvVar) -> String {
+        let mut result = String::new();
+        for var in self.iter() {
+            result.push_str( &clearer.clear_env_var(var) );
+        }
+        result
     }
 }
 
@@ -29,7 +42,7 @@ impl IntoIterator for CachedEnvVars {
     }
 }
 
-
+/// Iterator for CachedEnvVars
 pub struct IterCachedEnvVars<'a> {
     inner: &'a CachedEnvVars,
     pos: usize,
@@ -63,6 +76,7 @@ impl<'a> Iterator for IterCachedEnvVars<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::shell::bash::Bash;
 
     #[test]
     fn into_iter_collects_vec_of_strings() {
@@ -73,7 +87,6 @@ mod tests {
         assert_eq!(vars, vec!["DD_SHOW".to_owned(), "DD_SEQUENCE".to_owned(), "DD_SHOT".to_owned()]);
     }
 
-
     #[test]
     fn iter_collects_vec_of_str_refs() {
         // set the environment
@@ -82,6 +95,17 @@ mod tests {
         let vars = cache.iter().collect::<Vec<&str>>();
 
         assert_eq!(vars, vec!["DD_SHOW", "DD_SEQUENCE", "DD_SHOT"]);
+    }
+
+    #[test]
+    fn can_clear_env_vars() {
+        // set the environment
+        env::set_var(constants::JSP_TRACKING_VAR, "DD_SHOW:DD_SEQUENCE:DD_SHOT");
+        
+        let cache = CachedEnvVars::new();
+        let clearstr = cache.clear(Bash::new());
+        let expect = String::from("unset DD_SHOW;unset DD_SEQUENCE;unset DD_SHOT;");
+        assert_eq!(clearstr, expect);
     }
 }
 
