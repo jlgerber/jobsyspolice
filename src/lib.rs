@@ -53,3 +53,6 @@ pub use metadata::Metadata;
 
 pub mod cachedenvvars;
 pub use cachedenvvars::CachedEnvVars;
+
+pub mod shell;
+pub use shell::{ClearEnvVar, bash::Bash};
