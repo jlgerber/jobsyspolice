@@ -99,7 +99,7 @@ fn _is_valid(
 }
 
 pub mod testdata {
-    use crate::{ JGraph, Node, jspnode, Regexp, NodeType, EntryType, Metadata };
+    use crate::{ JGraph, Node, jspnode, Regexp, NodeType, EntryType };
 
     pub fn build_graph() -> JGraph {
         let mut graph = JGraph::new();
@@ -107,7 +107,15 @@ pub mod testdata {
         let root = graph.add_node(Node::new_root());
         let dd = graph.add_node(jspnode!("dd", "owner"=>"jobsys", "perms"=>"751"));
         let shows = graph.add_node(jspnode!("shows"));
-        let show = graph.add_node(jspnode!("show", r"^[A-Z]+[A-Z0-9]*$",r"^(REF|SHARED|OUTSOURCE|LOCATIONS)$", "owner"=>"jobsys", "perms"=>"751"));
+        let show = graph.add_node(
+            jspnode!(
+                "show", 
+                r"^[A-Z]+[A-Z0-9]*$",r"^(REF|SHARED|OUTSOURCE|LOCATIONS)$", 
+                "owner"=>"jobsys", 
+                "perms"=>"751",
+                "varname" => "DD_SHOW"
+            )
+        );
 
         //ref
         let refdir = graph.add_node(jspnode!("REF").set_volume());
@@ -178,14 +186,24 @@ pub mod testdata {
         let dailies = graph.add_node(jspnode!("DAILIES"));
 
         let shared = graph.add_node(jspnode!("SHARED"));
-        let shared_dirs = graph.add_node(jspnode!("shared_dirs", r"^(PREVIZ|INTEG|MODEL|RIG|ANIM|CFX|LIGHT|ENVIRO|FX|COMP|IMG)$"));
+        let shared_dirs = graph.add_node(jspnode!("dept", r"^(PREVIZ|INTEG|MODEL|RIG|ANIM|CFX|LIGHT|ENVIRO|FX|COMP|IMG)$"));
         let assetdev = graph.add_node(jspnode!("ASSETDEV"));
         let adshot = graph.add_node(jspnode!("assetdev shot", r"^([A-Z][A-Z0-9]+[_]{0,1})+[A-Z0-9]+$"));
         let sequence = graph.add_node(
             jspnode!(
-                "sequence", r"^(([A-Z]{2,4})|LIBRARY)$", r"^(SHARED|etc|lib|tool|user|bin)$")
+                "sequence", 
+                r"^(([A-Z]{2,4})|LIBRARY)$", 
+                r"^(SHARED|etc|lib|tool|user|bin)$",
+                "varname" => "DD_SEQUENCE"
+            )
         );
-        let shot = graph.add_node(jspnode!("shot", r"^[0-9]+[A-Z0-9]*$"));
+        let shot = graph.add_node(
+            jspnode!(
+                "shot", 
+                r"^[0-9]+[A-Z0-9]*$",
+                "varname" => "DD_SHOT"
+            )
+        );
 
         graph.extend_with_edges(&[
             (root, dd),
