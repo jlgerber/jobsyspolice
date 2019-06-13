@@ -1,7 +1,7 @@
 use chrono;
 use dotenv::dotenv;
 use fern::{ colors::{Color, ColoredLevelConfig}, self} ;
-use jsp::{ Bash, CachedEnvVars, ClearEnvVar, constants, diskutils, DiskType, get_disk_service, graph, is_valid, JGraph, JSPError, NodePath, NIndex, SearchTerm, Search, find_path};
+use jsp::{ Bash, CachedEnvVars, constants, diskutils, DiskType, get_disk_service, graph, is_valid, JGraph, JSPError, NodePath, NIndex, SearchTerm, Search, find_path};
 use petgraph;
 use log::{ LevelFilter, self };
 use serde_json;
@@ -129,7 +129,7 @@ fn main() -> Result<(), failure::Error> {
             // Parse the full path, as opposed to SearchTerms
             let mut input = PathBuf::from(terms.pop().expect("uanble to unwrap"));
             input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
-            
+
             match is_valid(&input, &graph) {
                 Ok(ref nodepath) => {
                     if !input.exists() {
@@ -294,12 +294,9 @@ fn setup_cli() -> (Opt, log::LevelFilter) {
     (args, level)
 }
 
-const JSP_PATH: &'static str = "JSP_PATH";
-const JSP_NAME: &'static str = "jstemplate.json";
-
 #[inline]
 fn _get_template_from_env() -> Result<PathBuf, env::VarError> {
-    let jsp_path = env::var(JSP_PATH)?;
+    let jsp_path = env::var(constants::JSP_PATH)?;
     log::trace!("expanding tilde for {:?}", jsp_path);
     let jsp_path = shellexpand::tilde(jsp_path.as_str());
     log::trace!("attempting to cannonicalize {:?}", jsp_path);
@@ -320,7 +317,7 @@ fn get_template_from_env() -> PathBuf {
     match _get_template_from_env() {
         Ok(v) => v,
         Err(e) => {
-            eprintln!("\nunable to get template from environment: {}. Is {} set?\n", e, JSP_PATH);
+            eprintln!("\nunable to get template from environment: {}. Is {} set?\n", e, constants::JSP_PATH);
             std::process::exit(1);
         }
     }
@@ -362,7 +359,7 @@ fn write_template(output: &mut PathBuf, graph: &JGraph) {
 
     // test to see if buffer is a directory. if it is apply the standard name
     if output.is_dir() {
-        output.push(JSP_NAME);
+        output.push(constants::JSP_NAME);
     }
     let j = serde_json::to_string_pretty(&graph).unwrap();
     let file = match File::create(output) {
