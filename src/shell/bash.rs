@@ -1,5 +1,6 @@
 use crate::ShellEnvManager;
 
+/// Struct which implements the `ShellEnvManager` trait for Bash.
 pub struct Bash {}
 
 impl Bash {
