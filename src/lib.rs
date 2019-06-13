@@ -50,3 +50,6 @@ pub use searchterm::{Search, SearchTerm};
 
 pub mod metadata;
 pub use metadata::Metadata;
+
+pub mod cachedenvvars;
+pub use cachedenvvars::CachedEnvVars;

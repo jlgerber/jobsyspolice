@@ -1,14 +1,15 @@
 use chrono;
 use dotenv::dotenv;
 use fern::{ colors::{Color, ColoredLevelConfig}, self} ;
-use jsp::{ diskutils, DiskType, get_disk_service, graph, is_valid, JGraph, JSPError, NodePath, NIndex, SearchTerm, Search, find_path};
+use jsp::{ constants, diskutils, DiskType, get_disk_service, graph, is_valid, JGraph, JSPError, NodePath, NIndex, SearchTerm, Search, find_path};
 use petgraph;
 use log::{ LevelFilter, self };
 use serde_json;
-use std::{ env, io::{BufWriter, Write}, path::{ Path, PathBuf }, fs::File };
+use std::{ env, io::{BufWriter, Write}, path::{ Path, Component, PathBuf }, fs::File };
 use structopt::StructOpt;
 use std::ffi::OsString;
 use std::str::FromStr;
+use std::collections::VecDeque;
 
 #[derive(Debug, StructOpt)]
 #[structopt( name = "jsp", about = "
@@ -129,9 +130,10 @@ fn main() -> Result<(), failure::Error> {
             let mut input = PathBuf::from(terms.pop().expect("uanble to unwrap"));
             input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
             match is_valid(&input, &graph) {
-                Ok(_nodepath) => {
+                Ok(ref nodepath) => {
                     //report_success(nodepath);
-                    print_go_success(input.as_os_str().to_str().unwrap(), shell);
+                    process_go_success(input, nodepath, shell);
+                    //print_go_success(input.as_os_str().to_str().unwrap(), shell);
                 },
                 Err(JSPError::ValidationFailure{entry, node, depth}) => {
                     report_failure(input.as_os_str(), &entry, node, depth, &graph );
@@ -151,10 +153,11 @@ fn main() -> Result<(), failure::Error> {
             });
 
             match find_path_from_terms(terms, &graph) {
-                Ok(path) => { 
+                Ok(( path,  nodepath)) => { 
                     let path_str = path.to_str().expect("unable to convert path to str. Does it contain non-ascii chars?");
                     if path.is_dir() {
-                        print_go_success(path_str, shell);
+                        process_go_success(path, &nodepath, shell);
+                        //print_go_success(path_str, shell);
                     } else {
                         print_go_failure(path_str, shell);
                     }
@@ -185,6 +188,41 @@ fn main() -> Result<(), failure::Error> {
         Opt::clap().print_help().unwrap();
     }
     Ok(())
+}
+
+
+#[inline]
+fn process_go_success(path: PathBuf, nodepath: &NodePath, shell: bool) {
+
+    let mut components = path.components().map(|x| {
+        match x {
+            Component::RootDir => String::from("/"),
+            Component::Normal(level) => level.to_str().unwrap().to_string(),
+            //None => String::from(""),
+            Component::CurDir => String::from("."),
+            Component::ParentDir => String::from(".."),
+            Component::Prefix(_) => panic!("prefix in path not supported"),
+        }
+    }).collect::<VecDeque<String>>();
+    // we need to get rid of the front
+    components.pop_front();
+
+    let mut varnames: Vec<&str> = Vec::new();
+
+    if shell == true {println!("");}
+
+    for (idx, n) in nodepath.iter().enumerate() {
+        if n.metadata().has_varname() {
+            let varname = n.metadata().varname_ref().unwrap();
+            print!("export {}={};", varname, components[idx]);
+            varnames.push(varname);
+        }
+    }
+    if varnames.len() > 0 {
+        print!("export {}={};", constants::JSP_TRACKING_VAR, varnames.join(":"));
+    }
+    println!("cd {};", path.as_os_str().to_str().unwrap());
+    if shell == true {println!("");}
 }
 
 #[inline]
@@ -368,7 +406,7 @@ fn get_graph(has_output: bool, graph: Option<PathBuf>) -> JGraph {
 }
 
 #[inline]
-fn find_path_from_terms(terms: Vec<SearchTerm>, graph: &JGraph) -> Result<PathBuf, JSPError> {
+fn find_path_from_terms(terms: Vec<SearchTerm>, graph: &JGraph) -> Result<(PathBuf, NodePath), JSPError> {
     let mut search = Search::new();
     for term in terms {
         search.push_back(term);
