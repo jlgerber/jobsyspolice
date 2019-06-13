@@ -7,7 +7,7 @@ use lazy_static::lazy_static;
 
 /// Given a Search reference and a JGraph reference, Find the PathBuf represented
 /// by the search, or return an error if unsuccessful.
-pub fn find_path(search: &Search, graph: &JGraph) -> Result<PathBuf, JSPError> {
+pub fn find_path<'a>(search: &Search, graph: &'a JGraph) -> Result<(PathBuf, NodePath<'a>), JSPError> {
     
     let keys = search.keys_owned();
     log::info!("Keys: {:?}", &keys);
@@ -72,7 +72,7 @@ pub fn find_path(search: &Search, graph: &JGraph) -> Result<PathBuf, JSPError> {
             _ => panic!("unexpected value")
         }
     }
-    Ok(path)
+    Ok((path, nodepath))
 }
 
 
@@ -356,7 +356,7 @@ mod tests {
         search.push_back(SearchTerm::new("sequence", "RD"));
 
         let result = find_path(&search, &graph).unwrap();
-        assert_eq!(result, PathBuf::from("/dd/shows/DEV01/RD"));
+        assert_eq!(result.0, PathBuf::from("/dd/shows/DEV01/RD"));
 
     }
 
@@ -372,7 +372,7 @@ mod tests {
         let result = find_path(&search, &graph).unwrap();
         // TODO: need a way of tagging Simple directories to group them with
         // regexs so that we avoid ambiguity
-        assert_eq!(result, PathBuf::from("/dd/shows/DEV01/CONFORM/user/work.jgerber"));
+        assert_eq!(result.0, PathBuf::from("/dd/shows/DEV01/CONFORM/user/work.jgerber"));
 
     }
 
@@ -388,7 +388,7 @@ mod tests {
         search.push_back(SearchTerm::new("work", "jgerber"));
 
         let result = find_path(&search, &graph).unwrap();
-        assert_eq!(result, PathBuf::from("/dd/shows/DEV01/RD/0001/user/work.jgerber"));
+        assert_eq!(result.0, PathBuf::from("/dd/shows/DEV01/RD/0001/user/work.jgerber"));
 
     }
 }
