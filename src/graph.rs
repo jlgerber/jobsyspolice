@@ -107,6 +107,11 @@ pub mod testdata {
         let root = graph.add_node(Node::new_root());
         let dd = graph.add_node(jspnode!("dd", "owner"=>"jobsys", "perms"=>"751"));
         let shows = graph.add_node(jspnode!("shows"));
+
+        //-------------------//
+        //        SHOW       //
+        //-------------------//
+
         let show = graph.add_node(
             jspnode!(
                 "show", 
@@ -116,8 +121,13 @@ pub mod testdata {
                 "varname" => "DD_SHOW"
             )
         );
+        
+        //--------------------//
+        //          REF       //
+        //--------------------//
 
-        //ref
+        /* REF directory structure appears at the show level only */
+
         let refdir = graph.add_node(jspnode!("REF").set_volume());
         let quicktimes = graph.add_node(jspnode!("quicktimes", "perms"=>"751"));
         let qtsubdir = graph.add_node(jspnode!("qtsubdir", r"^[0-9_]+$"));
@@ -140,55 +150,103 @@ pub mod testdata {
             jspnode!("chars_sd", r"^[a-z0-9_]+$", r"^(DEVL|SHARED|etc|lib|bin|user)$")
         );
 
-        // SHOW
-        let client_dd_edit = graph.add_node(jspnode!("client_dd_edit", r"^(CLIENT|DD)$").set_volume());
-        let client_dd_edit_sd = graph.add_node(
-            jspnode!("client_dd_edit_sd",r"^(([0-9]{4,5})|([0-9]{1,2}?[a-z]+)|([a-z]{2}[0-9]{4,5}))$")
-        );
+        //-------------------------//
+        //    ANY LEVEL NODES      //
+        //-------------------------//
+
+        /* These nodes may appear at any level in the graph */
+
+        /*   TOOLS  */
+
         let tools = graph.add_node(jspnode!("tools")); // 0751 ddinst
         let logs = graph.add_node(jspnode!("logs")); // 0771
         let package = graph.add_node(jspnode!("package"));
         let extension = graph.add_node(jspnode!("extension"));
-        let color = graph.add_node(jspnode!("color"));
-        let category = graph.add_node(jspnode!("category", r"^(char|prop|veh|scene|enviro|kit)$"));
-        let dept = graph.add_node(jspnode!("department", r"^(integ|model|previz|postviz|enviro|rig|anim|fx|cfx|light|comp|lookdev|shotmodel)$"));
-        let subcontext = graph.add_node(jspnode!("subcontext", r"^[a-z]+([_]{0,1}[a-z0-9])*$"));
         let bin = graph.add_node(jspnode!("bin"));
         let etc = graph.add_node(jspnode!("etc")); //0751 ddinst
         let lib = graph.add_node(jspnode!("lib")); //ddinst
         let lib_sd = graph.add_node(
             jspnode!("lib_sd", r"^(config|cortex|dmx|houdini|integ|jspools|katana|lw|massive|max|maya|mentalray|mkfoldy|moco|mova|nfb|nuke|perl|python[0-9.]*|race|refchef|rman|scratch|setupenv|shader|shoot2x|submission|vray|wam|web)$") // 0771
         );
-        let prod = graph.add_node(jspnode!("prod", "perms"=>"755")); // 755
-        let docs = graph.add_node(jspnode!("docs", "perms"=>"771")); // 0771
-        let user = graph.add_node(jspnode!("user", "perms"=>"751").set_volume()); //751
-        //let work = graph.add_node(jspnode!("work", r"^work\.(?P<user>[a-z]+)$", "owner"=> "$user", "perms"=>"770")); // 0770 default 0555
-        let work = graph.add_node(jspnode!("work", r"^work\.(?P<work>[a-z]+)$", "owner" => "$work", "perms"=>"770")); // 0770 default 0555
+        let prod = graph.add_node(jspnode!("prod", "perms"=>"755")); 
+        let docs = graph.add_node(jspnode!("docs", "perms"=>"771"));
+
+        /*   USER WORK  */
+
+        let user = graph.add_node(jspnode!("user", "perms"=>"751").set_volume()); 
+        let work = graph.add_node(
+            jspnode!(
+                "work", 
+                r"^work\.(?P<work>[a-z]+)$", 
+                "owner" => "$work", 
+                "perms"=>"770",
+                "varname" => "DD_WORK"
+            )
+        );  //default 0555
+
+        /*   SHARED   */
+
+        let shared = graph.add_node(jspnode!("SHARED"));
+        let shared_dirs = graph.add_node(jspnode!("dept", r"^(PREVIZ|INTEG|MODEL|RIG|ANIM|CFX|LIGHT|ENVIRO|FX|COMP|IMG)$"));
+        let category = graph.add_node(jspnode!("category", r"^(char|prop|veh|scene|enviro|kit)$", "varname" => "DD_CATEGORY"));
+        let dept = graph.add_node(jspnode!("department", r"^(integ|model|previz|postviz|enviro|rig|anim|fx|cfx|light|comp|lookdev|shotmodel)$"));
+        let subcontext = graph.add_node(jspnode!("subcontext", r"^[a-z]+([_]{0,1}[a-z0-9])*$", "varname" => "DD_SUBCONTEXT"));
+
+        //------------------------//
+        //    SHOW LEVEL NODES    //
+        //------------------------//
+
+        /*   ASSETDEV */
+
+        let assetdev = graph.add_node(jspnode!("ASSETDEV", "varname" => "DD_SEQUENCE"));
+        let adshot = graph.add_node(jspnode!("assetdev shot", r"^([A-Z][A-Z0-9]+[_]{0,1})+[A-Z0-9]+$", "varname" => "DD_SHOT"));
+
+        /*   CLIENT   */
+
+        let client_dd_edit = graph.add_node(jspnode!("client_dd_edit", r"^(CLIENT|DD)$").set_volume());
+        let client_dd_edit_sd = graph.add_node(
+            jspnode!("client_dd_edit_sd",r"^(([0-9]{4,5})|([0-9]{1,2}?[a-z]+)|([a-z]{2}[0-9]{4,5}))$")
+        );
+        let color = graph.add_node(jspnode!("color"));
+
+        /*  OUTSOURCE  */
+
         let outsource = graph.add_node(jspnode!("OUTSOURCE").set_volume());
-        let outsource_sd = graph.add_node(jspnode!("outsource_sd", r"^[a-zA-Z0-9_.]+$")); //perms default 555
+        let outsource_sd = graph.add_node(jspnode!("outsource_sd", r"^[a-zA-Z0-9_.]+$"));  // default 555
         let outsource_sdd = graph.add_node(
             jspnode!( "outsource_sdd", r"[a-zA-Z0-9_.]+^$", r"^prod$", "perms"=>"770")
-        ); // 0770 (?!(\bprod\b))
-        let finals = graph.add_node(jspnode!("FINALS", "perms"=>"750")); // 750
+        ); // (?!(\bprod\b))
+
+        /*  FINALS */
+
+        let finals = graph.add_node(jspnode!("FINALS", "perms"=>"750")); 
         let finals_sd = graph.add_node(jspnode!("finals_sd", r"[0-9_]+"));
+
+        /*  CONFORM  */
+
         let conform = graph.add_node(jspnode!("CONFORM"));
         let conform_sd =graph.add_node(jspnode!("conform_sd", r"^[a-z0-9_]+$"));
         // conform can also have SHARED as subdir as well as user docs and prod
 
+        /*  ART DEPT AND EDITORIAL */
+
         let artdept = graph.add_node(jspnode!("ARTDEPT"));
-        let artdept_sd = graph.add_node(jspnode!("artdept_sd", r"^[a-zA-Z0-9_.-]+$", "perms"=>"770")); //0770
+        let artdept_sd = graph.add_node(jspnode!("artdept_sd", r"^[a-zA-Z0-9_.-]+$", "perms"=>"770")); 
         let storyboard = graph.add_node(jspnode!("STORYBOARD"));
         let storyboard_sd = graph.add_node(
-            jspnode!("storyboard_sd", r"^[0-9]{2}_[0-9]{4}$")
-        );// 0770
+            jspnode!("storyboard_sd", r"^[0-9]{2}_[0-9]{4}$", "perms" => "770")
+        );
         let editorial = graph.add_node(jspnode!("STORYBOARD"));
         let film_lens = graph.add_node(jspnode!("film_lens", r"^(FILM|LENS)$"));
+
+        /*  DAILIES */
+
         let dailies = graph.add_node(jspnode!("DAILIES"));
 
-        let shared = graph.add_node(jspnode!("SHARED"));
-        let shared_dirs = graph.add_node(jspnode!("dept", r"^(PREVIZ|INTEG|MODEL|RIG|ANIM|CFX|LIGHT|ENVIRO|FX|COMP|IMG)$"));
-        let assetdev = graph.add_node(jspnode!("ASSETDEV"));
-        let adshot = graph.add_node(jspnode!("assetdev shot", r"^([A-Z][A-Z0-9]+[_]{0,1})+[A-Z0-9]+$"));
+        //--------------------//
+        //      SEQUENCE      //
+        //--------------------//
+
         let sequence = graph.add_node(
             jspnode!(
                 "sequence", 
@@ -197,6 +255,11 @@ pub mod testdata {
                 "varname" => "DD_SEQUENCE"
             )
         );
+
+        //---------------------//
+        //         SHOT        //
+        //---------------------//
+
         let shot = graph.add_node(
             jspnode!(
                 "shot", 
@@ -204,6 +267,10 @@ pub mod testdata {
                 "varname" => "DD_SHOT"
             )
         );
+
+        //-------------------//
+        //   GRAPH EDGES     //
+        //-------------------//
 
         graph.extend_with_edges(&[
             (root, dd),
