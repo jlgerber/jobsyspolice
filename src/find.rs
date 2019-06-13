@@ -8,46 +8,49 @@ use lazy_static::lazy_static;
 /// Given a Search reference and a JGraph reference, Find the PathBuf represented
 /// by the search, or return an error if unsuccessful.
 pub fn find_path<'a>(search: &Search, graph: &'a JGraph) -> Result<(PathBuf, NodePath<'a>), JSPError> {
-    
+    log::info!("find_path(search: {:?}, graph)", search);
     let keys = search.keys_owned();
-    log::info!("Keys: {:?}", &keys);
+    log::debug!("find_path(...) Keys: {:?}", &keys);
     let nodepath = find(keys, graph)?;
     let mut values = search.values_owned();
     let mut path = PathBuf::new();
 
     for node in nodepath.iter() {
         log::info!("");
-        log::info!("node in nodepath: {}", node);
+        log::info!("find_path(...) node in nodepath: {}", node);
         match node.identity() {
             NodeType::RegEx{name, pattern, exclude} => {
-                log::info!("NodeType::regex in match node.identity");
+                log::info!("find_path(...) NodeType::regex in match node.identity");
                 if let Some(ref value) = values.pop_front() {
-                    log::info!("NodeType::reged natching {}", value);
+                    log::info!("find_path(...) NodeType::reged natching {}", value);
                     if has_named_captures(pattern.as_str()) {
                         if pattern.capture_names().count() == 2 {
                             let replacement = replace_capture_group(pattern.as_str(), name, value);
                             if replacement.is_some() {
                                 path.push(replacement.unwrap());
                             } else {
-                                log::error!("capture group does not match {}", name);
+                                log::error!("find_path(...) capture group does not match {}", name);
                                 return Err(JSPError::FindFailure(format!("replace_capture_group failed for {}", pattern.as_str())));
                             }
                         } else {
                             let cnt = pattern.capture_names().count(); 
                             if cnt < 2 {
-                                log::error!("no capture groups");
+                                log::error!("find_path(...) no capture groups");
                                 return Err(JSPError::FindFailure(format!("not capture groups for {}", pattern.as_str()) ));
                             } else {
-                                log::error!("too many capture groups. we should have only 1 capture group");
+                                log::error!("find_path(...) too many capture groups. we should have only 1 capture group");
                                 return Err(JSPError::FindFailure(format!("to many capture groups for {}", pattern.as_str())));
                             }
                         } 
                     }else if pattern.is_match(value) {
-                        log::info!("pattern matching {}", value);
+                        log::info!("find_path(...) pattern matching '{}'", value);
                         // check to see if we are supposed to be expluding as well
                         if let Some(exclude_re) = exclude {
+                            log::debug!("find_path(...) matched exclude");
                             if !exclude_re.is_match(value) {
+                                log::debug!("find_path(...) exclude negative");
                                 path.push(value);
+                                log::debug!("find_path(...) pushed path value");
                             } else {
                                 return Err(JSPError::FindFailure(format!("candidate: {} was excluded from regex: '{}'",value, exclude_re.as_str() )));
                             }
@@ -59,19 +62,20 @@ pub fn find_path<'a>(search: &Search, graph: &'a JGraph) -> Result<(PathBuf, Nod
                     // count() == 2 should yield only a single capture group
                     }
                 } else {
-                    panic!("unable to pop value off of values VecDeque");
+                    panic!("find_path(...) unable to pop value off of values VecDeque");
                 }
             },
             NodeType::Simple(name) => {
-                log::info!("Simple match {}", name);
+                log::info!("find_path(...) Simple match {}", name);
                 path.push(name);
             },
             NodeType::Root => {
                 path.push("/");
             },
-            _ => panic!("unexpected value")
+            _ => panic!("find_path(...) unexpected value")
         }
     }
+    log::debug!("find-path(...) returning");
     Ok((path, nodepath))
 }
 
@@ -138,6 +142,7 @@ pub fn find<'a>(criteria: VecDeque<String>, graph: &'a JGraph) -> Result<NodePat
     let  np = vec![idx];
     let vec_nodes = Rc::new(RefCell::new(np));
     let criteria_rc = Rc::new(RefCell::new(criteria));
+
     match find_recurse(criteria_rc.clone(), vec_nodes, graph) {
         FindValue::Success(npath) => {
             let mut npath = Rc::try_unwrap(npath)

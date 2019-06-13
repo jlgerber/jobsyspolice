@@ -135,7 +135,7 @@ fn main() -> Result<(), failure::Error> {
                     if !input.exists() {
                         eprintln!("\n{:?} does not exist\n", input);
                     } else {
-                        process_go_success(input, nodepath, shell);
+                        process_go_success(input, nodepath, shell, 0);
                     }
                 },
                 Err(JSPError::ValidationFailure{entry, node, depth}) => {
@@ -159,7 +159,7 @@ fn main() -> Result<(), failure::Error> {
                 Ok(( path,  nodepath)) => { 
                     let path_str = path.to_str().expect("unable to convert path to str. Does it contain non-ascii chars?");
                     if path.is_dir() {
-                        process_go_success(path, &nodepath, shell);
+                        process_go_success(path, &nodepath, shell, 1);
                         //print_go_success(path_str, shell);
                     } else {
                         print_go_failure(path_str, shell);
@@ -195,8 +195,8 @@ fn main() -> Result<(), failure::Error> {
 
 
 #[inline]
-fn process_go_success(path: PathBuf, nodepath: &NodePath, shell: bool) {
-    
+fn process_go_success(path: PathBuf, nodepath: &NodePath, shell: bool, offset: usize) {
+    log::info!("process_go_success(...)");
     let bash = Bash::new();
     
     let mut components = path.components().map(|x| {
@@ -209,8 +209,9 @@ fn process_go_success(path: PathBuf, nodepath: &NodePath, shell: bool) {
         }
     }).collect::<VecDeque<String>>();
     // we need to get rid of the front
-    components.pop_front();
-
+    let popped = components.pop_front();
+    log::debug!("popped off {:?}", popped);
+    
     let mut varnames: Vec<&str> = Vec::new();
 
     if shell == true {println!("");}
@@ -224,7 +225,7 @@ fn process_go_success(path: PathBuf, nodepath: &NodePath, shell: bool) {
         if n.metadata().has_varname() {
             let varname = n.metadata().varname_ref().unwrap();
             
-            print!("{}", &bash.set_env_var(varname, &components[idx]));
+            print!("{}", &bash.set_env_var(varname, &components[idx - offset]));
             varnames.push(varname);
         }
     }
@@ -421,6 +422,7 @@ fn get_graph(has_output: bool, graph: Option<PathBuf>) -> JGraph {
 
 #[inline]
 fn find_path_from_terms(terms: Vec<SearchTerm>, graph: &JGraph) -> Result<(PathBuf, NodePath), JSPError> {
+    log::info!("find_path_from_terms(...)");
     let mut search = Search::new();
     for term in terms {
         search.push_back(term);
