@@ -75,7 +75,7 @@ mod tests {
 
 
     #[test]
-    fn into_iter_collects_vec_of_str_refs() {
+    fn iter_collects_vec_of_str_refs() {
         // set the environment
         env::set_var(constants::JSP_TRACKING_VAR, "DD_SHOW:DD_SEQUENCE:DD_SHOT");
         let cache = CachedEnvVars::new();
