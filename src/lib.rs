@@ -55,4 +55,4 @@ pub mod cachedenvvars;
 pub use cachedenvvars::CachedEnvVars;
 
 pub mod shell;
-pub use shell::{ClearEnvVar, bash::Bash};
+pub use shell::{/*ClearEnvVar,*/ ShellEnvManager, bash::Bash};

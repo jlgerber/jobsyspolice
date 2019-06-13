@@ -1,6 +1,7 @@
 use crate::{constants};
 use std::env;
-use crate::{ClearEnvVar};
+//use crate::{ClearEnvVar};
+use crate::ShellEnvManager;
 
 /// CachedEnvVars provides a means of looking up and iterating over the previously 
 /// set JSPVars in the environment
@@ -24,10 +25,10 @@ impl CachedEnvVars {
     /// Produce a string that, when eval'ed by a shell (eg bash or tcsh) compatible
     /// with the implementation of `ClearEnvVar by `clearer`, will blank out the
     /// settings the supplied variables.
-    pub fn clear(&self, clearer: impl ClearEnvVar) -> String {
+    pub fn clear<T>(&self, clearer: &T) -> String where T: ShellEnvManager /*ClearEnvVar*/ {
         let mut result = String::new();
         for var in self.iter() {
-            result.push_str( &clearer.clear_env_var(var) );
+            result.push_str( clearer.clear_env_var(var).as_str() );
         }
         result
     }
@@ -103,7 +104,8 @@ mod tests {
         env::set_var(constants::JSP_TRACKING_VAR, "DD_SHOW:DD_SEQUENCE:DD_SHOT");
         
         let cache = CachedEnvVars::new();
-        let clearstr = cache.clear(Bash::new());
+        let bash = Bash::new();
+        let clearstr = cache.clear(&bash);
         let expect = String::from("unset DD_SHOW;unset DD_SEQUENCE;unset DD_SHOT;");
         assert_eq!(clearstr, expect);
     }

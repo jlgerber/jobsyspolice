@@ -1,7 +1,7 @@
 use chrono;
 use dotenv::dotenv;
 use fern::{ colors::{Color, ColoredLevelConfig}, self} ;
-use jsp::{ Bash, CachedEnvVars, constants, diskutils, DiskType, get_disk_service, graph, is_valid, JGraph, JSPError, NodePath, NIndex, SearchTerm, Search, find_path};
+use jsp::{ Bash, CachedEnvVars, constants, diskutils, DiskType, find_path, get_disk_service, graph, is_valid, JGraph, JSPError, NodePath, NIndex, SearchTerm, Search, ShellEnvManager};
 use petgraph;
 use log::{ LevelFilter, self };
 use serde_json;
@@ -193,14 +193,16 @@ fn main() -> Result<(), failure::Error> {
     Ok(())
 }
 
+
 #[inline]
 fn process_go_success(path: PathBuf, nodepath: &NodePath, shell: bool) {
-
+    
+    let bash = Bash::new();
+    
     let mut components = path.components().map(|x| {
         match x {
             Component::RootDir => String::from("/"),
             Component::Normal(level) => level.to_str().unwrap().to_string(),
-            //None => String::from(""),
             Component::CurDir => String::from("."),
             Component::ParentDir => String::from(".."),
             Component::Prefix(_) => panic!("prefix in path not supported"),
@@ -214,23 +216,28 @@ fn process_go_success(path: PathBuf, nodepath: &NodePath, shell: bool) {
     if shell == true {println!("");}
     // generate string to clear previously cached variables
     let cached = CachedEnvVars::new();
-    print!("{}", cached.clear(Bash::new()));
+    print!("{}", cached.clear(&bash));
 
     // generate code to export a variable
     // TODO: make this part of the trait so that we can abstract over shell
     for (idx, n) in nodepath.iter().enumerate() {
         if n.metadata().has_varname() {
             let varname = n.metadata().varname_ref().unwrap();
-            print!("export {}={};", varname, components[idx]);
+            
+            print!("{}", &bash.set_env_var(varname, &components[idx]));
             varnames.push(varname);
         }
     }
-
+    // if we have variable names that we have set, we also need to preserve their names, so that
+    // we can clear them out on subsequent runs. This solves the scenario where you navigate
+    // deep into the tree, and then later navigate to a shallower level; you don't want the 
+    // variables tracking levels deeper than the current depth to be set. 
     if varnames.len() > 0 {
-        print!("export {}={};", constants::JSP_TRACKING_VAR, varnames.join(":"));
+        print!("{}", &bash.set_env_var(constants::JSP_TRACKING_VAR, varnames.join(":").as_str())) ;
     } else {
-        print!("unset {};", constants::JSP_TRACKING_VAR);
+        print!("{}", &bash.unset_env_var(constants::JSP_TRACKING_VAR));
     }
+    // Now the final output of where we are actually gong.
     println!("cd {};", path.as_os_str().to_str().unwrap());
     if shell == true {println!("");}
 }

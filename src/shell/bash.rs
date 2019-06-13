@@ -1,4 +1,5 @@
-use crate::ClearEnvVar;
+//use crate::ClearEnvVar;
+use crate::ShellEnvManager;
 
 pub struct Bash {}
 
@@ -9,9 +10,26 @@ impl Bash {
     }
 }
 
-impl ClearEnvVar for Bash {
+// impl ClearEnvVar for Bash {
+//     fn clear_env_var(&self, varname: &str) -> String {
+//         let  ret = format!("unset {};", varname); // could also be export {}='';
+//         ret
+//     }
+// }
+
+impl ShellEnvManager for Bash {
+
+    fn set_env_var(&self, varname: &str, value: &str) -> String {
+        format!("export {}={};", varname, value)
+    }
+
+    fn unset_env_var(&self, varname: &str) -> String {
+        format!("unset {};", varname)
+    }
+
     fn clear_env_var(&self, varname: &str) -> String {
         let  ret = format!("unset {};", varname); // could also be export {}='';
         ret
     }
+
 }
