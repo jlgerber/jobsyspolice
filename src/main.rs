@@ -242,15 +242,15 @@ fn process_go_success(path: PathBuf, nodepath: &NodePath, shell: bool) {
     if shell == true {println!("");}
 }
 
-#[inline]
-fn print_go_success(path_str: &str, shell: bool) {
-    if shell == true {
-        println!("cd {};", path_str);
-    } else {
-        println!("\n{}\n", path_str)
+// #[inline]
+// fn print_go_success(path_str: &str, shell: bool) {
+//     if shell == true {
+//         println!("cd {};", path_str);
+//     } else {
+//         println!("\n{}\n", path_str)
 
-    }
-}
+//     }
+// }
 
 #[inline]
 fn print_go_failure(path_str: &str, shell: bool) {

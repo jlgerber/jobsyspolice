@@ -1,5 +1,6 @@
 use crate::{ EntryType, NodeType, User, Metadata};
 use serde::{ Deserialize, Serialize, self };
+#[allow(unused_imports)]
 use log;
 use std::fmt::{ Display, Formatter, self };
 
@@ -156,13 +157,6 @@ impl Node {
         self
     }
 
-    /*
-    /// Set the perms to be an Option<u32>
-    pub fn set_perms<I>(mut self, perms: I) -> Node where I:Into<String>  {
-        self.metadata.set_perms(Some(perms.into()));
-        self
-    }
-    */
 }
 
 impl PartialEq<std::ffi::OsStr> for Node {

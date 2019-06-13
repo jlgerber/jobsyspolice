@@ -1,6 +1,5 @@
 use crate::{constants};
 use std::env;
-//use crate::{ClearEnvVar};
 use crate::ShellEnvManager;
 
 /// CachedEnvVars provides a means of looking up and iterating over the previously 
@@ -25,7 +24,7 @@ impl CachedEnvVars {
     /// Produce a string that, when eval'ed by a shell (eg bash or tcsh) compatible
     /// with the implementation of `ClearEnvVar by `clearer`, will blank out the
     /// settings the supplied variables.
-    pub fn clear<T>(&self, clearer: &T) -> String where T: ShellEnvManager /*ClearEnvVar*/ {
+    pub fn clear<T>(&self, clearer: &T) -> String where T: ShellEnvManager {
         let mut result = String::new();
         for var in self.iter() {
             result.push_str( clearer.clear_env_var(var).as_str() );
