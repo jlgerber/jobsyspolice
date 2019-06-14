@@ -3,6 +3,7 @@ use failure::Fail;
 use nix;
 use std::{ffi::OsString, io, num, path::PathBuf };
 use regex;
+use levelspec;
 
 #[derive(Debug, Fail)]
 pub enum JSPError {
@@ -59,6 +60,9 @@ pub enum JSPError {
 
     #[fail(display = "{}", _0)]
     RegexError(#[cause] regex::Error),
+
+    #[fail(display = "{}", _0)]
+    LevelSpecError(#[cause] levelspec::LSpecError),
 }
 
 
@@ -77,6 +81,12 @@ impl From<num::ParseIntError> for JSPError {
 impl From<nix::Error> for JSPError {
     fn from(error: nix::Error) -> Self {
         JSPError::NixError(error)
+    }
+}
+
+impl From<levelspec::LSpecError> for JSPError {
+    fn from(error: levelspec::LSpecError) -> Self {
+        JSPError::LevelSpecError(error)
     }
 }
 

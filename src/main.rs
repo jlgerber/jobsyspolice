@@ -10,6 +10,7 @@ use structopt::StructOpt;
 use std::ffi::OsString;
 use std::str::FromStr;
 use std::collections::VecDeque;
+use levelspec::{LevelSpec, LSpecError};
 
 #[derive(Debug, StructOpt)]
 #[structopt( name = "jsp", about = "
@@ -147,9 +148,23 @@ fn main() -> Result<(), failure::Error> {
             }
         // Parse SearchTerms 
         } else {
+
+            let lspec_term;
+            if terms.len() == 0 {
+                lspec_term = Vec::new();
+            } else if terms.len() == 1 {
+                lspec_term = vec![terms.pop().unwrap()];
+            } else {
+                lspec_term = terms.split_off(1);
+            }
+            // convert spec term to searchterms
+            let mut ls = LevelSpec::new(&lspec_term[0])?;
+            ls.upper();
+            let mut levelspec_terms = ls.to_vec_str().into_iter().enumerate().map(|(idx,x)| format!("{}:{}", constants::LEVELS[idx], x)).collect::<Vec<String>>();
+            levelspec_terms.append(&mut terms);
             // fold over the input vector of Strings, discarding any Strings which cannot
             // be converted to SearchTerms
-            let terms: Vec<SearchTerm> = terms.into_iter().fold(Vec::new(), |mut acc, x| {
+            let terms: Vec<SearchTerm> = levelspec_terms.into_iter().fold(Vec::new(), |mut acc, x| {
                 match SearchTerm::from_str(&x) {
                     Ok(term) => acc.push(term),
                     Err(e) => log::error!("{}", e.to_string()),
