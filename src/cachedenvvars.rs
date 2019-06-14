@@ -1,7 +1,7 @@
 use crate::{constants};
 use std::env;
 use crate::ShellEnvManager;
-
+use log;
 /// CachedEnvVars provides a means of looking up and iterating over the previously 
 /// set JSPVars in the environment
 #[derive(Debug)]
@@ -12,7 +12,7 @@ impl CachedEnvVars {
     /// new up a CachedEnvVars
     pub fn new() -> Self {
         let var = env::var(constants::JSP_TRACKING_VAR).unwrap_or(String::from(""));
-        let varnames = var.split(":").map(|x| x.to_owned()).collect::<Vec<String>>();
+        let varnames = var.split(":").filter(|x| x.trim() != "").map(|x| x.to_owned()).collect::<Vec<String>>();
         Self(varnames)
     }
     
@@ -24,7 +24,7 @@ impl CachedEnvVars {
     /// Produce a string that, when eval'ed by a shell (eg bash or tcsh) compatible
     /// with the implementation of `ClearEnvVar by `clearer`, will blank out the
     /// settings the supplied variables.
-    pub fn clear<T>(&self, clearer: &T) -> String where T: ShellEnvManager {
+    pub fn clear(&self, clearer: &Box<dyn ShellEnvManager>) -> String  {
         let mut result = String::new();
         for var in self.iter() {
             result.push_str( clearer.clear_env_var(var).as_str() );
@@ -76,7 +76,7 @@ impl<'a> Iterator for IterCachedEnvVars<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::shell::bash::Bash;
+    use crate::shell::bash;
 
     #[test]
     fn into_iter_collects_vec_of_strings() {
@@ -103,7 +103,7 @@ mod tests {
         env::set_var(constants::JSP_TRACKING_VAR, "DD_SHOW:DD_SEQUENCE:DD_SHOT");
         
         let cache = CachedEnvVars::new();
-        let bash = Bash::new();
+        let bash: Box<dyn ShellEnvManager> = Box::new(bash::Shell::new());
         let clearstr = cache.clear(&bash);
         let expect = String::from("unset DD_SHOW;unset DD_SEQUENCE;unset DD_SHOT;");
         assert_eq!(clearstr, expect);

@@ -1,7 +1,7 @@
 use chrono;
 use dotenv::dotenv;
 use fern::{ colors::{Color, ColoredLevelConfig}, self} ;
-use jsp::{ Bash, CachedEnvVars, constants, diskutils, DiskType, find_path, get_disk_service, graph, is_valid, JGraph, JSPError, NodePath, NIndex, SearchTerm, Search, ShellEnvManager};
+use jsp::{ bash, tcsh, SupportedShell, CachedEnvVars, constants, diskutils, DiskType, find_path, get_disk_service, graph, is_valid, JGraph, JSPError, NodePath, NIndex, SearchTerm, Search, ShellEnvManager};
 use petgraph;
 use log::{ LevelFilter, self };
 use serde_json;
@@ -58,9 +58,9 @@ enum Subcommand {
         #[structopt(name="TERMS")]
         terms: Vec<String>,
 
-        /// output meant to be interpreted by the shell
+        /// choose a shell (bash)
         #[structopt(short = "s", long = "shell")]
-        shell: bool,
+        myshell: Option<String>,
 
         /// accept a fullpath instead of key:value pairs
         #[structopt(short = "f", long = "fullpath")]
@@ -124,18 +124,20 @@ fn main() -> Result<(), failure::Error> {
     //   
     // Handle Navigation via the Go subcommand
     //
-    }  else if let Some(Subcommand::Go{mut terms, shell, full_path}) = args.subcmd {
+    }  else if let Some(Subcommand::Go{mut terms, myshell, full_path}) = args.subcmd {
+        let myshell = myshell.unwrap_or("bash".to_string());
+        let myshelldyn = SupportedShell::from_str(myshell.as_str())?.get();
         if full_path == true {
             // Parse the full path, as opposed to SearchTerms
             let mut input = PathBuf::from(terms.pop().expect("uanble to unwrap"));
             input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
-
+            
             match is_valid(&input, &graph) {
                 Ok(ref nodepath) => {
                     if !input.exists() {
                         eprintln!("\n{:?} does not exist\n", input);
                     } else {
-                        process_go_success(input, nodepath, shell, true);
+                        process_go_success(input, nodepath, myshelldyn, true);
                     }
                 },
                 Err(JSPError::ValidationFailure{entry, node, depth}) => {
@@ -159,13 +161,13 @@ fn main() -> Result<(), failure::Error> {
                 Ok(( path,  nodepath)) => { 
                     let path_str = path.to_str().expect("unable to convert path to str. Does it contain non-ascii chars?");
                     if path.is_dir() {
-                        process_go_success(path, &nodepath, shell, false);
+                        process_go_success(path, &nodepath, myshelldyn, false);
                         //print_go_success(path_str, shell);
                     } else {
-                        print_go_failure(path_str, shell);
+                        print_go_failure(path_str, true);
                     }
                 },
-                Err(e) => eprintln!("\n{}\n", e.to_string()),
+                Err(e) => {eprintln!("\n{}\n", e.to_string())},
             };
         }
 
@@ -195,9 +197,8 @@ fn main() -> Result<(), failure::Error> {
 
 
 #[inline]
-fn process_go_success(path: PathBuf, nodepath: &NodePath, shell: bool, pop_root: bool) {
+fn process_go_success(path: PathBuf, nodepath: &NodePath, myshell: Box<dyn ShellEnvManager>, pop_root: bool) {
     log::info!("process_go_success(...)");
-    let bash = Bash::new();
     
     let mut components = path.components().map(|x| {
         match x {
@@ -216,10 +217,10 @@ fn process_go_success(path: PathBuf, nodepath: &NodePath, shell: bool, pop_root:
     
     let mut varnames: Vec<&str> = Vec::new();
 
-    if shell == false {println!("");}
+    //if myshell.is_some() == false {println!("");}
     // generate string to clear previously cached variables
     let cached = CachedEnvVars::new();
-    print!("{}", cached.clear(&bash));
+    print!("{}", cached.clear(&myshell));
 
     // generate code to export a variable
     // TODO: make this part of the trait so that we can abstract over shell
@@ -227,7 +228,7 @@ fn process_go_success(path: PathBuf, nodepath: &NodePath, shell: bool, pop_root:
         if n.metadata().has_varname() {
             let varname = n.metadata().varname_ref().unwrap();
             
-            print!("{}", &bash.set_env_var(varname, &components[idx]));
+            print!("{}", &myshell.set_env_var(varname, &components[idx]));
             varnames.push(varname);
         }
     }
@@ -236,13 +237,13 @@ fn process_go_success(path: PathBuf, nodepath: &NodePath, shell: bool, pop_root:
     // deep into the tree, and then later navigate to a shallower level; you don't want the 
     // variables tracking levels deeper than the current depth to be set. 
     if varnames.len() > 0 {
-        print!("{}", &bash.set_env_var(constants::JSP_TRACKING_VAR, varnames.join(":").as_str())) ;
+        print!("{}", &myshell.set_env_var(constants::JSP_TRACKING_VAR, varnames.join(":").as_str())) ;
     } else {
-        print!("{}", &bash.unset_env_var(constants::JSP_TRACKING_VAR));
+        print!("{}", &myshell.unset_env_var(constants::JSP_TRACKING_VAR));
     }
     // Now the final output of where we are actually gong.
     println!("cd {};", path.as_os_str().to_str().unwrap());
-    if shell == false {println!("");}
+    //if myshell.is_some() == false {println!("");}
 }
 
 // #[inline]
@@ -256,13 +257,14 @@ fn process_go_success(path: PathBuf, nodepath: &NodePath, shell: bool, pop_root:
 // }
 
 #[inline]
-fn print_go_failure(path_str: &str, shell: bool) {
-    if shell == true {
+fn print_go_failure(path_str: &str, myshell: bool) {
+    if myshell == false {
         println!("echo \nError: Path does not exist: {}\n", path_str);
     } else {
         eprintln!("\nError: Path does not exist: '{}'\n", path_str);
     }
 }
+
 #[inline]
 fn setup_logger(level: log::LevelFilter) -> Result<(), fern::InitError> {
     let  colors = ColoredLevelConfig::new()

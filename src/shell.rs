@@ -1,6 +1,37 @@
 
+use std::str::FromStr;
+use crate::JSPError;
 
 pub mod bash;
+pub mod tcsh;
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum SupportedShell {
+    Bash,
+    Tcsh
+}
+
+impl SupportedShell {
+
+    pub fn get(&self) -> Box<dyn ShellEnvManager> {
+        match self {
+            SupportedShell::Bash => Box::new(bash::Shell::new()),
+            SupportedShell::Tcsh => Box::new(tcsh::Shell::new()),
+        }
+    }
+}
+
+impl FromStr for SupportedShell {
+    type Err = JSPError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "bash" => Ok(SupportedShell::Bash),
+            "tcsh" => Ok(SupportedShell::Tcsh),
+            _ => Err(JSPError::UnknownShell(s.to_string())),
+        }
+    }
+}
 
 /// Basic methods for setting environment variables for a target Shell. These
 /// are used by the `jsp go` to print commands to stdout, which will later be 

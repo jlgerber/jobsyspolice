@@ -4,7 +4,7 @@ use crate::ShellEnvManager;
 pub struct Shell {}
 
 impl Shell {
-    /// New up an instance of Shell
+    /// New up an instance of Tcsh
     pub fn new() -> Self {
         Self {}
     }
@@ -13,15 +13,15 @@ impl Shell {
 impl ShellEnvManager for Shell {
 
     fn set_env_var(&self, varname: &str, value: &str) -> String {
-        format!("export {}={};", varname, value)
+        format!("setenv {} {};", varname, value)
     }
 
     fn unset_env_var(&self, varname: &str) -> String {
-        format!("unset {};", varname)
+        format!("setenv {} \"\";", varname)
     }
 
     fn clear_env_var(&self, varname: &str) -> String {
-        let  ret = format!("unset {};", varname); // could also be export {}='';
+        let  ret = format!("unsetenv {};", varname); // could also be export {}='';
         ret
     }
 
