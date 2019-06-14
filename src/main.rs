@@ -216,7 +216,7 @@ fn process_go_success(path: PathBuf, nodepath: &NodePath, shell: bool, pop_root:
     
     let mut varnames: Vec<&str> = Vec::new();
 
-    if shell == true {println!("");}
+    if shell == false {println!("");}
     // generate string to clear previously cached variables
     let cached = CachedEnvVars::new();
     print!("{}", cached.clear(&bash));
@@ -242,7 +242,7 @@ fn process_go_success(path: PathBuf, nodepath: &NodePath, shell: bool, pop_root:
     }
     // Now the final output of where we are actually gong.
     println!("cd {};", path.as_os_str().to_str().unwrap());
-    if shell == true {println!("");}
+    if shell == false {println!("");}
 }
 
 // #[inline]
