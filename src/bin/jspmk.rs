@@ -29,6 +29,9 @@ struct Opt {
     /// Jobsystem path to validate (eg /dd/shows/FOOBAR)
     #[structopt(name="INPUT")]
     input: Option<String>,
+
+    #[structopt(short="v", long="verbose")]
+    verbose: bool,
 }
 
 
@@ -45,9 +48,9 @@ fn main() -> Result<(), JSPError> {
         let input = PathBuf::from(input);
         let input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
         match diskservice.mk(input.as_path()) {
-            Ok(_) => println!("\nSuccess\n"),
+            Ok(_) => (),//println!("\nSuccess\n"),
             Err(JSPError::ValidationFailure{entry, node, depth}) => {
-                report_failure(input.as_path(), &entry, node, depth, &graph );
+                report_failure(input.as_path(), &entry, node, depth, &graph, args.verbose);
             },
             Err(e) => println!("\nFailure\n\n{}", e.to_string()),
         }
@@ -167,18 +170,18 @@ fn get_graph(has_output: bool, graph: Option<PathBuf>) -> JGraph {
 
 
 #[inline]
-fn report_failure(input: &Path, entry: &OsString, node: NIndex, depth: u8, graph: &JGraph ) {
+fn report_failure(input: &Path, entry: &OsString, node: NIndex, depth: u8, graph: &JGraph, verbose: bool) {
     let path = input
                 .iter()
                 .take((depth+1) as usize)
                 .fold(PathBuf::new(), |mut p, v| {p.push(v); p});
 
     let neighbors = graph.neighbors(node);
-    eprintln!("\nFailure\n");
+    if verbose { eprintln!("\nFailure\n"); }
     eprintln!("Failed to match {:?} in {:?} against:", entry, path);
     for n in neighbors {
         eprintln!("{}", graph[n].display_name());
     }
-    eprintln!("");
+    if verbose { eprintln!(""); }
     std::process::exit(1);
 }
