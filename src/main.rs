@@ -10,7 +10,7 @@ use structopt::StructOpt;
 use std::ffi::OsString;
 use std::str::FromStr;
 use std::collections::VecDeque;
-use levelspec::{LevelSpec, LSpecError};
+use levelspec::{LevelSpec};
 
 #[derive(Debug, StructOpt)]
 #[structopt( name = "jsp", about = "
@@ -223,7 +223,7 @@ fn process_go_success(path: PathBuf, nodepath: &NodePath, myshell: Box<dyn Shell
     
     log::info!("process_go_success(...)");
     
-    let mut components = path.components().map(|x| {
+    let components = path.components().map(|x| {
         match x {
             Component::RootDir => String::from("/"),
             Component::Normal(level) => level.to_str().unwrap().to_string(),
