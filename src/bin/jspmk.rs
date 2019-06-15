@@ -32,7 +32,7 @@ struct Opt {
 }
 
 
-fn main() {
+fn main() -> Result<(), JSPError> {
     dotenv().ok();
     let (args, level) = setup_cli();
     setup_logger(level).unwrap();
@@ -42,17 +42,20 @@ fn main() {
     if let Some(input) = args.input {
 
         let diskservice = get_disk_service(DiskType::Local, &graph);
-
-        match diskservice.mk(Path::new(input.as_str())) {
+        let input = PathBuf::from(input);
+        let input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
+        match diskservice.mk(input.as_path()) {
             Ok(_) => println!("\nSuccess\n"),
             Err(JSPError::ValidationFailure{entry, node, depth}) => {
-                report_failure(input.as_str(), &entry, node, depth, &graph );
+                report_failure(input.as_path(), &entry, node, depth, &graph );
             },
             Err(e) => println!("\nFailure\n\n{}", e.to_string()),
         }
     } else {
         Opt::clap().print_help().unwrap();
     }
+
+    Ok(())
 }
 
 #[inline]
@@ -164,8 +167,8 @@ fn get_graph(has_output: bool, graph: Option<PathBuf>) -> JGraph {
 
 
 #[inline]
-fn report_failure(input: &str, entry: &OsString, node: NIndex, depth: u8, graph: &JGraph ) {
-    let path = Path::new(input)
+fn report_failure(input: &Path, entry: &OsString, node: NIndex, depth: u8, graph: &JGraph ) {
+    let path = input
                 .iter()
                 .take((depth+1) as usize)
                 .fold(PathBuf::new(), |mut p, v| {p.push(v); p});

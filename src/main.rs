@@ -138,7 +138,7 @@ fn main() -> Result<(), failure::Error> {
                     if !input.exists() {
                         eprintln!("\n{:?} does not exist\n", input);
                     } else {
-                        process_go_success(input, nodepath, myshelldyn, false);
+                        process_go_success(input, nodepath, myshelldyn);
                     }
                 },
                 Err(JSPError::ValidationFailure{entry, node, depth}) => {
@@ -183,7 +183,7 @@ fn main() -> Result<(), failure::Error> {
                 Ok(( path,  nodepath)) => { 
                     let path_str = path.to_str().expect("unable to convert path to str. Does it contain non-ascii chars?");
                     if path.is_dir() {
-                        process_go_success(path, &nodepath, myshelldyn, false);
+                        process_go_success(path, &nodepath, myshelldyn);
                         //print_go_success(path_str, shell);
                     } else {
                         print_go_failure(path_str, true);
@@ -219,8 +219,10 @@ fn main() -> Result<(), failure::Error> {
 
 
 #[inline]
-fn process_go_success(path: PathBuf, nodepath: &NodePath, myshell: Box<dyn ShellEnvManager>, pop_root: bool) {
+fn process_go_success(path: PathBuf, nodepath: &NodePath, myshell: Box<dyn ShellEnvManager>) {
+    
     log::info!("process_go_success(...)");
+    
     let mut components = path.components().map(|x| {
         match x {
             Component::RootDir => String::from("/"),
@@ -230,15 +232,9 @@ fn process_go_success(path: PathBuf, nodepath: &NodePath, myshell: Box<dyn Shell
             Component::Prefix(_) => panic!("prefix in path not supported"),
         }
     }).collect::<VecDeque<String>>();
-    // we need to get rid of the front
-    if pop_root{
-        let popped = components.pop_front();
-        log::debug!("popped off {:?}", popped);
-    }
-    
+       
     let mut varnames: Vec<&str> = Vec::new();
 
-    //if myshell.is_some() == false {println!("");}
     // generate string to clear previously cached variables
     let cached = CachedEnvVars::new();
     print!("{}", cached.clear(&myshell));
@@ -262,18 +258,7 @@ fn process_go_success(path: PathBuf, nodepath: &NodePath, myshell: Box<dyn Shell
     }
     // Now the final output of where we are actually gong.
     println!("cd {};", path.as_os_str().to_str().unwrap());
-    //if myshell.is_some() == false {println!("");}
 }
-
-// #[inline]
-// fn print_go_success(path_str: &str, shell: bool) {
-//     if shell == true {
-//         println!("cd {};", path_str);
-//     } else {
-//         println!("\n{}\n", path_str)
-
-//     }
-// }
 
 #[inline]
 fn print_go_failure(path_str: &str, myshell: bool) {
