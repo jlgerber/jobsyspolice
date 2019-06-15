@@ -11,6 +11,7 @@ impl CachedEnvVars {
 
     /// new up a CachedEnvVars
     pub fn new() -> Self {
+        log::info!("CachedEnvVars new()");
         let var = env::var(constants::JSP_TRACKING_VAR).unwrap_or(String::from(""));
         let varnames = var.split(":").filter(|x| x.trim() != "").map(|x| x.to_owned()).collect::<Vec<String>>();
         Self(varnames)

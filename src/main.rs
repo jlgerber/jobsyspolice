@@ -1,7 +1,7 @@
 use chrono;
 use dotenv::dotenv;
 use fern::{ colors::{Color, ColoredLevelConfig}, self} ;
-use jsp::{ bash, tcsh, SupportedShell, CachedEnvVars, constants, diskutils, DiskType, find_path, get_disk_service, graph, is_valid, JGraph, JSPError, NodePath, NIndex, SearchTerm, Search, ShellEnvManager};
+use jsp::{ SupportedShell, CachedEnvVars, constants, diskutils, DiskType, find_path, get_disk_service, graph, is_valid, JGraph, JSPError, NodePath, NIndex, SearchTerm, Search, ShellEnvManager};
 use petgraph;
 use log::{ LevelFilter, self };
 use serde_json;
