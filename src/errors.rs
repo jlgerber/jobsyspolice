@@ -15,7 +15,7 @@ pub enum JSPError {
     #[fail(display = "Unable to Chown '{}'", _0)]
     ChownFailure (String),
 
-    #[fail(display = "Unable to find '{}'", _0)]
+    #[fail(display = "FindFailure. Encountered issue: '{}'", _0)]
     FindFailure (String),
 
     #[fail(display = "Unknown Shell: '{}'", _0)]

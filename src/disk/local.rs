@@ -97,7 +97,7 @@ impl<'a> Disk for DiskService<'a> {
                     }
                 }
 
-                &EntryType::Root => panic!("entry type root not supported"),
+                &EntryType::Root => (),//panic!("entry type root not supported"),
             }
         }
         Ok(())

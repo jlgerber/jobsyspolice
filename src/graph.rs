@@ -23,9 +23,14 @@ pub fn is_valid<'a, I: AsRef<Path>>(path: I, graph: &'a JGraph) -> Result<NodePa
     let mut it = path.as_ref().iter();
     // we have to drop the first item, which is the first "/"
     it.next();
+
     let level: u8 = 0;
-    let indices = Vec::new();
-    let result = _is_valid(it, &graph, graph.node_references().next().unwrap().0, level, Rc::new(RefCell::new(indices)));
+    let root_index = graph.node_references().next().unwrap().0;
+    // we store the first index as we will be asking for its children, and
+    // we both need it to be present and know that it will match all future
+    // queries.
+    let indices = vec![root_index]; 
+    let result = _is_valid(it, &graph, root_index, level, Rc::new(RefCell::new(indices)));
     match result {
         ReturnValue::Success(vals) => {
             let mut vals = Rc::try_unwrap(vals)
@@ -49,7 +54,7 @@ fn _is_valid(
     level: u8,
     indices: Rc<RefCell<Vec<NIndex>>>
 ) -> ReturnValue {
-
+    //log::warn!("parent {:?}",parent);
     let mut result: Option<ReturnValue> = None;
     let level = level+1;
     let component = path.next();
@@ -58,7 +63,7 @@ fn _is_valid(
             let mut cnt = 0;
             for n in graph.neighbors(parent) {
                 let node = &graph[n];
-                trace!("testing {:?} against {:?}", val, node);
+                log::trace!("testing {:?} against {:?}", val, node);
                 if node == val {
                     trace!("MATCH");
                     let r = _is_valid(path.clone(), graph, n, level, indices.clone());

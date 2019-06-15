@@ -22,29 +22,33 @@ pub fn find_path<'a>(search: &Search, graph: &'a JGraph) -> Result<(PathBuf, Nod
             NodeType::RegEx{name, pattern, exclude} => {
                 log::info!("find_path(...) NodeType::regex in match node.identity");
                 if let Some(ref value) = values.pop_front() {
-                    log::info!("find_path(...) NodeType::reged natching {}", value);
+                    log::info!("find_path(...) NodeType::regex matching {}", value);
+                    
                     if has_named_captures(pattern.as_str()) {
+                        // the first item is the full match of the regex, 
+                        // and the second is the first capture group
                         if pattern.capture_names().count() == 2 {
                             let replacement = replace_capture_group(pattern.as_str(), name, value);
                             if replacement.is_some() {
                                 path.push(replacement.unwrap());
                             } else {
-                                log::error!("find_path(...) capture group does not match {}", name);
+                                //log::error!("find_path(...) capture group does not match {}", name);
                                 return Err(JSPError::FindFailure(format!("replace_capture_group failed for {}", pattern.as_str())));
                             }
                         } else {
                             let cnt = pattern.capture_names().count(); 
                             if cnt < 2 {
-                                log::error!("find_path(...) no capture groups");
+                                //log::error!("find_path(...) no capture groups");
                                 return Err(JSPError::FindFailure(format!("not capture groups for {}", pattern.as_str()) ));
                             } else {
-                                log::error!("find_path(...) too many capture groups. we should have only 1 capture group");
+                                //log::error!("find_path(...) too many capture groups. we should have only 1 capture group");
                                 return Err(JSPError::FindFailure(format!("to many capture groups for {}", pattern.as_str())));
                             }
-                        } 
-                    }else if pattern.is_match(value) {
+                        }
+
+                    } else if pattern.is_match(value) {
                         log::info!("find_path(...) pattern matching '{}'", value);
-                        // check to see if we are supposed to be expluding as well
+                        // check to see if we are supposed to be excluding as well
                         if let Some(exclude_re) = exclude {
                             log::debug!("find_path(...) matched exclude");
                             if !exclude_re.is_match(value) {
@@ -60,6 +64,9 @@ pub fn find_path<'a>(search: &Search, graph: &'a JGraph) -> Result<(PathBuf, Nod
                     // reminder. capture_names()[0] is full regex. 1st actual capture
                     // starts on index 1. Hence why we are checking for a count of 2. 
                     // count() == 2 should yield only a single capture group
+                    } else {
+                        //log::error!("find_path(...) unable to match regex ");
+                        return Err(JSPError::FindFailure(format!("Unable to match regular expression: {}", pattern.as_str())));   
                     }
                 } else {
                     panic!("find_path(...) unable to pop value off of values VecDeque");
@@ -75,10 +82,10 @@ pub fn find_path<'a>(search: &Search, graph: &'a JGraph) -> Result<(PathBuf, Nod
             _ => panic!("find_path(...) unexpected value")
         }
     }
-    log::debug!("find-path(...) returning");
+    
+    log::info!("find-path(...) returning {:?} {:?}", path, &nodepath.nodes);
     Ok((path, nodepath))
 }
-
 
 fn has_named_captures(input: &str) -> bool {
     lazy_static! {

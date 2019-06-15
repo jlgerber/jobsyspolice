@@ -137,7 +137,7 @@ fn main() -> Result<(), failure::Error> {
                     if !input.exists() {
                         eprintln!("\n{:?} does not exist\n", input);
                     } else {
-                        process_go_success(input, nodepath, myshelldyn, true);
+                        process_go_success(input, nodepath, myshelldyn, false);
                     }
                 },
                 Err(JSPError::ValidationFailure{entry, node, depth}) => {
@@ -199,7 +199,6 @@ fn main() -> Result<(), failure::Error> {
 #[inline]
 fn process_go_success(path: PathBuf, nodepath: &NodePath, myshell: Box<dyn ShellEnvManager>, pop_root: bool) {
     log::info!("process_go_success(...)");
-    
     let mut components = path.components().map(|x| {
         match x {
             Component::RootDir => String::from("/"),
@@ -221,13 +220,11 @@ fn process_go_success(path: PathBuf, nodepath: &NodePath, myshell: Box<dyn Shell
     // generate string to clear previously cached variables
     let cached = CachedEnvVars::new();
     print!("{}", cached.clear(&myshell));
-
     // generate code to export a variable
     // TODO: make this part of the trait so that we can abstract over shell
     for (idx, n) in nodepath.iter().enumerate() {
         if n.metadata().has_varname() {
             let varname = n.metadata().varname_ref().unwrap();
-            
             print!("{}", &myshell.set_env_var(varname, &components[idx]));
             varnames.push(varname);
         }
