@@ -148,14 +148,15 @@ fn main() -> Result<(), failure::Error> {
             }
         // Parse SearchTerms 
         } else {
-
             let lspec_term;
             if terms.len() == 0 {
                 lspec_term = Vec::new();
             } else if terms.len() == 1 {
                 lspec_term = vec![terms.pop().unwrap()];
             } else {
-                lspec_term = terms.split_off(1);
+                let tmp = terms.split_off(1);
+                lspec_term = terms;
+                terms = tmp;
             }
             // convert spec term to searchterms
             let mut ls = LevelSpec::new(&lspec_term[0])?;
@@ -177,7 +178,6 @@ fn main() -> Result<(), failure::Error> {
                     let path_str = path.to_str().expect("unable to convert path to str. Does it contain non-ascii chars?");
                     if path.is_dir() {
                         process_go_success(path, &nodepath, myshelldyn, false);
-                        //print_go_success(path_str, shell);
                     } else {
                         print_go_failure(path_str, true);
                     }
