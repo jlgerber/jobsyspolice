@@ -1,13 +1,59 @@
-use crate::{ JGraph, JSPError, NodePath, NodeType, NIndex, Search};
+use crate::{ JGraph, JSPError, NodePath, NodeType, NIndex, Search, SearchTerm};
 use std::{ cell::RefCell, rc::Rc, collections::VecDeque, path::PathBuf };
 use log;
 use petgraph::{visit::IntoNodeReferences};
 use regex::Regex;
 use lazy_static::lazy_static;
 
+
+/// Given a vector of `SearchTerm`s, find an appropriate PathBuf and Nodepath, 
+/// or return a relevant JSPError.
+///  
+/// Each SearchTerm is used to search for its key in a corresponding named node
+///  (eg NodeType::Regex's name field). Non-named nodes are autmatched. In this way
+/// `find_path_for_terms` builds up a NodePath through the graph representing a 
+/// search. It then applies the `SearchTerm`'s values, and builds a concrete
+/// path, based on accumulated non-named Nodes as well as identified named nodes
+/// to arrive at a valid `PathBuf`.
+/// 
+/// # Parameters
+/// 
+/// * `terms` - A vector of `SearchTerm`s representing the a sparse, ordered
+/// search through the graph.
+/// * `graph` - A reference to the previously built JGraph 
+/// 
+/// # Returns 
+/// 
+/// if successful, a tuple of `PathBuf` storing a valid path on disk, and a 
+/// `NodePath` storing the corresponding `Node`s for the path. Otherwise a 
+/// relevant JSPError if not successful. 
+pub fn find_path_from_terms(terms: Vec<SearchTerm>, graph: &JGraph) 
+    -> Result<(PathBuf, NodePath), JSPError> 
+{
+    log::info!("find_path_from_terms(...)");
+    let mut search = Search::new();
+    for term in terms {
+        search.push_back(term);
+    }
+    find_path(&search, graph)
+}
+
 /// Given a Search reference and a JGraph reference, Find the PathBuf represented
 /// by the search, or return an error if unsuccessful.
-pub fn find_path<'a>(search: &Search, graph: &'a JGraph) -> Result<(PathBuf, NodePath<'a>), JSPError> {
+/// 
+/// # Parameters
+/// 
+/// * `search` - A reference to the `Search` struct. 
+/// * `graph` - A reference to a JGraph
+/// 
+/// # Returns
+/// 
+/// if successful, a tuple of `PathBuf` storing a valid path on disk, and a 
+/// `NodePath` storing the corresponding `Node`s for the path. Otherwise a 
+/// relevant JSPError if not successful. 
+pub fn find_path<'a>(search: &Search, graph: &'a JGraph) 
+    -> Result<(PathBuf, NodePath<'a>), JSPError> 
+{
     log::info!("find_path(search: {:?}, graph)", search);
     let keys = search.keys_owned();
     log::debug!("find_path(...) Keys: {:?}", &keys);
@@ -122,6 +168,7 @@ fn replace_capture_group(regstr: &str, key: &str, replacement: &str) -> Option<S
        None
     }
 }
+
 /// Find a NodePath given a vector of criteria Strings and a JGraph reference
 ///
 /// # Parameters

@@ -19,7 +19,7 @@ pub type JGraph = petgraph::Graph<Node, ()>;
 ///
 /// `bool` indicating whether or not `path` is valid based on
 /// the schema described by the input `graph`.
-pub fn is_valid<'a, I: AsRef<Path>>(path: I, graph: &'a JGraph) -> Result<NodePath<'a>, JSPError> {
+pub fn validate_path<'a, I: AsRef<Path>>(path: I, graph: &'a JGraph) -> Result<NodePath<'a>, JSPError> {
     let mut it = path.as_ref().iter();
     // we have to drop the first item, which is the first "/"
     it.next();
@@ -30,7 +30,7 @@ pub fn is_valid<'a, I: AsRef<Path>>(path: I, graph: &'a JGraph) -> Result<NodePa
     // we both need it to be present and know that it will match all future
     // queries.
     let indices = vec![root_index]; 
-    let result = _is_valid(it, &graph, root_index, level, Rc::new(RefCell::new(indices)));
+    let result = validate_path_recurse(it, &graph, root_index, level, Rc::new(RefCell::new(indices)));
     match result {
         ReturnValue::Success(vals) => {
             let mut vals = Rc::try_unwrap(vals)
@@ -47,7 +47,7 @@ pub fn is_valid<'a, I: AsRef<Path>>(path: I, graph: &'a JGraph) -> Result<NodePa
 }
 
 // helper recursive function
-fn _is_valid(
+fn validate_path_recurse(
     mut path: std::path::Iter,
     graph: &JGraph,
     parent: NodeIndex<DefaultIx>,
@@ -66,7 +66,7 @@ fn _is_valid(
                 log::trace!("testing {:?} against {:?}", val, node);
                 if node == val {
                     trace!("MATCH");
-                    let r = _is_valid(path.clone(), graph, n, level, indices.clone());
+                    let r = validate_path_recurse(path.clone(), graph, n, level, indices.clone());
                     if r.is_success() {
                         indices.borrow_mut().push(n);
                         return ReturnValue::Success(indices);
@@ -391,21 +391,21 @@ mod tests {
     fn path_extends_beyond_graph() {
         let tgraph = build_graph();
         let p = "/dd/shows/DEV01/SHARED/MODEL/veh/model";
-        assert!(is_valid(p, &tgraph).is_ok());
+        assert!(validate_path(p, &tgraph).is_ok());
     }
 
     #[test]
-    fn shot_is_valid_graph() {
+    fn shotvalidate_path_recurse_graph() {
         let tgraph = build_graph();
         let p = "/dd/shows/DEV01/RD/9999/SHARED/MODEL";
 
-        assert!(is_valid(p, &tgraph).is_ok());
+        assert!(validate_path(p, &tgraph).is_ok());
     }
 
     #[test]
     fn wrong_path_is_invalid_graph() {
         let tgraph = build_graph();
         let p = "/dd/shows/DEV01/RD/9999/FOO/SHARED/MODEL";
-        assert!(is_valid(p, &tgraph).is_err());
+        assert!(validate_path(p, &tgraph).is_err());
     }
 }

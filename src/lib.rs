@@ -26,7 +26,7 @@ pub mod nodepath;
 pub use nodepath::NodePath;
 
 pub mod graph;
-pub use graph::{is_valid, JGraph};
+pub use graph::{validate_path, JGraph};
 
 pub mod returnvalue;
 pub use returnvalue::{ ReturnValue, NIndex };
@@ -43,7 +43,7 @@ pub use user::{User, get_default_user};
 pub mod constants;
 
 pub mod find;
-pub use find::{find, find_path};
+pub use find::{find, find_path, find_path_from_terms};
 
 pub mod searchterm;
 pub use searchterm::{Search, SearchTerm};

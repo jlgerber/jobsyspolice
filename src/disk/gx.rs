@@ -1,6 +1,6 @@
 
 
-use crate::{ diskutils, JGraph, is_valid, JSPError, EntryType, User, constants };
+use crate::{ diskutils, JGraph, validate_path, JSPError, EntryType, User, constants };
 use super::{ Disk, Path };
 use std::{ path::PathBuf };
 use log;
@@ -31,7 +31,7 @@ impl<'a> Disk for DiskService<'a> {
     fn mk(&self, path: &Path ) -> Result<(), JSPError> {
         log::info!("gx::Disk.mk(path: {:?})", path);
 
-        let nodepath = is_valid(path, self.graph)?;
+        let nodepath = validate_path(path, self.graph)?;
         // we need to stash information when we reach the last node
         // that is in the template for a given path. So we store the
         // length of the nodepath, which we use to match against the

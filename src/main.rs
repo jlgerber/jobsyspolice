@@ -2,7 +2,7 @@ use chrono;
 use colored::Colorize;
 use dotenv::dotenv;
 use fern::{ colors::{Color, ColoredLevelConfig}, self} ;
-use jsp::{ SupportedShell, CachedEnvVars, constants, diskutils, DiskType, find_path, get_disk_service, graph, is_valid, JGraph, JSPError, NodePath, NIndex, SearchTerm, Search, ShellEnvManager};
+use jsp::{ SupportedShell, CachedEnvVars, constants, diskutils, DiskType, find, get_disk_service, graph, validate_path, JGraph, JSPError, NodePath, NIndex, SearchTerm, ShellEnvManager};
 use petgraph;
 use log::{ LevelFilter, self };
 use serde_json;
@@ -145,7 +145,7 @@ fn main() -> Result<(), failure::Error> {
             let mut input = PathBuf::from(terms.pop().expect("uanble to unwrap"));
             input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
             
-            match is_valid(&input, &graph) {
+            match validate_path(&input, &graph) {
                 Ok(ref nodepath) => {
                     if !input.exists() {
                         eprintln!("{}{} does not exist{}", cr, input.to_str().unwrap().bright_blue(), cr);
@@ -191,7 +191,7 @@ fn main() -> Result<(), failure::Error> {
                 acc 
             });
 
-            match find_path_from_terms(terms, &graph) {
+            match find::find_path_from_terms(terms, &graph) {
                 Ok(( path,  nodepath)) => { 
                     let path_str = path.to_str().expect("unable to convert path to str. Does it contain non-ascii chars?");
                     if path.is_dir() {
@@ -211,7 +211,7 @@ fn main() -> Result<(), failure::Error> {
     //
     } else if let Some(mut input) = args.input {
         input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
-        match is_valid(&input, &graph) {
+        match validate_path(&input, &graph) {
             Ok(nodepath) => {
                 report_success(nodepath);
             },
@@ -442,15 +442,6 @@ fn get_graph(has_output: bool, graph: Option<PathBuf>) -> JGraph {
     }
 }
 
-#[inline]
-fn find_path_from_terms(terms: Vec<SearchTerm>, graph: &JGraph) -> Result<(PathBuf, NodePath), JSPError> {
-    log::info!("find_path_from_terms(...)");
-    let mut search = Search::new();
-    for term in terms {
-        search.push_back(term);
-    }
-    find_path(&search, graph)
-}
 
 #[inline]
 fn report_success(nodepath: NodePath) {
