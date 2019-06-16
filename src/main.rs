@@ -1,4 +1,5 @@
 use chrono;
+use colored::Colorize;
 use dotenv::dotenv;
 use fern::{ colors::{Color, ColoredLevelConfig}, self} ;
 use jsp::{ SupportedShell, CachedEnvVars, constants, diskutils, DiskType, find_path, get_disk_service, graph, is_valid, JGraph, JSPError, NodePath, NIndex, SearchTerm, Search, ShellEnvManager};
@@ -51,6 +52,10 @@ enum Subcommand {
     Mk {
         #[structopt(name="INPUT", parse(from_os_str))]
         input: PathBuf,
+
+        /// Print Success / Failure information. And in color!
+        #[structopt(short = "v", long = "verbose")]
+        verbose: bool,
     },
     /// Navigation command
     #[structopt(name = "go")]
@@ -66,6 +71,11 @@ enum Subcommand {
         /// accept a fullpath instead of key:value pairs
         #[structopt(short = "f", long = "fullpath")]
         full_path: bool,
+
+        /// Print Success / Failure information. And in color!
+        #[structopt(short = "v", long = "verbose")]
+        verbose: bool,
+
     }
 }
 
@@ -108,26 +118,28 @@ fn main() -> Result<(), failure::Error> {
     //
     // Handle Directory Creation via the mk subcommand
     //
-    } else if let Some(Subcommand::Mk{mut input}) = args.subcmd {
+    } else if let Some(Subcommand::Mk{mut input, verbose}) = args.subcmd {
         // if we are dealing with a relative path..
         input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
         let diskservice = get_disk_service(DiskType::Local, &graph);
-
+        let cr = if verbose {"\n"} else {""};
         //match diskservice.mk(Path::new(input.as_str())) {
         match diskservice.mk(input.as_path()) {
-            Ok(_) => println!("\nSuccess\n"),
+
+            Ok(_) => println!("{}{}{}", cr, "Success".bright_blue(), cr),
             Err(JSPError::ValidationFailure{entry, node, depth}) => {
-                report_failure(input.as_os_str(), &entry, node, depth, &graph );
+                report_failure(input.as_os_str(), &entry, node, depth, &graph, verbose );
             },
-            Err(e) => println!("\nFailure\n\n{}", e.to_string()),
+            Err(e) => println!("{}{}{}{}{}",cr, "Failure".bright_red(),e.to_string(),cr, cr),
         }
 
     //   
     // Handle Navigation via the Go subcommand
     //
-    }  else if let Some(Subcommand::Go{mut terms, myshell, full_path}) = args.subcmd {
+    }  else if let Some(Subcommand::Go{mut terms, myshell, full_path, verbose}) = args.subcmd {
         let myshell = myshell.unwrap_or("bash".to_string());
         let myshelldyn = SupportedShell::from_str(myshell.as_str())?.get();
+        let cr = if verbose {"\n"} else {""};
         if full_path == true {
             // Parse the full path, as opposed to SearchTerms
             let mut input = PathBuf::from(terms.pop().expect("uanble to unwrap"));
@@ -136,19 +148,19 @@ fn main() -> Result<(), failure::Error> {
             match is_valid(&input, &graph) {
                 Ok(ref nodepath) => {
                     if !input.exists() {
-                        eprintln!("\n{:?} does not exist\n", input);
+                        eprintln!("{}{} does not exist{}", cr, input.to_str().unwrap().bright_blue(), cr);
                     } else {
                         process_go_success(input, nodepath, myshelldyn);
                     }
                 },
                 Err(JSPError::ValidationFailure{entry, node, depth}) => {
-                    report_failure(input.as_os_str(), &entry, node, depth, &graph );
+                    report_failure(input.as_os_str(), &entry, node, depth, &graph, verbose );
                 }
                 Err(_) => panic!("JSPError type returned invalid")
             }
         // Parse SearchTerms 
         } else {
-                       let lspec_term;
+            let lspec_term;
             if terms.len() == 0 {
                 lspec_term = Vec::new();
             } else if terms.len() == 1 {
@@ -184,12 +196,13 @@ fn main() -> Result<(), failure::Error> {
                     let path_str = path.to_str().expect("unable to convert path to str. Does it contain non-ascii chars?");
                     if path.is_dir() {
                         process_go_success(path, &nodepath, myshelldyn);
-                        //print_go_success(path_str, shell);
                     } else {
-                        print_go_failure(path_str, true);
+                        print_go_failure(path_str, true, verbose);
                     }
                 },
-                Err(e) => {eprintln!("\n{}\n", e.to_string())},
+                Err(e) => {
+                    eprintln!("{}{}{}", cr, e.to_string().as_str().bright_red(), cr)
+                },
             };
         }
 
@@ -203,7 +216,7 @@ fn main() -> Result<(), failure::Error> {
                 report_success(nodepath);
             },
             Err(JSPError::ValidationFailure{entry, node, depth}) => {
-                report_failure(input.as_os_str(), &entry, node, depth, &graph );
+                report_failure(input.as_os_str(), &entry, node, depth, &graph, true );
             }
             Err(_) => panic!("JSPError type returned invalid")
         }
@@ -261,11 +274,12 @@ fn process_go_success(path: PathBuf, nodepath: &NodePath, myshell: Box<dyn Shell
 }
 
 #[inline]
-fn print_go_failure(path_str: &str, myshell: bool) {
+fn print_go_failure(path_str: &str, myshell: bool, verbose: bool) {
+    let cr = if verbose { "\n" } else {""};
     if myshell == false {
-        println!("echo \nError: Path does not exist: {}\n", path_str);
+        println!("echo {}Error: Path does not exist: {}{}", cr, path_str.bright_blue(), cr);
     } else {
-        eprintln!("\nError: Path does not exist: '{}'\n", path_str);
+        eprintln!("{}Error: Path does not exist: '{}'{}", cr, path_str.bright_blue(), cr);
     }
 }
 
@@ -450,18 +464,18 @@ fn report_success(nodepath: NodePath) {
 }
 
 #[inline]
-fn report_failure(input: &std::ffi::OsStr, entry: &OsString, node: NIndex, depth: u8, graph: &JGraph ) {
+fn report_failure(input: &std::ffi::OsStr, entry: &OsString, node: NIndex, depth: u8, graph: &JGraph, verbose: bool ) {
     let path = Path::new(input)
                 .iter()
                 .take((depth+1) as usize)
                 .fold(PathBuf::new(), |mut p, v| {p.push(v); p});
 
     let neighbors = graph.neighbors(node);
-    eprintln!("\nFailure\n");
-    eprintln!("Failed to match {:?} in {:?} against:", entry, path);
+    if verbose { eprintln!("\n{}\n", "Failure".bright_red()); }
+    eprintln!("Failed to match {} in {:?} against:", entry.to_str().unwrap_or("").bright_red(), path);
     for n in neighbors {
-        eprintln!("{}", graph[n].display_name());
+        eprintln!("{}", graph[n].display_name().bright_red());
     }
-    eprintln!("");
+    if verbose { eprintln!(""); }
     std::process::exit(1);
 }

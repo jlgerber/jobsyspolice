@@ -1,12 +1,12 @@
 use chrono;
+use colored::Colorize;
 use dotenv::dotenv;
 use fern::{ colors::{Color, ColoredLevelConfig}, self} ;
 use jsp::*;
 use log::{ LevelFilter, self };
 use serde_json;
-use std::{ env,  path::{ Path, PathBuf }, fs::File };
+use std::{ env, ffi::OsString, path::{ Path, PathBuf }, fs::File };
 use structopt::StructOpt;
-use std::ffi::OsString;
 
 const JSP_PATH: &'static str = "JSP_PATH";
 
@@ -177,10 +177,10 @@ fn report_failure(input: &Path, entry: &OsString, node: NIndex, depth: u8, graph
                 .fold(PathBuf::new(), |mut p, v| {p.push(v); p});
 
     let neighbors = graph.neighbors(node);
-    if verbose { eprintln!("\nFailure\n"); }
-    eprintln!("Failed to match {:?} in {:?} against:", entry, path);
+    if verbose { eprintln!("\n{}\n", "Failure".bright_red()); }
+    eprintln!("Failed to match {} in {:?} against:", entry.to_str().unwrap().bright_blue(), path);
     for n in neighbors {
-        eprintln!("{}", graph[n].display_name());
+        eprintln!("\t{}", graph[n].display_name().bright_blue());
     }
     if verbose { eprintln!(""); }
     std::process::exit(1);
