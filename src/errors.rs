@@ -3,7 +3,8 @@ use failure::Fail;
 use nix;
 use std::{ffi::OsString, io, num, path::PathBuf };
 use regex;
-use levelspec;
+//use levelspec;
+use levelspecter;
 
 #[derive(Debug, Fail)]
 pub enum JSPError {
@@ -62,7 +63,7 @@ pub enum JSPError {
     RegexError(#[cause] regex::Error),
     
     #[fail(display = "{}", _0)]
-    LevelSpecError(#[cause] levelspec::LSpecError),
+    LevelSpecError(#[cause] levelspecter::LevelSpecterError),
 }
 
 
@@ -96,8 +97,15 @@ impl From<std::boxed::Box<dyn std::error::Error>> for JSPError {
     }
 }
 
-impl From<levelspec::LSpecError> for JSPError {
-    fn from(error: levelspec::LSpecError) -> Self {
+// impl From<levelspec::LSpecError> for JSPError {
+//     fn from(error: levelspec::LSpecError) -> Self {
+//         JSPError::LevelSpecError(error)
+//     }
+// }
+
+
+impl From<levelspecter::LevelSpecterError> for JSPError {
+    fn from(error: levelspecter::LevelSpecterError) -> Self {
         JSPError::LevelSpecError(error)
     }
 }
