@@ -11,9 +11,7 @@ use structopt::StructOpt;
 use std::ffi::OsString;
 use std::str::FromStr;
 use std::collections::VecDeque;
-//use levelspec::{LevelSpec};
-use levelspecter::{LevelSpec};
-
+use levelspecter::{LevelSpec, LevelName};
 
 #[derive(Debug, StructOpt)]
 #[structopt( name = "jsp", about = "
@@ -162,6 +160,7 @@ fn main() -> Result<(), failure::Error> {
             }
         // Parse SearchTerms 
         } else {
+            
             let lspec_term;
             if terms.len() == 0 {
                 lspec_term = Vec::new();
@@ -173,7 +172,16 @@ fn main() -> Result<(), failure::Error> {
                 terms = tmp;
             }
             // convert spec term to searchterms
-            let mut ls = LevelSpec::new(&lspec_term[0])?;
+            let ls = LevelSpec::new(&lspec_term[0])?;
+
+            let mut ls = ls.rel_to_abs(|level|{
+                match level {
+                    LevelName::Show => env::var("DD_SHOW").ok(),
+                    LevelName::Sequence => env::var("DD_SEQUENCE").ok(),
+                    LevelName::Shot => env::var("DD_SHOT").ok(),
+                }
+            })?;
+
             ls.set_upper();
             let mut levelspec_terms = 
                 ls.to_vec_str()

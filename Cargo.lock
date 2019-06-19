@@ -276,7 +276,7 @@ dependencies = [
  "failure 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "fern 0.5.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "levelspecter 0.7.0 (git+https://github.com/jlgerber/levelspecter.git)",
+ "levelspecter 0.9.0 (git+https://github.com/jlgerber/levelspecter.git)",
  "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "nix 0.14.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "petgraph 0.4.13 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -298,8 +298,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "levelspecter"
-version = "0.7.0"
-source = "git+https://github.com/jlgerber/levelspecter.git#65cf2c78cecdad5616e1706cf819e00e062e9687"
+version = "0.9.0"
+source = "git+https://github.com/jlgerber/levelspecter.git#77e7286a0344430294f9a3f8b569d94f3fefb0b8"
 dependencies = [
  "aschar-casesensitive 0.2.0 (git+https://github.com/jlgerber/aschar-casesensitive.git)",
  "failure 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -837,7 +837,7 @@ dependencies = [
 "checksum itertools 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)" = "5b8467d9c1cebe26feb08c640139247fac215782d35371ade9a2136ed6085358"
 "checksum itoa 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)" = "501266b7edd0174f8530248f87f99c88fbe60ca4ef3dd486835b8d8d53136f7f"
 "checksum lazy_static 1.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "bc5729f27f159ddd61f4df6228e827e86643d4d3e7c32183cb30a1c08f604a14"
-"checksum levelspecter 0.7.0 (git+https://github.com/jlgerber/levelspecter.git)" = "<none>"
+"checksum levelspecter 0.9.0 (git+https://github.com/jlgerber/levelspecter.git)" = "<none>"
 "checksum lexical-core 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "3e82e023e062f1d25f807ad182008fba1b46538e999f908a08cc0c29e084462e"
 "checksum libc 0.2.58 (registry+https://github.com/rust-lang/crates.io-index)" = "6281b86796ba5e4366000be6e9e18bf35580adf9e63fbe2294aadb587613a319"
 "checksum log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)" = "c84ec4b527950aa83a329754b01dbe3f58361d1c5efacd1f6d68c494d08a17c6"
