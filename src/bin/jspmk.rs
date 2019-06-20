@@ -26,11 +26,17 @@ struct Opt {
     #[structopt( short = "i", long = "input", parse(from_os_str) )]
     graph: Option<PathBuf>,
 
-    /// Jobsystem path to validate (eg /dd/shows/FOOBAR)
-    #[structopt(name="INPUT")]
-    input: Option<String>,
+    /// one or more search tearms of the form key:value , or a 
+    /// fullpath, depending upon other field
+    #[structopt(name="TERMS")]
+    terms: Vec<String>,
+    
+    /// accept a fullpath instead of key:value pairs
+    #[structopt(short = "f", long = "fullpath")]
+    full_path: bool,
 
-    #[structopt(short="v", long="verbose")]
+    /// Print Success / Failure information. And in color!
+    #[structopt(short = "v", long = "verbose")]
     verbose: bool,
 }
 
@@ -41,23 +47,11 @@ fn main() -> Result<(), JSPError> {
     setup_logger(level).unwrap();
 
     let graph = get_graph(false, args.graph);
+    //pub fn mk(mut terms: Vec<String>, graph: &JGraph, full_path: bool, verbose: bool) -> Result<(), JSPError> {
 
-    if let Some(input) = args.input {
+    mk(args.terms, &graph, args.full_path, args.verbose)?;
 
-        let diskservice = get_disk_service(DiskType::Local, &graph);
-        let input = PathBuf::from(input);
-        let input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
-        match diskservice.mk(input.as_path()) {
-            Ok(_) => (),//println!("\nSuccess\n"),
-            Err(JSPError::ValidationFailure{entry, node, depth}) => {
-                report_failure(input.as_path(), &entry, node, depth, &graph, args.verbose);
-            },
-            Err(e) => println!("\nFailure\n\n{}", e.to_string()),
-        }
-    } else {
-        Opt::clap().print_help().unwrap();
-    }
-
+   
     Ok(())
 }
 
