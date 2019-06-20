@@ -57,6 +57,7 @@ enum Subcommand {
         /// fullpath, depending upon other field
         #[structopt(name="TERMS")]
         terms: Vec<String>,
+        
         /// accept a fullpath instead of key:value pairs
         #[structopt(short = "f", long = "fullpath")]
         full_path: bool,
@@ -109,7 +110,6 @@ fn main() -> Result<(), failure::Error> {
             output = diskutils::convert_relative_pathbuf_to_absolute(output)?;
             write_template(&mut output, &graph);
         }
-    
     //
     // Handle Dot output in the main command. We are writing the template out as a dot file
     //
@@ -123,97 +123,16 @@ fn main() -> Result<(), failure::Error> {
         } else {
             println!("{:#?}",  petgraph::dot::Dot::with_config(&graph, &[petgraph::dot::Config::EdgeNoLabel]));
         }
-
     //
     // Handle Directory Creation via the mk subcommand
     //
     } else if let Some(Subcommand::Mk{terms, full_path, verbose}) = args.subcmd {
         mk(terms, &graph, full_path, verbose)?;
-        /*
-        let cr = if verbose {"\n"} else {""};
-        let diskservice = get_disk_service(DiskType::Local, &graph);
-        if full_path{
-            let mut input = PathBuf::from(terms.pop().expect("uanble to unwrap"));
-            input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
-
-            //match diskservice.mk(Path::new(input.as_str())) {
-            match diskservice.mk(input.as_path()) {
-
-                Ok(_) => println!("{}{}{}", cr, "Success".bright_blue(), cr),
-                Err(JSPError::ValidationFailure{entry, node, depth}) => {
-                    report_failure(input.as_os_str(), &entry, node, depth, &graph, verbose );
-                },
-                Err(e) => println!("{}{}{}{}{}",cr, "Failure".bright_red(),e.to_string(),cr, cr),
-            }
-        } else {
-            let terms = gen_terms_from_strings(terms)?;
-            let input = match find::find_path_from_terms(terms, &graph) {
-                Ok(( path,  _)) => { 
-                    match diskservice.mk(path.as_path()) {
-                        Ok(_) => println!("{}{}{}", cr, "Success".bright_blue(), cr),
-                        Err(JSPError::ValidationFailure{entry, node, depth}) => {
-                            report_failure(path.as_os_str(), &entry, node, depth, &graph, verbose );
-                        },
-                        Err(e) => println!("{}{}{}{}{}",cr, "Failure".bright_red(),e.to_string(),cr, cr),
-                    }
-                },
-                Err(e) => {
-                    eprintln!("{}{}{}", cr, e.to_string().as_str().bright_red(), cr)
-                },
-            };
-            //match diskservice.mk(Path::new(input.as_str())) {
-            
-        }
-        // if we are dealing with a relative path..
-        */
     //   
     // Handle Navigation via the Go subcommand
     //
     }  else if let Some(Subcommand::Go{terms, myshell, full_path, verbose}) = args.subcmd {
         go(terms, myshell, &graph, full_path, verbose)?;
-        /*
-        let myshell = myshell.unwrap_or("bash".to_string());
-        let myshelldyn = SupportedShell::from_str(myshell.as_str())?.get();
-        let cr = if verbose {"\n"} else {""};
-
-        if full_path == true {
-            // Parse the full path, as opposed to SearchTerms
-            let mut input = PathBuf::from(terms.pop().expect("uanble to unwrap"));
-            input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
-            
-            match validate_path(&input, &graph) {
-                Ok(ref nodepath) => {
-                    if !input.exists() {
-                        eprintln!("{}{} does not exist{}", cr, input.to_str().unwrap().bright_blue(), cr);
-                    } else {
-                        process_go_success(input, nodepath, myshelldyn);
-                    }
-                },
-                Err(JSPError::ValidationFailure{entry, node, depth}) => {
-                    report_failure(input.as_os_str(), &entry, node, depth, &graph, verbose );
-                }
-                Err(_) => panic!("JSPError type returned invalid")
-            }
-        // Parse SearchTerms 
-        } else {
-            
-            let terms = gen_terms_from_strings(terms)?;
-
-            match find::find_path_from_terms(terms, &graph) {
-                Ok(( path,  nodepath)) => { 
-                    let path_str = path.to_str().expect("unable to convert path to str. Does it contain non-ascii chars?");
-                    if path.is_dir() {
-                        process_go_success(path, &nodepath, myshelldyn);
-                    } else {
-                        print_go_failure(path_str, true, verbose);
-                    }
-                },
-                Err(e) => {
-                    eprintln!("{}{}{}", cr, e.to_string().as_str().bright_red(), cr)
-                },
-            };
-        }
-    */
     //
     // Validate supplied argument to determine whether it is a valid path or not
     //
@@ -236,104 +155,6 @@ fn main() -> Result<(), failure::Error> {
         Opt::clap().print_help().unwrap();
     }
     Ok(())
-}
-
-#[inline]
-fn gen_terms_from_strings(mut terms: Vec<String>) -> Result<Vec<SearchTerm>, JSPError> {
-
-    let lspec_term;
-    if terms.len() == 0 {
-        lspec_term = Vec::new();
-    } else if terms.len() == 1 {
-        lspec_term = vec![terms.pop().unwrap()];
-    } else {
-        let tmp = terms.split_off(1);
-        lspec_term = terms;
-        terms = tmp;
-    }
-    // convert spec term to searchterms
-    let ls = LevelSpec::new(&lspec_term[0])?;
-
-    let mut ls = ls.rel_to_abs(|level|{
-        match level {
-            LevelName::Show => env::var("DD_SHOW").ok(),
-            LevelName::Sequence => env::var("DD_SEQUENCE").ok(),
-            LevelName::Shot => env::var("DD_SHOT").ok(),
-        }
-    })?;
-
-    ls.set_upper();
-    let mut levelspec_terms = 
-        ls.to_vec_str()
-        .into_iter()
-        .enumerate()
-        .map(|(idx,x)| format!("{}:{}", constants::LEVELS[idx], x))
-        .collect::<Vec<String>>();
-    levelspec_terms.append(&mut terms);
-    // fold over the input vector of Strings, discarding any Strings which cannot
-    // be converted to SearchTerms
-    let terms: Vec<SearchTerm> = levelspec_terms.into_iter().fold(Vec::new(), |mut acc, x| {
-    //let terms: Vec<SearchTerm> = terms.into_iter().fold(Vec::new(), |mut acc, x| {
-        match SearchTerm::from_str(&x) {
-            Ok(term) => acc.push(term),
-            Err(e) => log::error!("{}", e.to_string()),
-        };
-        acc 
-    });
-    
-    Ok(terms)
-} 
-
-#[inline]
-fn process_go_success(path: PathBuf, nodepath: &NodePath, myshell: Box<dyn ShellEnvManager>) {
-    
-    log::info!("process_go_success(...)");
-    
-    let components = path.components().map(|x| {
-        match x {
-            Component::RootDir => String::from("/"),
-            Component::Normal(level) => level.to_str().unwrap().to_string(),
-            Component::CurDir => String::from("."),
-            Component::ParentDir => String::from(".."),
-            Component::Prefix(_) => panic!("prefix in path not supported"),
-        }
-    }).collect::<VecDeque<String>>();
-       
-    let mut varnames: Vec<&str> = Vec::new();
-
-    // generate string to clear previously cached variables
-    let cached = CachedEnvVars::new();
-    print!("{}", cached.clear(&myshell));
-    // generate code to export a variable
-    // TODO: make this part of the trait so that we can abstract over shell
-    for (idx, n) in nodepath.iter().enumerate() {
-        if n.metadata().has_varname() {
-            let varname = n.metadata().varname_ref().unwrap();
-            print!("{}", &myshell.set_env_var(varname, &components[idx]));
-            varnames.push(varname);
-        }
-    }
-    // if we have variable names that we have set, we also need to preserve their names, so that
-    // we can clear them out on subsequent runs. This solves the scenario where you navigate
-    // deep into the tree, and then later navigate to a shallower level; you don't want the 
-    // variables tracking levels deeper than the current depth to be set. 
-    if varnames.len() > 0 {
-        print!("{}", &myshell.set_env_var(constants::JSP_TRACKING_VAR, varnames.join(":").as_str())) ;
-    } else {
-        print!("{}", &myshell.unset_env_var(constants::JSP_TRACKING_VAR));
-    }
-    // Now the final output of where we are actually gong.
-    println!("cd {};", path.as_os_str().to_str().unwrap());
-}
-
-#[inline]
-fn print_go_failure(path_str: &str, myshell: bool, verbose: bool) {
-    let cr = if verbose { "\n" } else {""};
-    if myshell == false {
-        println!("echo {}Error: Path does not exist: {}{}", cr, path_str.bright_blue(), cr);
-    } else {
-        eprintln!("{}Error: Path does not exist: '{}'{}", cr, path_str.bright_blue(), cr);
-    }
 }
 
 #[inline]
@@ -360,7 +181,6 @@ fn setup_logger(level: log::LevelFilter) -> Result<(), fern::InitError> {
         .apply()?;
     Ok(())
 }
-
 
 #[inline]
 fn setup_cli() -> (Opt, log::LevelFilter) {
@@ -494,7 +314,6 @@ fn get_graph(has_output: bool, graph: Option<PathBuf>) -> JGraph {
          _get_graph(graph)
     }
 }
-
 
 #[inline]
 fn report_success(nodepath: NodePath) {
