@@ -2,7 +2,7 @@ use chrono;
 use colored::Colorize;
 use dotenv::dotenv;
 use fern::{ colors::{Color, ColoredLevelConfig}, self} ;
-use jsp::{ SupportedShell, CachedEnvVars, constants, diskutils, DiskType, find, get_disk_service, graph, validate_path, JGraph, JSPError, NodePath, NIndex, SearchTerm, ShellEnvManager};
+use jsp::{ go, mk, SupportedShell, CachedEnvVars, constants, diskutils, DiskType, find, get_disk_service, graph, validate_path, JGraph, JSPError, NodePath, NIndex, SearchTerm, ShellEnvManager};
 use petgraph;
 use log::{ LevelFilter, self };
 use serde_json;
@@ -127,7 +127,9 @@ fn main() -> Result<(), failure::Error> {
     //
     // Handle Directory Creation via the mk subcommand
     //
-    } else if let Some(Subcommand::Mk{mut terms, full_path, verbose}) = args.subcmd {
+    } else if let Some(Subcommand::Mk{terms, full_path, verbose}) = args.subcmd {
+        mk(terms, &graph, full_path, verbose)?;
+        /*
         let cr = if verbose {"\n"} else {""};
         let diskservice = get_disk_service(DiskType::Local, &graph);
         if full_path{
@@ -163,12 +165,13 @@ fn main() -> Result<(), failure::Error> {
             
         }
         // if we are dealing with a relative path..
-
+        */
     //   
     // Handle Navigation via the Go subcommand
     //
-    }  else if let Some(Subcommand::Go{mut terms, myshell, full_path, verbose}) = args.subcmd {
-        
+    }  else if let Some(Subcommand::Go{terms, myshell, full_path, verbose}) = args.subcmd {
+        go(terms, myshell, &graph, full_path, verbose)?;
+        /*
         let myshell = myshell.unwrap_or("bash".to_string());
         let myshelldyn = SupportedShell::from_str(myshell.as_str())?.get();
         let cr = if verbose {"\n"} else {""};
@@ -210,7 +213,7 @@ fn main() -> Result<(), failure::Error> {
                 },
             };
         }
-
+    */
     //
     // Validate supplied argument to determine whether it is a valid path or not
     //
