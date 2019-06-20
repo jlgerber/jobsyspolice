@@ -160,7 +160,7 @@ fn main() -> Result<(), failure::Error> {
             }
         // Parse SearchTerms 
         } else {
-            
+            /*
             let lspec_term;
             if terms.len() == 0 {
                 lspec_term = Vec::new();
@@ -199,8 +199,8 @@ fn main() -> Result<(), failure::Error> {
                     Err(e) => log::error!("{}", e.to_string()),
                 };
                 acc 
-            });
-
+            });*/
+            let terms = gen_terms_from_strings(terms)?;
             match find::find_path_from_terms(terms, &graph) {
                 Ok(( path,  nodepath)) => { 
                     let path_str = path.to_str().expect("unable to convert path to str. Does it contain non-ascii chars?");
@@ -240,6 +240,51 @@ fn main() -> Result<(), failure::Error> {
     Ok(())
 }
 
+#[inline]
+fn gen_terms_from_strings(mut terms: Vec<String>) -> Result<Vec<SearchTerm>, JSPError> {
+
+    let lspec_term;
+    if terms.len() == 0 {
+        lspec_term = Vec::new();
+    } else if terms.len() == 1 {
+        lspec_term = vec![terms.pop().unwrap()];
+    } else {
+        let tmp = terms.split_off(1);
+        lspec_term = terms;
+        terms = tmp;
+    }
+    // convert spec term to searchterms
+    let ls = LevelSpec::new(&lspec_term[0])?;
+
+    let mut ls = ls.rel_to_abs(|level|{
+        match level {
+            LevelName::Show => env::var("DD_SHOW").ok(),
+            LevelName::Sequence => env::var("DD_SEQUENCE").ok(),
+            LevelName::Shot => env::var("DD_SHOT").ok(),
+        }
+    })?;
+
+    ls.set_upper();
+    let mut levelspec_terms = 
+        ls.to_vec_str()
+        .into_iter()
+        .enumerate()
+        .map(|(idx,x)| format!("{}:{}", constants::LEVELS[idx], x))
+        .collect::<Vec<String>>();
+    levelspec_terms.append(&mut terms);
+    // fold over the input vector of Strings, discarding any Strings which cannot
+    // be converted to SearchTerms
+    let terms: Vec<SearchTerm> = levelspec_terms.into_iter().fold(Vec::new(), |mut acc, x| {
+    //let terms: Vec<SearchTerm> = terms.into_iter().fold(Vec::new(), |mut acc, x| {
+        match SearchTerm::from_str(&x) {
+            Ok(term) => acc.push(term),
+            Err(e) => log::error!("{}", e.to_string()),
+        };
+        acc 
+    });
+    
+    Ok(terms)
+} 
 
 #[inline]
 fn process_go_success(path: PathBuf, nodepath: &NodePath, myshell: Box<dyn ShellEnvManager>) {
