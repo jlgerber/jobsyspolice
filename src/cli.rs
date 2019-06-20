@@ -16,17 +16,36 @@ use crate::{
 };
 use colored::Colorize;
 use levelspecter::{LevelSpec, LevelName};
-use std::collections::VecDeque;
-use std::env;
-use std::ffi::OsString;
-use std::path::{Path, Component, PathBuf};
-use std::str::FromStr;
+use std::{
+    collections::VecDeque,
+    env,
+    ffi::OsString,
+    path::{Path, Component, PathBuf},
+    str::FromStr
+};
 
+/// Make a series of directories if they do not already exist. 
+/// 
+/// # Parameters
+/// 
+/// * `terms`     - Vector of strings representing request, either as levelspec and additional key:value pairs,
+///                 or as a single absolute path. 
+/// * `graph`     - Reference to the JGraph which describes the jobsytem template
+/// * `full_path` - Indicates that the first term provided is a regular path, as opposed to a levelspec
+///                 Normally, Mk detects this using the path separator as an indicator. However this may
+///                 be explicitly set.
+/// * `verbose`   - Output is more extensive, colored, etc.
+pub fn mk(
+    mut terms: Vec<String>, 
+    graph: &JGraph, 
+    full_path: bool, 
+    verbose: bool
+) -> Result<(), JSPError> {
 
-pub fn mk(mut terms: Vec<String>, graph: &JGraph, full_path: bool, verbose: bool) -> Result<(), JSPError> {
     let cr = if verbose {"\n"} else {""};
     let diskservice = get_disk_service(DiskType::Local, graph);
-    if full_path{
+
+    if full_path || ( terms.len() > 0 && terms[0].contains("/") ) {
         let mut input = PathBuf::from(terms.pop().expect("uanble to unwrap"));
         input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
 
@@ -40,6 +59,7 @@ pub fn mk(mut terms: Vec<String>, graph: &JGraph, full_path: bool, verbose: bool
         }
     } else {
         let terms = gen_terms_from_strings(terms)?;
+
         let _input = match find::find_path_from_terms(terms, &graph) {
             Ok(( path,  _)) => { 
                 match diskservice.mk(path.as_path()) {
@@ -58,6 +78,23 @@ pub fn mk(mut terms: Vec<String>, graph: &JGraph, full_path: bool, verbose: bool
     Ok(()) 
 }
 
+/// Return shell commands that, wnen evaluated, result in a change of location in the job system 
+/// and initialization of environment variables defined in the template in relation to the path, 
+/// providing either a levelspec and optional key:value terms additionally,vor an absolute path 
+/// to a location. 
+/// 
+/// # Parameters
+/// 
+/// * `terms`     - vector of terms representing the navigation request. The first item in the vector
+///                 may either be an absolute path or a levelspec. Subsequent values should adhehere
+///                 to `key:value` form. 
+/// * `myshell`   - Optionally, the name of the shell that one wishes the commands returned to target. 
+///                 bash is the default shell. 
+/// * `graph`     - an reference to the JGraph describing the jobsystem template 
+/// * `full_path` - explicitly declare that the input is a full path. Under usual circumstances, 
+///                 the command will automatically determine this based on the presence of a 
+///                 path separator in the input.
+/// * `verbose`   - Output is more extensive, colored, etc.
 pub fn go (
     mut terms: Vec<String>, 
     myshell: Option<String>, 
@@ -68,9 +105,9 @@ pub fn go (
         
     let myshell = myshell.unwrap_or("bash".to_string());
     let myshelldyn = SupportedShell::from_str(myshell.as_str())?.get();
-    let cr = if verbose {"\n"} else {""};
 
-    if full_path == true {
+    let cr = if verbose {"\n"} else {""};
+    if full_path == true || ( terms.len() > 0 && terms[0].contains("/") ) {
         // Parse the full path, as opposed to SearchTerms
         let mut input = PathBuf::from(terms.pop().expect("uanble to unwrap"));
         input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
@@ -143,10 +180,10 @@ fn gen_terms_from_strings(mut terms: Vec<String>) -> Result<Vec<SearchTerm>, JSP
         .map(|(idx,x)| format!("{}:{}", constants::LEVELS[idx], x))
         .collect::<Vec<String>>();
     levelspec_terms.append(&mut terms);
+
     // fold over the input vector of Strings, discarding any Strings which cannot
     // be converted to SearchTerms
     let terms: Vec<SearchTerm> = levelspec_terms.into_iter().fold(Vec::new(), |mut acc, x| {
-    //let terms: Vec<SearchTerm> = terms.into_iter().fold(Vec::new(), |mut acc, x| {
         match SearchTerm::from_str(&x) {
             Ok(term) => acc.push(term),
             Err(e) => log::error!("{}", e.to_string()),
