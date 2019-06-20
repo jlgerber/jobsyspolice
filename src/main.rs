@@ -50,8 +50,16 @@ enum Subcommand {
     /// Jobsystem path to create (eg /dd/shows/FOOBAR)
     #[structopt(name = "mk")]
     Mk {
-        #[structopt(name="INPUT", parse(from_os_str))]
-        input: PathBuf,
+        //#[structopt(name="INPUT", parse(from_os_str))]
+        //input: PathBuf,
+        
+        /// one or more search tearms of the form key:value , or a 
+        /// fullpath, depending upon other field
+        #[structopt(name="TERMS")]
+        terms: Vec<String>,
+        /// accept a fullpath instead of key:value pairs
+        #[structopt(short = "f", long = "fullpath")]
+        full_path: bool,
 
         /// Print Success / Failure information. And in color!
         #[structopt(short = "v", long = "verbose")]
@@ -60,7 +68,8 @@ enum Subcommand {
     /// Navigation command
     #[structopt(name = "go")]
     Go {
-        /// one or more search tearms of the form key:value 
+        /// one or more search tearms of the form key:value , or a 
+        /// fullpath, depending upon other field
         #[structopt(name="TERMS")]
         terms: Vec<String>,
 
@@ -118,28 +127,52 @@ fn main() -> Result<(), failure::Error> {
     //
     // Handle Directory Creation via the mk subcommand
     //
-    } else if let Some(Subcommand::Mk{mut input, verbose}) = args.subcmd {
-        // if we are dealing with a relative path..
-        input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
-        let diskservice = get_disk_service(DiskType::Local, &graph);
+    } else if let Some(Subcommand::Mk{mut terms, full_path, verbose}) = args.subcmd {
         let cr = if verbose {"\n"} else {""};
-        //match diskservice.mk(Path::new(input.as_str())) {
-        match diskservice.mk(input.as_path()) {
+        let diskservice = get_disk_service(DiskType::Local, &graph);
+        if full_path{
+            let mut input = PathBuf::from(terms.pop().expect("uanble to unwrap"));
+            input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
 
-            Ok(_) => println!("{}{}{}", cr, "Success".bright_blue(), cr),
-            Err(JSPError::ValidationFailure{entry, node, depth}) => {
-                report_failure(input.as_os_str(), &entry, node, depth, &graph, verbose );
-            },
-            Err(e) => println!("{}{}{}{}{}",cr, "Failure".bright_red(),e.to_string(),cr, cr),
+            //match diskservice.mk(Path::new(input.as_str())) {
+            match diskservice.mk(input.as_path()) {
+
+                Ok(_) => println!("{}{}{}", cr, "Success".bright_blue(), cr),
+                Err(JSPError::ValidationFailure{entry, node, depth}) => {
+                    report_failure(input.as_os_str(), &entry, node, depth, &graph, verbose );
+                },
+                Err(e) => println!("{}{}{}{}{}",cr, "Failure".bright_red(),e.to_string(),cr, cr),
+            }
+        } else {
+            let terms = gen_terms_from_strings(terms)?;
+            let input = match find::find_path_from_terms(terms, &graph) {
+                Ok(( path,  _)) => { 
+                    match diskservice.mk(path.as_path()) {
+                        Ok(_) => println!("{}{}{}", cr, "Success".bright_blue(), cr),
+                        Err(JSPError::ValidationFailure{entry, node, depth}) => {
+                            report_failure(path.as_os_str(), &entry, node, depth, &graph, verbose );
+                        },
+                        Err(e) => println!("{}{}{}{}{}",cr, "Failure".bright_red(),e.to_string(),cr, cr),
+                    }
+                },
+                Err(e) => {
+                    eprintln!("{}{}{}", cr, e.to_string().as_str().bright_red(), cr)
+                },
+            };
+            //match diskservice.mk(Path::new(input.as_str())) {
+            
         }
+        // if we are dealing with a relative path..
 
     //   
     // Handle Navigation via the Go subcommand
     //
     }  else if let Some(Subcommand::Go{mut terms, myshell, full_path, verbose}) = args.subcmd {
+        
         let myshell = myshell.unwrap_or("bash".to_string());
         let myshelldyn = SupportedShell::from_str(myshell.as_str())?.get();
         let cr = if verbose {"\n"} else {""};
+
         if full_path == true {
             // Parse the full path, as opposed to SearchTerms
             let mut input = PathBuf::from(terms.pop().expect("uanble to unwrap"));
@@ -160,47 +193,9 @@ fn main() -> Result<(), failure::Error> {
             }
         // Parse SearchTerms 
         } else {
-            /*
-            let lspec_term;
-            if terms.len() == 0 {
-                lspec_term = Vec::new();
-            } else if terms.len() == 1 {
-                lspec_term = vec![terms.pop().unwrap()];
-            } else {
-                let tmp = terms.split_off(1);
-                lspec_term = terms;
-                terms = tmp;
-            }
-            // convert spec term to searchterms
-            let ls = LevelSpec::new(&lspec_term[0])?;
-
-            let mut ls = ls.rel_to_abs(|level|{
-                match level {
-                    LevelName::Show => env::var("DD_SHOW").ok(),
-                    LevelName::Sequence => env::var("DD_SEQUENCE").ok(),
-                    LevelName::Shot => env::var("DD_SHOT").ok(),
-                }
-            })?;
-
-            ls.set_upper();
-            let mut levelspec_terms = 
-                ls.to_vec_str()
-                .into_iter()
-                .enumerate()
-                .map(|(idx,x)| format!("{}:{}", constants::LEVELS[idx], x))
-                .collect::<Vec<String>>();
-            levelspec_terms.append(&mut terms);
-            // fold over the input vector of Strings, discarding any Strings which cannot
-            // be converted to SearchTerms
-            let terms: Vec<SearchTerm> = levelspec_terms.into_iter().fold(Vec::new(), |mut acc, x| {
-            //let terms: Vec<SearchTerm> = terms.into_iter().fold(Vec::new(), |mut acc, x| {
-                match SearchTerm::from_str(&x) {
-                    Ok(term) => acc.push(term),
-                    Err(e) => log::error!("{}", e.to_string()),
-                };
-                acc 
-            });*/
+            
             let terms = gen_terms_from_strings(terms)?;
+
             match find::find_path_from_terms(terms, &graph) {
                 Ok(( path,  nodepath)) => { 
                     let path_str = path.to_str().expect("unable to convert path to str. Does it contain non-ascii chars?");
