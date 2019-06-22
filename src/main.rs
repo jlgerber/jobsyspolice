@@ -108,7 +108,7 @@ fn main() -> Result<(), failure::Error> {
                 log::warn!("INPUT not compatible with --file argument. It will be ignored");
             }
             output = diskutils::convert_relative_pathbuf_to_absolute(output)?;
-            write_template(&mut output, &graph);
+            diskutils::write_template(&mut output, &graph);
         }
     //
     // Handle Dot output in the main command. We are writing the template out as a dot file
@@ -119,7 +119,7 @@ fn main() -> Result<(), failure::Error> {
                 log::warn!("INPUT not compatible with --dot argument. It will be ignored");
             }
             output = diskutils::convert_relative_pathbuf_to_absolute(output)?;
-            write_template_as_dotfile(&output, &graph);
+            diskutils::write_template_as_dotfile(&output, &graph);
         } else {
             println!("{:#?}",  petgraph::dot::Dot::with_config(&graph, &[petgraph::dot::Config::EdgeNoLabel]));
         }
@@ -252,58 +252,6 @@ fn _get_graph(graph: Option<PathBuf>) -> JGraph {
         serde_json::from_reader(json_file).expect("error while reading json");
         result
     }
-}
-
-#[inline]
-fn write_template(output: &mut PathBuf, graph: &JGraph) {
-
-    // if we are writing out the template, we use the internal definition
-    //let graph = graph::testdata::build_graph();
-
-    // test to see if buffer is a directory. if it is apply the standard name
-    if output.is_dir() {
-        output.push(constants::JSP_NAME);
-    }
-    let j = serde_json::to_string_pretty(&graph).unwrap();
-    let file = match File::create(output) {
-        Ok(out) => {
-            log::debug!("attempting to write to {:?}", out);
-            out},
-        Err(e) => {
-            eprintln!("{}", e);
-            std::process::exit(1);
-        }
-    };
-    let mut f = BufWriter::new(file);
-    f.write_all(j.as_bytes()).expect("Unable to write data");
-}
-
-#[inline]
-fn write_template_as_dotfile(output: &PathBuf, graph: &JGraph) {
-    let mut file = match File::create(output) {
-        Ok(out) => {
-            log::debug!("attempting to write to {:?}", out);
-            out},
-        Err(e) => {
-            eprintln!("{}", e);
-            std::process::exit(1);
-        }
-    };
-    match file.write_all(
-        format!(
-            "{:#?}"
-            ,petgraph::dot::Dot::with_config(
-                &graph,
-                &[petgraph::dot::Config::EdgeNoLabel]
-            )
-        ).as_bytes()
-    ) {
-        Err(e) => {
-            eprintln!("{}",e);
-            std::process::exit(1);
-        }
-        Ok(_) => ()
-    };
 }
 
 #[inline]

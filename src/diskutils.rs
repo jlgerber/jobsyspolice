@@ -1,4 +1,4 @@
-use crate::{JSPError, User, constants, get_default_user, Node, NodeType};
+use crate::{JSPError, User, constants, get_default_user, Node, NodeType, JGraph};
 use log;
 use lazy_static::lazy_static;
 use nix::{ unistd::{chown, Uid, Gid }};
@@ -10,7 +10,10 @@ use std::{
     },
     path::Path,
     path::PathBuf,
+    fs::File,
+    io::{BufWriter, Write},
 };
+
 use users::{ get_user_by_name };
 
 lazy_static! {
@@ -128,4 +131,57 @@ pub fn convert_relative_pathbuf_to_absolute(path: PathBuf) -> Result<PathBuf, JS
         return Ok(curdir);
     }
     Ok(path)
+}
+
+/// Write the template out to disk
+pub fn write_template(output: &mut PathBuf, graph: &JGraph) {
+
+    // if we are writing out the template, we use the internal definition
+    //let graph = graph::testdata::build_graph();
+
+    // test to see if buffer is a directory. if it is apply the standard name
+    if output.is_dir() {
+        output.push(constants::JSP_NAME);
+    }
+    let j = serde_json::to_string_pretty(&graph).unwrap();
+    let file = match File::create(output) {
+        Ok(out) => {
+            log::debug!("attempting to write to {:?}", out);
+            out},
+        Err(e) => {
+            eprintln!("{}", e);
+            std::process::exit(1);
+        }
+    };
+    let mut f = BufWriter::new(file);
+    f.write_all(j.as_bytes()).expect("Unable to write data");
+}
+
+/// Given an output path and a reference to a JGraph, write 
+/// the graph out to disk.
+pub fn write_template_as_dotfile(output: &PathBuf, graph: &JGraph) {
+    let mut file = match File::create(output) {
+        Ok(out) => {
+            log::debug!("attempting to write to {:?}", out);
+            out},
+        Err(e) => {
+            eprintln!("{}", e);
+            std::process::exit(1);
+        }
+    };
+    match file.write_all(
+        format!(
+            "{:#?}"
+            ,petgraph::dot::Dot::with_config(
+                &graph,
+                &[petgraph::dot::Config::EdgeNoLabel]
+            )
+        ).as_bytes()
+    ) {
+        Err(e) => {
+            eprintln!("{}",e);
+            std::process::exit(1);
+        }
+        Ok(_) => ()
+    };
 }
