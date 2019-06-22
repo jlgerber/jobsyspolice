@@ -50,6 +50,14 @@ impl Node {
         }
     }
 
+    pub fn new_simple(identity: NodeType, entry_type: EntryType, metadata: Metadata) -> Self {
+        Self { 
+            identity, 
+            entry_type,
+            metadata,
+        }
+    }
+
     /// Specialized constructor function which returns a Root node.
     pub fn new_root() -> Self {
         Self {
