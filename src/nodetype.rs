@@ -31,7 +31,7 @@ impl NodeType {
         NodeType::RegEx{name, pattern, exclude}
     }
 }
-
+ 
 impl Display for NodeType {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match self {
@@ -40,7 +40,7 @@ impl Display for NodeType {
             NodeType::Simple(name) =>  write!(f, "Simple('{}')",name),
             NodeType::Root =>  write!(f, "Root"),
             NodeType::Untracked => write!(f, "Untracked"),
-        }
+        }  
     }
 }
 
