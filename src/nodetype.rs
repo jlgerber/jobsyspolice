@@ -26,6 +26,11 @@ pub enum NodeType {
         exclude: Option<Regexp>
     },
 }
+impl NodeType {
+    pub fn new_regex(name: String, pattern: Regexp, exclude: Option<Regexp>) -> NodeType {
+        NodeType::RegEx{name, pattern, exclude}
+    }
+}
 
 impl Display for NodeType {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
