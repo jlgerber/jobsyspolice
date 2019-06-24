@@ -159,9 +159,18 @@ pub fn write_template(output: &mut PathBuf, graph: &JGraph) {
     f.write_all(j.as_bytes()).expect("Unable to write data");
 }
 
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum DotFormat {
+    Pretty,
+    Debug,
+    Display
+}
+
+
 /// Given an output path and a reference to a JGraph, write 
 /// the graph out to disk.
-pub fn write_template_as_dotfile(output: &PathBuf, graph: &JGraph) {
+pub fn write_template_as_dotfile(output: &PathBuf, graph: &JGraph, format: DotFormat) {
+    
     let mut file = match File::create(output) {
         Ok(out) => {
             log::debug!("attempting to write to {:?}", out);
@@ -171,15 +180,45 @@ pub fn write_template_as_dotfile(output: &PathBuf, graph: &JGraph) {
             std::process::exit(1);
         }
     };
-    match file.write_all(
-        format!(
-            "{:#?}"
-            ,petgraph::dot::Dot::with_config(
-                &graph,
-                &[petgraph::dot::Config::EdgeNoLabel]
+    let result = match format {
+        DotFormat::Pretty => {
+            file.write_all(
+                format!(
+                    "{:#?}"
+                    ,petgraph::dot::Dot::with_config(
+                        &graph,
+                        &[petgraph::dot::Config::EdgeNoLabel]
+                    )
+                ).as_bytes()
             )
-        ).as_bytes()
-    ) {
+        }
+
+        DotFormat::Debug => {
+            file.write_all(
+                format!(
+                    "{:?}"
+                    ,petgraph::dot::Dot::with_config(
+                        &graph,
+                        &[petgraph::dot::Config::EdgeNoLabel]
+                    )
+                ).as_bytes()
+            )
+        }
+
+        DotFormat::Display => {
+            file.write_all(
+                format!(
+                    "{}"
+                    ,petgraph::dot::Dot::with_config(
+                        &graph,
+                        &[petgraph::dot::Config::EdgeNoLabel]
+                    )
+                ).as_bytes()
+            )
+        }
+    };
+    
+    match result {
         Err(e) => {
             eprintln!("{}",e);
             std::process::exit(1);
