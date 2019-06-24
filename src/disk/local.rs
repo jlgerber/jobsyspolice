@@ -59,39 +59,42 @@ impl<'a> Disk for DiskService<'a> {
 
             match node.entry_type() {
                 &EntryType::Directory | &EntryType::Volume => {
-                    log::debug!("local::DiskService EntryType::Directory");
+                    log::debug!("local::DiskService.mk(...) EntryType::Directory");
 
                     // we need the owner to look up the uid
                     let tmp_owner = node.metadata().owner().clone();
                     log::trace!("node: {} type:{:?}", &node, &node.entry_type());
                     owner = tmp_owner.unwrap_or(owner);
 
+                    log::trace!("local::DiskService.mk(...) retrieving uid via diskutils::get_uid_for_owner");
                     let uid = diskutils::get_uid_for_owner(
                         &owner,
                         &node,
                         item.to_str().expect("unable to convert osstr to str")
                     )?;
 
+                    log::trace!("local::DiskService.mk(...) testing if create_path.exists {:?} {}", &create_path, create_path.exists()) ;
                     if !create_path.exists() {
+                        log::trace!("local::DiskService.mk(...) calling diksutils::create_dir()");
                         diskutils::create_dir(&create_path, uid, uperms)?
 
                     } else if idx == last_managed_node {
-                        log::debug!("local::DiskService last_managed_node");
+                        log::trace!("local::DiskService.mk(...) last_managed_node");
                         // stash the uid from the recently created path as a User::Uid()
                         // this will be used by Untracked to assign ownership.
                         owner = diskutils::get_owner_for_path(&create_path)?;
-                        log::debug!("local::DiskService last_managed_node owner : {:?} for path {:?}",
+                        log::trace!("local::DiskService.mk(...) last_managed_node owner : {:?} for path {:?}",
                                     owner, &create_path);
                     }
                 }
 
                 &EntryType::Untracked => {
-                    log::debug!("local::DiskService EntryType::Untracked");
+                    log::trace!("local::DiskService.mk(...) EntryType::Untracked");
                     if !create_path.exists() {
                         if let User::Uid(id) = owner {
                             diskutils::create_dir(&create_path, id, uperms)?;
                         } else {
-                            panic!("unexpected. Unable to get Uid from owner in ENtryType::Untracked");
+                            panic!("local::DiskService.mk(...) unexpected. Unable to get Uid from owner in ENtryType::Untracked");
                             //return Err(JSPError::Placeholder)?;
                         }
                     }
