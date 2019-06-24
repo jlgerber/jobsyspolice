@@ -93,7 +93,6 @@ impl<'a> Disk for DiskService<'a> {
                             diskutils::create_dir(&create_path, id, uperms)?;
                         } else {
                             panic!("unexpected. Unable to get Uid from owner in ENtryType::Untracked");
-                            //return Err(JSPError::Placeholder)?;
                         }
                     }
                 }

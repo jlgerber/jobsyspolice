@@ -27,9 +27,18 @@ impl RemoveFirstAscii for &str {
 #[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Serialize, Deserialize, Clone)]
 //#[serde(tag = "type")]
 pub enum User {
+    /// Define user to be the current user 
+    /// as identified in the environment
     Me,
+    /// Statically named user
     Named(String),
+    /// Dynamically named user, capturing
+    /// a variable name that the system will dereference
+    /// to produce a valid user. Typically, the system
+    /// will strip the leading '$' off of the variable becore
+    /// storing as a Captured User
     Captured(String),
+    /// User identified by UserId
     Uid(u32),
 }
 
