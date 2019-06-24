@@ -82,8 +82,10 @@ pub fn get_uid_for_owner(owner: &User, node: &Node, dir: &str) -> Result<u32, JS
             if let NodeType::RegEx{name: _, pattern, exclude: _} = node.identity() {
                 let caps = pattern.captures(dir).ok_or(JSPError::MissingOwnerInRegex)?;
                 let owner = caps.name(key).ok_or(JSPError::MissingOwnerInRegex)?.as_str();
+                log::debug!("get_uid_for_owner(...) owner {}", owner);
                 owner.to_string()
             } else {
+                log::error!("get_uid_for_owner(...) Missing owner in regex");
                 return Err(JSPError::MissingOwnerInRegex);
             }
         }
