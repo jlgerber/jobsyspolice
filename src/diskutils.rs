@@ -208,7 +208,7 @@ pub fn write_template_as_dotfile(output: &PathBuf, graph: &JGraph, format: DotFo
         DotFormat::Display => {
             file.write_all(
                 format!(
-                    "{}"
+                    "{:?}"
                     ,petgraph::dot::Dot::with_config(
                         &graph,
                         &[petgraph::dot::Config::EdgeNoLabel]
