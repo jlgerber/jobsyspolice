@@ -61,3 +61,6 @@ pub mod cli;
 pub use cli::{go, mk};
 
 pub mod jspt;
+
+pub mod report;
+pub use report::*;
