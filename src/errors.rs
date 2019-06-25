@@ -64,6 +64,10 @@ pub enum JSPError {
     
     #[fail(display = "{}", _0)]
     LevelSpecError(#[cause] levelspecter::LevelSpecterError),
+
+    #[fail(display = "Empty argument list")]
+    EmptyArgumentListError,
+
 }
 
 
