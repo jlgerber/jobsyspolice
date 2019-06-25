@@ -1,7 +1,7 @@
 use chrono;
 use dotenv::dotenv;
 use fern::{ colors::{Color, ColoredLevelConfig}, self} ;
-use jsp::{get_graph, mk};
+use jsp::{get_graph, mk, report_simple_failure};
 use log::{ LevelFilter, self };
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -47,7 +47,10 @@ fn main() -> Result<(), failure::Error> {
 
     let (graph,  _keymap,  _regexmap) = get_graph( args.graph)?;
 
-    mk(args.terms, &graph, args.full_path, args.verbose)?;
+    match mk(args.terms, &graph, args.full_path, args.verbose) {
+            Ok(()) => (),
+            Err(e) => report_simple_failure(e.to_string().as_str(), args.verbose)
+        }
 
     Ok(())
 }
