@@ -35,6 +35,9 @@ use std::{
 ///                 Normally, Mk detects this using the path separator as an indicator. However this may
 ///                 be explicitly set.
 /// * `verbose`   - Output is more extensive, colored, etc.
+/// 
+/// # Returns
+/// A Result wrapping a unit if successful, or a JSPError if unable to make the provided directory.
 pub fn mk(
     mut terms: Vec<String>, 
     graph: &JGraph, 
@@ -95,6 +98,9 @@ pub fn mk(
 ///                 the command will automatically determine this based on the presence of a 
 ///                 path separator in the input.
 /// * `verbose`   - Output is more extensive, colored, etc.
+/// 
+/// # Rwturns
+/// A Result wrapping a unit if successful, or a JSPError if unable to navigate to the supplied directory.
 pub fn go (
     mut terms: Vec<String>, 
     myshell: Option<String>, 

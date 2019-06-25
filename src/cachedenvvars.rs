@@ -3,13 +3,19 @@ use std::env;
 use crate::ShellEnvManager;
 use log;
 /// CachedEnvVars provides a means of looking up and iterating over the previously 
-/// set JSPVars in the environment
+/// set JSPVars in the environment.
 #[derive(Debug)]
 pub struct CachedEnvVars(Vec<String>);
 
 impl CachedEnvVars {
 
-    /// new up a CachedEnvVars
+    /// New up a CachedEnvVars
+    /// 
+    /// # Params
+    /// None
+    /// 
+    /// # Returns 
+    /// CachedEnvVars instance
     pub fn new() -> Self {
         log::info!("CachedEnvVars new()");
         let var = env::var(constants::JSP_TRACKING_VAR).unwrap_or(String::from(""));
@@ -25,6 +31,15 @@ impl CachedEnvVars {
     /// Produce a string that, when eval'ed by a shell (eg bash or tcsh) compatible
     /// with the implementation of `ClearEnvVar by `clearer`, will blank out the
     /// settings the supplied variables.
+    /// 
+    /// # Parameters
+    /// 
+    /// * `clearer` - A boxed trait object implementing the `ShellEnvManager` trait.
+    /// 
+    /// # Returns
+    /// 
+    /// String of commands in a compatible shell which, when eval'ed, will reset the
+    /// caller's environment 
     pub fn clear(&self, clearer: &Box<dyn ShellEnvManager>) -> String  {
         let mut result = String::new();
         for var in self.iter() {
@@ -37,7 +52,7 @@ impl CachedEnvVars {
 impl IntoIterator for CachedEnvVars {
     type Item = String;
     type IntoIter = std::vec::IntoIter<Self::Item>;
-
+    
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()
     }
