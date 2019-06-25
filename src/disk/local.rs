@@ -79,7 +79,9 @@ impl<'a> Disk for DiskService<'a> {
                         log::trace!("local::DiskService.mk(...) calling diksutils::create_dir()");
                         diskutils::create_dir(&create_path, uid, uperms)?
 
-                    } else if idx == last_managed_node {
+                    } 
+                    // now cache uid.
+                    if idx == last_managed_node {
                         log::trace!("local::DiskService.mk(...) last_managed_node");
                         // stash the uid from the recently created path as a User::Uid()
                         // this will be used by Untracked to assign ownership.
@@ -112,7 +114,7 @@ impl<'a> Disk for DiskService<'a> {
 
                 &EntryType::Root => {
                     log::trace!("local::DiskService.mk(...) EntryType::Root");
-                    ()},//panic!("entry type root not supported"),
+                    ()},
             }
         }
         Ok(())
