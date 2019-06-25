@@ -1,19 +1,32 @@
 use chrono;
 use colored::Colorize;
 use dotenv::dotenv;
-use fern::{ colors::{Color, ColoredLevelConfig}, self} ;
-use jsp::{ go, mk, Node, SupportedShell, CachedEnvVars, constants, diskutils, DiskType, find, get_disk_service, graph, validate_path, JGraph, JSPError, NodePath, NIndex, SearchTerm, ShellEnvManager};
+use fern::{ 
+    colors::{
+        Color, 
+        ColoredLevelConfig
+    }, 
+    self
+};
+
+use jsp::{ 
+    go, 
+    mk, 
+    diskutils, 
+    validate_path, 
+    JGraph, 
+    JSPError, 
+    NodePath, 
+    NIndex,
+    get_graph,
+};
+
 use petgraph;
 use log::{ LevelFilter, self };
-use serde_json;
-use std::{ env, io::{BufWriter, Write}, path::{ Path, Component, PathBuf }, fs::File };
+use std::path::{ Path,  PathBuf };
 use structopt::StructOpt;
 use std::ffi::OsString;
-use std::str::FromStr;
-use std::collections::VecDeque;
-use levelspecter::{LevelSpec, LevelName};
-use jsp::jspt::{JSPTemplateError, Loader, State, JGraphKeyMap, RegexMap};
-use std::io::{BufReader, BufRead};
+
 
 #[derive(Debug, StructOpt)]
 #[structopt( name = "jsp", about = "
@@ -29,10 +42,6 @@ struct Opt {
     /// Generate a Graphviz dot file of the jstemplate and print it to stdout
     #[structopt( short="d", long = "dot", parse(from_os_str))]
     dot: Option<PathBuf>,
-
-    /// Write the graph out as json using an interally maintained definition
-    #[structopt( short = "f", long = "file", parse(from_os_str) )]
-    file: Option<PathBuf>,
 
     /// Read the graph from a specified template file. Normally, we identify
     /// the template from the JSP_PATH environment variable
@@ -52,9 +61,6 @@ enum Subcommand {
     /// Jobsystem path to create (eg /dd/shows/FOOBAR)
     #[structopt(name = "mk")]
     Mk {
-        //#[structopt(name="INPUT", parse(from_os_str))]
-        //input: PathBuf,
-        
         /// one or more search tearms of the form key:value , or a 
         /// fullpath, depending upon other field
         #[structopt(name="TERMS")]
@@ -99,24 +105,8 @@ fn main() -> Result<(), failure::Error> {
     let (args, level) = setup_cli();
     setup_logger(level).unwrap();
     
-    let  ( graph,  keymap,  regexmap)  = get_graph(args.file.is_some(), args.graph)?;
-
-    //
-    // Handle jstemplate file output in main command. 
-    // 
-    // if args.file.is_some() {
-    //     if let Some(mut output) = args.file {
-    //         if args.input.is_some() {
-    //             log::warn!("INPUT not compatible with --file argument. It will be ignored");
-    //         }
-    //         output = diskutils::convert_relative_pathbuf_to_absolute(output)?;
-    //         diskutils::write_template(&mut output, &graph);
-    //     }
-    // //
-    // // Handle Dot output in the main command. We are writing the template out as a dot file
-    // //
-    // } else 
-    
+    let  ( graph,  _keymap,  _regexmap)  = get_graph(args.graph)?;
+ 
     if args.dot.is_some() {
         if let Some(mut output) = args.dot {
             if args.input.is_some() {
@@ -151,7 +141,6 @@ fn main() -> Result<(), failure::Error> {
             }
             Err(_) => panic!("JSPError type returned invalid")
         }
-
     //
     // Don't know what you are thinking. I will print help and get out of your way
     //
@@ -200,100 +189,6 @@ fn setup_cli() -> (Opt, log::LevelFilter) {
 
     (args, level)
 }
-
-#[inline]
-fn _get_template_from_env() -> Result<PathBuf, env::VarError> {
-    let jsp_path = env::var(constants::JSP_PATH)?;
-    log::trace!("expanding tilde for {:?}", jsp_path);
-    let jsp_path = shellexpand::tilde(jsp_path.as_str());
-    log::trace!("attempting to cannonicalize {:?}", jsp_path);
-    let jsp_path = match PathBuf::from(jsp_path.into_owned().as_str()).canonicalize() {
-        Ok(p) => p,
-        Err(e) => {
-            log::error!("failed to cannonicalize {}", e);
-            // Todo swap this out when implement failure
-            return Err(env::VarError::NotPresent);
-        }
-    };
-    log::trace!("returning {:?}", jsp_path);
-    Ok(jsp_path)
-}
-
-#[inline]
-fn get_template_from_env() -> PathBuf {
-    match _get_template_from_env() {
-        Ok(v) => v,
-        Err(e) => {
-            eprintln!("\nunable to get template from environment: {}. Is {} set?\n", e, constants::JSP_PATH);
-            std::process::exit(1);
-        }
-    }
-}
-
-#[inline]
-fn open_template(template: &Path) -> File {
-    match File::open(&template) {
-        Ok(f) => f,
-        Err(e) => {
-            eprintln!("\nunable to open {:?}. error: {}\n", template, e);
-            std::process::exit(1);
-        }
-    }
-}
-
-#[inline]
-pub fn get_graph(has_output: bool,graph: Option<PathBuf>) ->  Result<(JGraph, JGraphKeyMap, RegexMap), JSPTemplateError>  {
-    if graph.is_none() {
-        let template = get_template_from_env();
-        let file = open_template(&template);
-
-
-        //let file = File::open(opt.input)?;
-        let bufreader =  BufReader::new(file);
-
-        // lets create structs that Loader::new requires
-        let (mut jgraph, mut keymap, mut regexmap) = Loader::setup();
-        // and now call Loader::new with them.
-        let mut loader = Loader::new(&mut jgraph, &mut keymap, &mut regexmap);
-
-
-            // let result: JGraph =
-            // serde_json::from_reader(json_file).expect("error while reading json");
-            // result
-
-        loader.load(bufreader)?;
-        
-        Ok((jgraph, keymap, regexmap))
-    } else {
-        let file_path = graph.unwrap();
-        let file = File::open(file_path).expect("file not found");
-         //let file = File::open(opt.input)?;
-        let bufreader =  BufReader::new(file);
-
-        // lets create structs that Loader::new requires
-        let (mut jgraph, mut keymap, mut regexmap) = Loader::setup();
-        // and now call Loader::new with them.
-        let mut loader = Loader::new(&mut jgraph, &mut keymap, &mut regexmap);
-
-
-            // let result: JGraph =
-            // serde_json::from_reader(json_file).expect("error while reading json");
-            // result
-
-        loader.load(bufreader)?;
-        
-        Ok((jgraph, keymap, regexmap))
-    }
-}
-
-// #[inline]
-// fn get_graph(has_output: bool, graph: Option<PathBuf>) -> Result<(JGraph, JGraphKeyMap, RegexMap), JSPTemplateError> {
-//     if has_output {
-//         graph::testdata::build_graph()
-//     } else {
-//          _get_graph(graph)
-//     }
-// }
 
 #[inline]
 fn report_success(nodepath: NodePath) {
