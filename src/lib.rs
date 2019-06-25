@@ -26,7 +26,7 @@ pub mod nodepath;
 pub use nodepath::NodePath;
 
 pub mod graph;
-pub use graph::{validate_path, JGraph};
+pub use graph::{validate_path, JGraph, get_graph};
 
 pub mod returnvalue;
 pub use returnvalue::{ ReturnValue, NIndex };
