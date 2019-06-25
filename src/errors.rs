@@ -3,9 +3,9 @@ use failure::Fail;
 use nix;
 use std::{ffi::OsString, io, num, path::PathBuf };
 use ext_regex;
-//use levelspec;
 use levelspecter;
 
+/// Error enum implementing Fail trait
 #[derive(Debug, Fail)]
 pub enum JSPError {
     #[fail(display = "missing NIndex: {:?}", _0)]
@@ -67,6 +67,9 @@ pub enum JSPError {
 
     #[fail(display = "Empty argument list")]
     EmptyArgumentListError,
+
+    #[fail(display = "Uid Retrieval Error: {}", _0)]
+    UidRetrievalError(String),
 
 }
 

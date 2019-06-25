@@ -35,8 +35,8 @@ impl<'a> Disk for DiskService<'a> {
         // that is in the template for a given path. So we store the
         // length of the nodepath, which we use to match against the
         // loop count later, when we are looping over the supplied path.
-        let last_managed_node = nodepath.len(); // we don't subtract one because idx 0 == "/"
-
+        let last_managed_node = nodepath.len() - 1; 
+        log::trace!("last managed node {}", last_managed_node);
         let mut gperms: &str = &self.perms;
         let mut uperms = u32::from_str_radix(&gperms,8).expect("couldnt convert gperms to perms");
         let mut owner = User::from(constants::DEFAULT_USER);
@@ -45,11 +45,12 @@ impl<'a> Disk for DiskService<'a> {
         let mut create_path = PathBuf::new();
 
         for (idx, item) in path.iter().enumerate() {
-            log::trace!("path iter pass {}", idx);
+            log::debug!("path iter pass {}, item: {:?}", idx, &item);
             create_path.push(item);
-            if idx == 0 {continue;}
+            // seems like I can now remove the next two lines
+            //if idx == 0 {continue;}
             // idx 0 is / so we have to subtract one
-            let node = &nodepath[idx - 1];
+            let node = &nodepath[idx];
 
             // update permissions if they have changed
             if let Some(perms) = node.metadata().perms() {
@@ -59,7 +60,7 @@ impl<'a> Disk for DiskService<'a> {
 
             match node.entry_type() {
                 &EntryType::Directory | &EntryType::Volume => {
-                    log::debug!("local::DiskService.mk(...) EntryType::Directory");
+                    log::debug!("local::DiskService.mk(...) EntryType::Directory or Volume");
 
                     // we need the owner to look up the uid
                     let tmp_owner = node.metadata().owner().clone();
@@ -91,16 +92,27 @@ impl<'a> Disk for DiskService<'a> {
                 &EntryType::Untracked => {
                     log::trace!("local::DiskService.mk(...) EntryType::Untracked");
                     if !create_path.exists() {
+                        log::debug!("local::DiskService.mk(...) {:?} does not exist. attempting to create", &create_path);
                         if let User::Uid(id) = owner {
                             diskutils::create_dir(&create_path, id, uperms)?;
                         } else {
-                            panic!("local::DiskService.mk(...) unexpected. Unable to get Uid from owner in ENtryType::Untracked");
-                            //return Err(JSPError::Placeholder)?;
+                            log::error!( "local::DiskService.mk(...) unexpected. Unable to get Uid from owner {:?} in EntryType::Untracked",
+                                    owner);
+                            return Err(JSPError::UidRetrievalError(
+                                format!(
+                                    "local::DiskService.mk(...) unexpected. Unable to get Uid from owner {:?} in EntryType::Untracked",
+                                    owner
+                                )
+                            ));
                         }
+                    } else {
+                        log::debug!("local::DiskService.mk(...) path {:?} exists. skipping mkdir", create_path);
                     }
                 }
 
-                &EntryType::Root => (),//panic!("entry type root not supported"),
+                &EntryType::Root => {
+                    log::trace!("local::DiskService.mk(...) EntryType::Root");
+                    ()},//panic!("entry type root not supported"),
             }
         }
         Ok(())

@@ -6,6 +6,8 @@ use std::{ops::Index, cmp::PartialEq};
 #[allow(unused_imports)]
 use log::{debug, trace};
 use petgraph::{ graph::{ Neighbors, WalkNeighbors} };
+
+
 /// The NodePath stores a path of nodes in the JGraph. The nodes
 /// are represented internally as `NIndex`s. One may generate an
 /// iterator from the NodePath.

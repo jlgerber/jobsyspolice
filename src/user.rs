@@ -6,6 +6,10 @@ use std::{
     fmt::{self, Display, Formatter},
 };
 
+/// Trait defining remove_first, which is intended to return 
+/// a String with the first ascii character removed, assuming that
+/// the type the trait is implemented for represents an ascii 
+/// string.
 trait RemoveFirstAscii {
     fn remove_first(&self) -> String;
 }

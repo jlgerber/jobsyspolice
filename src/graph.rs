@@ -3,7 +3,6 @@ use crate::{
     Node, 
     ReturnValue, 
     NIndex, 
-    //NodeType, 
     NodePath, 
     JSPError, 
     jspt::{
@@ -18,6 +17,7 @@ use crate::{
 use log::{debug, trace};
 use petgraph::{ graph::{ DefaultIx, NodeIndex}, visit::IntoNodeReferences };
 use std::{ cell::RefCell, env, fs::File, rc::Rc, io::{BufReader}, path::{Path, PathBuf}};
+
 
 /// Define a type alias for the type of graph we will be using.
 /// JGraph is a Jobsystem Graph
@@ -75,7 +75,7 @@ pub fn validate_path<'a, I: AsRef<Path>>(path: I, graph: &'a JGraph) -> Result<N
     // we store the first index as we will be asking for its children, and
     // we both need it to be present and know that it will match all future
     // queries.
-    let indices = vec![root_index]; 
+    let indices = Vec::new();//vec![root_index]; 
     let result = validate_path_recurse(it, &graph, root_index, level, Rc::new(RefCell::new(indices)));
     match result {
         ReturnValue::Success(vals) => {
@@ -83,6 +83,7 @@ pub fn validate_path<'a, I: AsRef<Path>>(path: I, graph: &'a JGraph) -> Result<N
                           .unwrap()
                           .into_inner();
             //log::debug!("vals: {:?}", vals);
+            vals.push(root_index); // now that we are reversing, we need to push this onto the end
             vals.reverse();
             Ok(NodePath::new(&graph).replace_nodes_unchecked(vals))
         },

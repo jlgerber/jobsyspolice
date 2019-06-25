@@ -33,7 +33,7 @@ lazy_static! {
 /// # Returns
 /// A Unit or JSPError
 pub fn create_dir(path: &Path, owner_id: u32, perms: u32) -> Result<(), JSPError> {
-    log::info!("create_dir() called");
+    log::info!("create_dir(path:{:?}, owner_id:{}, perms:{}) called", path, owner_id, perms);
     fs::create_dir(path)?;
     chown(
         path,
