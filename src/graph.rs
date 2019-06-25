@@ -1,12 +1,58 @@
-pub use crate::{ Node, ReturnValue, NIndex, NodeType, NodePath, JSPError };
+use crate::{ 
+    constants,
+    Node, 
+    ReturnValue, 
+    NIndex, 
+    //NodeType, 
+    NodePath, 
+    JSPError, 
+    jspt::{
+        JSPTemplateError, 
+        JGraphKeyMap, 
+        RegexMap, 
+        Loader,
+    } 
+};
+
 #[allow(unused_imports)]
 use log::{debug, trace};
 use petgraph::{ graph::{ DefaultIx, NodeIndex}, visit::IntoNodeReferences };
-use std::{ cell::RefCell, rc::Rc, path::Path };
+use std::{ cell::RefCell, env, fs::File, rc::Rc, io::{BufReader}, path::{Path, PathBuf}};
 
 /// Define a type alias for the type of graph we will be using.
 /// JGraph is a Jobsystem Graph
 pub type JGraph = petgraph::Graph<Node, ()>;
+
+/// Reetrieve a graph from a path
+pub fn get_graph(graph: Option<PathBuf>) ->  Result<(JGraph, JGraphKeyMap, RegexMap), JSPTemplateError>  {
+    if graph.is_none() {
+        let template = get_template_from_env();
+        let file = open_template(&template);
+
+        let bufreader =  BufReader::new(file);
+
+        let (mut jgraph, mut keymap, mut regexmap) = Loader::setup();
+        // and now call Loader::new with them.
+        let mut loader = Loader::new(&mut jgraph, &mut keymap, &mut regexmap);
+
+        loader.load(bufreader)?;
+        
+        Ok((jgraph, keymap, regexmap))
+    } else {
+        let file_path = graph.unwrap();
+        let file = File::open(file_path).expect("file not found");
+        let bufreader =  BufReader::new(file);
+
+        // lets create structs that Loader::new requires
+        let (mut jgraph, mut keymap, mut regexmap) = Loader::setup();
+        // and now call Loader::new with them.
+        let mut loader = Loader::new(&mut jgraph, &mut keymap, &mut regexmap);
+
+        loader.load(bufreader)?;
+        
+        Ok((jgraph, keymap, regexmap))
+    }
+}
 
 /// Determine if the provided path is valid or not.NodeType
 ///
@@ -42,6 +88,46 @@ pub fn validate_path<'a, I: AsRef<Path>>(path: I, graph: &'a JGraph) -> Result<N
         },
         ReturnValue::Failure{entry, node, depth} => {
             Err(JSPError::ValidationFailure{entry, node, depth})
+        }
+    }
+}
+
+#[inline]
+fn get_template_from_env() -> PathBuf {
+    match _get_template_from_env() {
+        Ok(v) => v,
+        Err(e) => {
+            eprintln!("\nunable to get template from environment: {}. Is {} set?\n", e, constants::JSP_PATH);
+            std::process::exit(1);
+        }
+    }
+}
+
+#[inline]
+fn _get_template_from_env() -> Result<PathBuf, env::VarError> {
+    let jsp_path = env::var(constants::JSP_PATH)?;
+    log::trace!("expanding tilde for {:?}", jsp_path);
+    let jsp_path = shellexpand::tilde(jsp_path.as_str());
+    log::trace!("attempting to cannonicalize {:?}", jsp_path);
+    let jsp_path = match PathBuf::from(jsp_path.into_owned().as_str()).canonicalize() {
+        Ok(p) => p,
+        Err(e) => {
+            log::error!("failed to cannonicalize {}", e);
+            // Todo swap this out when implement failure
+            return Err(env::VarError::NotPresent);
+        }
+    };
+    log::trace!("returning {:?}", jsp_path);
+    Ok(jsp_path)
+}
+
+#[inline]
+fn open_template(template: &Path) -> File {
+    match File::open(&template) {
+        Ok(f) => f,
+        Err(e) => {
+            eprintln!("\nunable to open {:?}. error: {}\n", template, e);
+            std::process::exit(1);
         }
     }
 }
