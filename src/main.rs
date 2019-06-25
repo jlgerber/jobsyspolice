@@ -1,5 +1,5 @@
 use chrono;
-use colored::Colorize;
+//use colored::Colorize;
 use dotenv::dotenv;
 use fern::{ 
     colors::{
@@ -16,18 +16,18 @@ use jsp::{
     mk, 
     diskutils, 
     validate_path, 
-    JGraph, 
+    //JGraph, 
     JSPError, 
     NodePath, 
-    NIndex,
+    //NIndex,
     get_graph,
 };
 
 use petgraph;
 use log::{ LevelFilter, self };
-use std::path::{ Path,  PathBuf };
+use std::path::{ /*Path,*/  PathBuf };
 use structopt::StructOpt;
-use std::ffi::OsString;
+//use std::ffi::OsString;
 
 
 #[derive(Debug, StructOpt)]
