@@ -4,7 +4,7 @@ use nom::{
     bytes::complete::{tag},
     combinator::{ map},
     multi::many1,
-    character::complete::{ space0, alphanumeric1,},
+    character::complete::{ space0},
 };
 
 use crate::jspt::{helpers::*, Edge, ParseResult};

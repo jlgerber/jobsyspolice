@@ -4,7 +4,6 @@ use nom::{
     bytes::complete::tag,
     branch::alt,
     combinator::{map, recognize},
-    //error::ErrorKind,
     character::complete::space0,
     multi::separated_nonempty_list,
 };
