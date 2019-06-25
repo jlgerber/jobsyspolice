@@ -12,6 +12,7 @@ use fern::{
 use jsp::{ 
     report_failure,
     report_simple_failure,
+    report_success,
     go, 
     mk, 
     diskutils, 
@@ -196,15 +197,4 @@ fn setup_cli() -> (Opt, log::LevelFilter) {
     };
 
     (args, level)
-}
-
-#[inline]
-fn report_success(nodepath: NodePath) {
-    eprintln!("\nSuccess\n");
-
-    for n in nodepath.iter() {
-        eprintln!("{:?}", n.display_name());
-    }
-
-    println!("");
 }

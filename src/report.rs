@@ -1,8 +1,27 @@
-use crate::{JGraph, NIndex};
+use crate::{JGraph, NIndex, NodePath};
 use std::path::{PathBuf, Path};
 use std::ffi::{OsString, OsStr};
 use colored::*;
 
+/// Report successful execution of task to user. 
+/// 
+/// # Parameters
+/// 
+/// * `nodepath` - NodePath instance storing ordered list of Nodes 
+/// 
+/// # Returns
+/// None
+pub fn report_success(nodepath: NodePath) {
+    eprintln!("\nSuccess\n");
+
+    for n in nodepath.iter() {
+        eprintln!("{:?}", n.display_name());
+    }
+
+    println!("");
+}
+
+/// Report failed task to user, given context
 pub fn report_failure(input: &OsStr, entry: &OsString, node: NIndex, depth: u8, graph: &JGraph, verbose: bool ) {
     let path = Path::new(input)
                 .iter()
@@ -19,6 +38,7 @@ pub fn report_failure(input: &OsStr, entry: &OsString, node: NIndex, depth: u8, 
     std::process::exit(1);
 }
 
+/// Report simple failure to the user given an error str and a verbose bool
 pub fn report_simple_failure(error: &str, verbose: bool ) {
     if verbose { 
         eprintln!("\n{}\n", "Error".bright_red()); 
