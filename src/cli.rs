@@ -44,7 +44,11 @@ pub fn mk(
     full_path: bool, 
     verbose: bool
 ) -> Result<(), JSPError> {
-
+    
+    if terms.len() == 0 {
+        return Err(JSPError::EmptyArgumentListError);
+    }
+    
     let cr = if verbose {"\n"} else {""};
     let diskservice = get_disk_service(DiskType::Local, graph);
 
@@ -108,7 +112,9 @@ pub fn go (
     full_path: bool, 
     verbose: bool
 ) -> Result<(),JSPError> {
-        
+    if terms.len() == 0 {
+        return Err(JSPError::EmptyArgumentListError);
+    }
     let myshell = myshell.unwrap_or("bash".to_string());
     let myshelldyn = SupportedShell::from_str(myshell.as_str())?.get();
 
