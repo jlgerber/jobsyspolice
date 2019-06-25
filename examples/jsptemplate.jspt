@@ -1,0 +1,220 @@
+[regex]
+# the regex section comes first and defines named regular expressions
+
+num_n_under              = "[0-9_]+"
+lower_num_dot_dash_under = "[a-z0-9._-]" 
+lower_number_dash        = "[a-z0-9_]+"
+libsd_re = "(config|cortex|dmx|houdini|integ|jspools|katana|lw|massive|max|maya|mentalray|mkfoldy|moco|mova|nfb|nuke|perl|python[0-9.]*|race|refchef|rman|scratch|setupenv|shader|shoot2x|submission|vray|wam|web)"
+
+[nodes]
+
+// pre show 
+dd
+shows
+show = "[A-Z]+[A-Z0-9]*" "(REF|SHARED|OUTSOURCE|LOCATIONS|DAILIES)" [owner: jobsys, perms: 751, varname: DD_SHOW]
+
+// REF AND SHOW LEVEL 
+
+refdir             = REF          [volume]
+quicktimes         = quicktimes   [perms: 751]
+qtsubdir           = $num_n_under
+clientvault        = CLIENT_VAULT [volume]
+clientvault_subdir = "(incoming|outgoing)"
+clientvault_ssd    = "[0-9_]+"
+slatesNcategories  = "(SLATES|CATGORIES)"
+snc_sd             = $lower_num_dot_dash_under
+locations          = LOCATIONS 
+loc_sd             = $lower_num_dot_dash_under
+loc_ssd            = $lower_num_dot_dash_under
+documents
+doc_sd             = "(agency|director_treatments|vfx_methodology|schedules|scripts|storyboards)"
+audio
+audio_sd           = "(mixes|sources)"
+threed             = "3d"
+threed_sd          = "(3d_assets|mocap)"
+chars              = CHARACTERS 
+
+// chars_sd           = $lower_number_dash "(DEVL|SHARED|etc|lib|bin|user)"
+chars_sd           = "[a-z0-9_]+" "(DEVL|SHARED|etc|lib|bin|user)"
+
+      
+//-------------------------//
+//    ANY LEVEL NODES      //
+//-------------------------//
+
+tools      [perms: 0751, owner: ddinst]
+logs       [perms: 0771]
+package
+extension 
+bin
+etc                  [owner: ddinst, perms: 0751]
+lib                  [owner: ddinst]
+lib_sd =   $libsd_re [perms: 0771]
+prod                 [perms: 755]
+docs                 [perms: 771]
+
+
+//   USER WORK  
+
+user                            [volume, perms: 751]
+//default 0555
+
+// problem handling variable after owner 
+// should be fixed 
+work = "work\.(?P<work>[a-z]+)" [owner: $work, perms: 770, varname: DD_WORK]
+//work = "work\.(?P<work>[a-z]+)" [owner: work, perms: 770, varname: DD_WORK]
+
+//   SHARED 
+
+shared     = SHARED
+depts      = "(PREVIZ|INTEG|MODEL|RIG|ANIM|CFX|LIGHT|ENVIRO|FX|COMP|IMG)"
+category   = "(char|prop|veh|scene|enviro|kit)" [ varname: DD_CATEGORY ]
+department = "(integ|model|previz|postviz|enviro|rig|anim|fx|cfx|light|comp|lookdev|shotmodel)"
+subcontext = "[a-z]+([_]{0,1}[a-z0-9])*"        [ varname: DD_SUBCONTEXT ]
+
+//------------------------//
+//    SHOW LEVEL NODES    //
+//------------------------//
+
+//   ASSETDEV 
+assetdev = ASSETDEV [varname: DD_SEQUENCE]
+adshot   = "([A-Z][A-Z0-9]+[_]{0,1})+[A-Z0-9]+" [varname : DD_SHOT ]
+
+//   CLIENT
+client_dd_edit    = "(CLIENT|DD)"  [volume]
+client_dd_edit_sd = "(([0-9]{4,5})|([0-9]{1,2}?[a-z]+)|([a-z]{2}[0-9]{4,5}))"
+color 
+
+//  OUTSOURCE
+
+outsource     = OUTSOURCE [volume]
+// default 555 
+outsource_sd  = "[a-zA-Z0-9_.]" 
+outsource_ssd = "[a-zA-Z0-9_.]+" "(\bprod\b)" [perms: 770]
+   
+
+//  FINALS
+finals    = FINALS [perms: 750]
+finals_sd = "[0-9_]+"
+
+//  CONFORM 
+
+// name conform as a regex to prevent work.user completion from identifying conform
+conform    = "CONFORM"
+conform_sd = "[a-z0-9_]+" "(user|docs|prod)"
+// conform can also have SHARED as subdir as well as user docs and prod
+
+//  ART DEPT AND EDITORIAL 
+
+artdept       = ARTDEPT
+artdept_sd    = "[a-zA-Z0-9_.-]+" [perms: 770] 
+storyboard    = STORYBOARD
+storyboard_sd = "[0-9]{2}_[0-9]{4}" [perms:770]
+
+editorial = EDITORIAL
+film_lens = "(FILM|LENS)"
+
+//  DAILIES
+
+dailies = DAILIES
+
+//--------------------//
+//      SEQUENCE      //
+//--------------------//
+
+sequence = "(([A-Z]{2,4})|LIBRARY)" "(SHARED|REF|OUTSOURCE|LOCATIONS|DAILIES)" [varname: DD_SEQUENCE]
+    
+//---------------------//
+//         SHOT        //
+//---------------------//
+
+shot =  "[0-9]+[A-Z0-9]*" [varname:DD_SHOT]
+
+//-------------------//
+//   GRAPH EDGES     //
+//-------------------//
+
+[edges] 
+// edges must start with root
+root -> dd -> shows -> show -> sequence -> shot
+
+// SHARED 
+shared -> depts -> category -> department -> subcontext 
+
+// user 
+user -> work 
+
+// REFERENCE DIR
+refdir -> clientvault -> clientvault_subdir -> clientvault_ssd
+refdir -> slatesNcategories -> snc_sd        
+refdir -> locations -> loc_sd -> loc_ssd
+refdir -> documents -> doc_sd 
+refdir -> audio -> audio_sd 
+refdir -> threed -> threed_sd         
+refdir -> chars -> chars_sd      
+refdir -> quicktimes -> qtsubdir
+
+
+// TOOLS 
+tools -> package
+tools -> extension 
+tools -> bin 
+tools -> etc   
+
+// SHOW 
+
+show -> tools 
+show -> logs
+show -> etc 
+show -> refdir
+show -> etc 
+show -> color 
+show -> user
+show -> client_dd_edit -> client_dd_edit_sd
+show -> shared
+show -> lib -> lib_sd 
+show -> prod 
+show -> docs 
+show -> outsource -> outsource_sd -> outsource_ssd
+show -> finals -> finals_sd           
+show -> artdept -> artdept_sd 
+show -> storyboard -> storyboard_sd
+show -> editorial
+show -> film_lens
+show -> conform 
+show -> assetdev -> adshot
+show -> dailies 
+
+// CONFORM 
+show -> conform
+conform -> user 
+conform -> shared 
+conform -> conform_sd 
+conform -> docs 
+conform -> prod 
+
+// SEQUENCE SUBDIRS
+
+sequence -> etc
+sequence -> tools
+sequence -> user
+sequence -> shared 
+sequence -> lib 
+sequence -> prod 
+
+// SHOT SUBDIRS
+
+shot -> tools 
+shot -> etc  
+shot -> shared 
+shot -> user 
+shot -> lib 
+shot -> prod 
+shot -> tools 
+
+// ASSETDEV SHOTS
+
+adshot -> etc 
+adshot -> shared 
+adshot -> user 
+adshot -> prod 

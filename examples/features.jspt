@@ -1,0 +1,44 @@
+[regex]
+
+num_under =   "[0-9_]+"
+quicktimes =  "quicktimes"
+qtsubdir   =  "[0-9_]+" 
+doc_sd     =  "(agency|director_treatments|vfx_methodology|schedules|scripts|storyboards)"
+chars_sd   =  "(DEVL|SHARED|etc|lib|bin|user)"
+level       = "[A-Z]+[A-Z0-9]*" "(REF|SHARED|OUTSOURCE|LOCATIONS)"
+
+[nodes]
+
+# nodes are the directories and files in the template. They may be simple, like:
+dd  
+shows
+# or more complex, like:
+show            = $level  [ varname:DD_SHOW, owner: jobsys, perms: 751 ]
+
+# $vars refer to the regex section above 
+seq             = $level [ varname:DD_SEQUENCE, owner: jobsys, perms: 751 ]
+shot            = $level [ varname:DD_SHOT, owner: jobsys, perms: 751 ]
+refdir          = REF 
+shared          = SHARED
+img             = IMG
+quicktimes      = $quicktimes 
+qtsubdir        = $qtsubdir
+clientvault     = CLIENT_VAULT
+    
+# but you don't have to name your regex. you may also just write regec inline
+clientvault_sd  = "(incoming|outgoing)"
+clientvault_ssd = "[0-9_]+"
+
+[graph]
+ 
+# each pair of nodes define an edge. Notice that we 
+# are not limited to an edge per line
+dd -> shows -> show -> seq -> shot
+
+# The graph section is where you wire up nodes
+dd -> refdir -> quicktimes
+
+# speculative shared -> img | model | anim | fx 
+show -> shared
+seq  -> shared
+shot -> shared
