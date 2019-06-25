@@ -59,3 +59,5 @@ pub use shell::{bash, tcsh, ShellEnvManager, SupportedShell};
 
 pub mod cli;
 pub use cli::{go, mk};
+
+pub mod jspt;

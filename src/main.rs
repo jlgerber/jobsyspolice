@@ -2,7 +2,7 @@ use chrono;
 use colored::Colorize;
 use dotenv::dotenv;
 use fern::{ colors::{Color, ColoredLevelConfig}, self} ;
-use jsp::{ go, mk, SupportedShell, CachedEnvVars, constants, diskutils, DiskType, find, get_disk_service, graph, validate_path, JGraph, JSPError, NodePath, NIndex, SearchTerm, ShellEnvManager};
+use jsp::{ go, mk, Node, SupportedShell, CachedEnvVars, constants, diskutils, DiskType, find, get_disk_service, graph, validate_path, JGraph, JSPError, NodePath, NIndex, SearchTerm, ShellEnvManager};
 use petgraph;
 use log::{ LevelFilter, self };
 use serde_json;
@@ -12,6 +12,8 @@ use std::ffi::OsString;
 use std::str::FromStr;
 use std::collections::VecDeque;
 use levelspecter::{LevelSpec, LevelName};
+use jsp::jspt::{JSPTemplateError, Loader, State, JGraphKeyMap, RegexMap};
+use std::io::{BufReader, BufRead};
 
 #[derive(Debug, StructOpt)]
 #[structopt( name = "jsp", about = "
@@ -97,23 +99,25 @@ fn main() -> Result<(), failure::Error> {
     let (args, level) = setup_cli();
     setup_logger(level).unwrap();
     
-    let graph = get_graph(args.file.is_some(), args.graph);
+    let  ( graph,  keymap,  regexmap)  = get_graph(args.file.is_some(), args.graph)?;
 
     //
     // Handle jstemplate file output in main command. 
     // 
-    if args.file.is_some() {
-        if let Some(mut output) = args.file {
-            if args.input.is_some() {
-                log::warn!("INPUT not compatible with --file argument. It will be ignored");
-            }
-            output = diskutils::convert_relative_pathbuf_to_absolute(output)?;
-            diskutils::write_template(&mut output, &graph);
-        }
-    //
-    // Handle Dot output in the main command. We are writing the template out as a dot file
-    //
-    } else if args.dot.is_some() {
+    // if args.file.is_some() {
+    //     if let Some(mut output) = args.file {
+    //         if args.input.is_some() {
+    //             log::warn!("INPUT not compatible with --file argument. It will be ignored");
+    //         }
+    //         output = diskutils::convert_relative_pathbuf_to_absolute(output)?;
+    //         diskutils::write_template(&mut output, &graph);
+    //     }
+    // //
+    // // Handle Dot output in the main command. We are writing the template out as a dot file
+    // //
+    // } else 
+    
+    if args.dot.is_some() {
         if let Some(mut output) = args.dot {
             if args.input.is_some() {
                 log::warn!("INPUT not compatible with --dot argument. It will be ignored");
@@ -238,30 +242,58 @@ fn open_template(template: &Path) -> File {
 }
 
 #[inline]
-fn _get_graph(graph: Option<PathBuf>) -> JGraph {
+pub fn get_graph(has_output: bool,graph: Option<PathBuf>) ->  Result<(JGraph, JGraphKeyMap, RegexMap), JSPTemplateError>  {
     if graph.is_none() {
         let template = get_template_from_env();
-        let json_file = open_template(&template);
-        let result: JGraph =
-        serde_json::from_reader(json_file).expect("error while reading json");
-        result
+        let file = open_template(&template);
+
+
+        //let file = File::open(opt.input)?;
+        let bufreader =  BufReader::new(file);
+
+        // lets create structs that Loader::new requires
+        let (mut jgraph, mut keymap, mut regexmap) = Loader::setup();
+        // and now call Loader::new with them.
+        let mut loader = Loader::new(&mut jgraph, &mut keymap, &mut regexmap);
+
+
+            // let result: JGraph =
+            // serde_json::from_reader(json_file).expect("error while reading json");
+            // result
+
+        loader.load(bufreader)?;
+        
+        Ok((jgraph, keymap, regexmap))
     } else {
-        let json_file_path = graph.unwrap();
-        let json_file = File::open(json_file_path).expect("file not found");
-        let result: JGraph =
-        serde_json::from_reader(json_file).expect("error while reading json");
-        result
+        let file_path = graph.unwrap();
+        let file = File::open(file_path).expect("file not found");
+         //let file = File::open(opt.input)?;
+        let bufreader =  BufReader::new(file);
+
+        // lets create structs that Loader::new requires
+        let (mut jgraph, mut keymap, mut regexmap) = Loader::setup();
+        // and now call Loader::new with them.
+        let mut loader = Loader::new(&mut jgraph, &mut keymap, &mut regexmap);
+
+
+            // let result: JGraph =
+            // serde_json::from_reader(json_file).expect("error while reading json");
+            // result
+
+        loader.load(bufreader)?;
+        
+        Ok((jgraph, keymap, regexmap))
     }
 }
 
-#[inline]
-fn get_graph(has_output: bool, graph: Option<PathBuf>) -> JGraph {
-    if has_output {
-        graph::testdata::build_graph()
-    } else {
-         _get_graph(graph)
-    }
-}
+// #[inline]
+// fn get_graph(has_output: bool, graph: Option<PathBuf>) -> Result<(JGraph, JGraphKeyMap, RegexMap), JSPTemplateError> {
+//     if has_output {
+//         graph::testdata::build_graph()
+//     } else {
+//          _get_graph(graph)
+//     }
+// }
 
 #[inline]
 fn report_success(nodepath: NodePath) {

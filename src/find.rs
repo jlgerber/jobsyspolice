@@ -2,7 +2,7 @@ use crate::{ JGraph, JSPError, NodePath, NodeType, NIndex, Search, SearchTerm};
 use std::{ cell::RefCell, rc::Rc, collections::VecDeque, path::PathBuf };
 use log;
 use petgraph::{visit::IntoNodeReferences};
-use regex::Regex;
+use ext_regex::Regex;
 use lazy_static::lazy_static;
 
 
@@ -154,10 +154,10 @@ fn replace_capture_group(regstr: &str, key: &str, replacement: &str) -> Option<S
                                .as_str() == key {
         log::debug!("replace_capture_group(...) match");
         lazy_static!{
-        static ref RE2: Regex = regex::Regex::new(r"\(\?P<[a-zA-Z_\-0-9]+>.+\)")
+        static ref RE2: Regex = ext_regex::Regex::new(r"\(\?P<[a-zA-Z_\-0-9]+>.+\)")
                                 .expect("unable to compile RE2 regex in replace_capture_group");
 
-        static ref STRIP_REF: Regex = regex::Regex::new(r"[\^\$]+")
+        static ref STRIP_REF: Regex = ext_regex::Regex::new(r"[\^\$]+")
                                       .expect("unable to compile STRIP_REF regex in replace_capture_group");
 
         }

@@ -1,4 +1,4 @@
-use regex::{ Captures, CaptureLocations, CaptureMatches, CaptureNames, Regex, Replacer, Split, SplitN, Match, Matches };
+use ext_regex::{ Captures, CaptureLocations, CaptureMatches, CaptureNames, Regex, Replacer, Split, SplitN, Match, Matches };
 use serde::{ de::{Visitor, Error}, Deserializer, Serializer, Deserialize, Serialize };
 use std::{ borrow::Cow, cmp::Ordering, fmt::{Display, Formatter, self}, str::FromStr } ;
 
@@ -36,9 +36,9 @@ impl Display for Regexp {
 }
 
 impl FromStr for Regexp {
-    type Err = regex::Error;
+    type Err = ext_regex::Error;
 
-    fn from_str(s: &str) -> Result<Regexp, regex::Error> {
+    fn from_str(s: &str) -> Result<Regexp, ext_regex::Error> {
         Regexp::new(s)
     }
 }
@@ -55,7 +55,7 @@ impl Regexp {
     ///         matches.
     /// # Returns
     ///    Result wrapping a Regexp or a regex::Error
-    pub fn new(r: &str) -> Result<Regexp, regex::Error> {
+    pub fn new(r: &str) -> Result<Regexp, ext_regex::Error> {
         let regx = Regex::new(r)?;
         Ok(Regexp(regx))
     }

@@ -2,7 +2,7 @@ use crate::NIndex;
 use failure::Fail;
 use nix;
 use std::{ffi::OsString, io, num, path::PathBuf };
-use regex;
+use ext_regex;
 //use levelspec;
 use levelspecter;
 
@@ -60,7 +60,7 @@ pub enum JSPError {
     NixError(#[cause] nix::Error),
 
     #[fail(display = "{}", _0)]
-    RegexError(#[cause] regex::Error),
+    RegexError(#[cause] ext_regex::Error),
     
     #[fail(display = "{}", _0)]
     LevelSpecError(#[cause] levelspecter::LevelSpecterError),
@@ -85,8 +85,8 @@ impl From<nix::Error> for JSPError {
     }
 }
 
-impl From<regex::Error> for JSPError {
-    fn from(error: regex::Error) -> Self {
+impl From<ext_regex::Error> for JSPError {
+    fn from(error: ext_regex::Error) -> Self {
         JSPError::RegexError(error)
     }
 }
