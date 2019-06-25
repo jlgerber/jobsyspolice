@@ -10,6 +10,8 @@ use fern::{
 };
 
 use jsp::{ 
+    report_failure,
+    report_simple_failure,
     go, 
     mk, 
     diskutils, 
@@ -121,12 +123,18 @@ fn main() -> Result<(), failure::Error> {
     // Handle Directory Creation via the mk subcommand
     //
     } else if let Some(Subcommand::Mk{terms, full_path, verbose}) = args.subcmd {
-        mk(terms, &graph, full_path, verbose)?;
+        match mk(terms, &graph, full_path, verbose){
+            Ok(()) => (),
+            Err(e) => report_simple_failure(e.to_string().as_str(), verbose)
+        }
     //   
     // Handle Navigation via the Go subcommand
     //
     }  else if let Some(Subcommand::Go{terms, myshell, full_path, verbose}) = args.subcmd {
-        go(terms, myshell, &graph, full_path, verbose)?;
+        match go(terms, myshell, &graph, full_path, verbose) {
+            Ok(()) => (),
+            Err(e) => report_simple_failure(e.to_string().as_str(), verbose)
+        }
     //
     // Validate supplied argument to determine whether it is a valid path or not
     //
@@ -199,21 +207,4 @@ fn report_success(nodepath: NodePath) {
     }
 
     println!("");
-}
-
-#[inline]
-fn report_failure(input: &std::ffi::OsStr, entry: &OsString, node: NIndex, depth: u8, graph: &JGraph, verbose: bool ) {
-    let path = Path::new(input)
-                .iter()
-                .take((depth+1) as usize)
-                .fold(PathBuf::new(), |mut p, v| {p.push(v); p});
-
-    let neighbors = graph.neighbors(node);
-    if verbose { eprintln!("\n{}\n", "Failure".bright_red()); }
-    eprintln!("Failed to match {} in {:?} against:", entry.to_str().unwrap_or("").bright_red(), path);
-    for n in neighbors {
-        eprintln!("{}", graph[n].display_name().bright_red());
-    }
-    if verbose { eprintln!(""); }
-    std::process::exit(1);
 }
