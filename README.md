@@ -41,7 +41,11 @@ let chars_sd = graph.add_node(
 );
 ```
 
-## Translated
+## jspcompile
+The jspcompile crate provides the `jspcompile` command, which compiles `jspt` files to `json` or `dot`. 
+
+Here is an example of the `jspt` format:
+
 ```
 [regex]
 num_under =   "[0-9_]+"
@@ -74,3 +78,23 @@ show -> shared
 seq -> shared
 shot -> shared
 ```
+
+## Demo
+```
+
+jspmk dev01.rd.0001 work:jgerber
+jspmk dev01.aa.0001 work:jgerber
+jspmk dev01.rd.9999 work:jgerber
+jspgo !:*
+
+jspmk dev02.rd.0001 work:jgerber
+jspmk dev02.aa.0001 work:jgerber
+jspmk dev02.rd.9999 work:jgerber
+
+jspgo .aa.
+jspgo .rd.
+jspgo ..9999
+
+jspgo dev01
+jspgo /dd/shows/DEV01/RD
+ 
