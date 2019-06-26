@@ -131,21 +131,21 @@ impl<'a> Loader<'a> {
                     Ok(v) => {
                         match v {
                             ParseResult::Empty => {}
-                            ParseResult::Header(header) => {log::info!("line: {} {:?}", statemachine.line_number(), header)}
+                            ParseResult::Header(header) => {log::info!("Loader::load(...) line: {} {:?}", statemachine.line_number(), header)}
 
-                            ParseResult::Comment(comment) =>{log::debug!("line: {} {}", statemachine.line_number(), comment)}
+                            ParseResult::Comment(comment) =>{log::debug!("Loader::load(...) line: {} {}", statemachine.line_number(), comment)}
 
                             ParseResult::Node(node) => {
-                                log::info!("line: {} {:?}", statemachine.line_number(), node);
+                                log::info!("Loader::load(...) line: {} {:?}", statemachine.line_number(), node);
                                 self.process_node(node, line.as_str(), &statemachine)?;
                             }
 
                             ParseResult::Regex(regex) => {
-                                log::info!("line: {} {:?}", statemachine.line_number(), regex);
+                                log::info!("Loader::load(...) line: {} {:?}", statemachine.line_number(), regex);
                                 self.process_regex(regex)?;
                             }
                             ParseResult::Edges(edges) => {
-                                log::info!("line: {} {:?}", statemachine.line_number(), edges);
+                                log::info!("Loader::load(...) line: {} {:?}", statemachine.line_number(), edges);
                                 
                                 // deal with root
                                 // this is not where this belongs
@@ -170,7 +170,7 @@ impl<'a> Loader<'a> {
     // We provide the line and statemachine for context in the case of failure. 
     fn process_edges(&mut self, edges: Vec<Edge>, line: &str, statemachine: &StateMachine) -> Result<(), JSPTemplateError> {
         for edge in edges {
-            log::debug!("Adding edge for {:?}", &edge);
+            log::debug!("Loader::process_edges(...) Adding edge for {:?}", &edge);
             let from_node = self.keymap.get(&edge.from).ok_or_else(||
                 JSPTemplateLineError::from((
                     statemachine.line_number(),
@@ -260,6 +260,7 @@ impl<'a> Loader<'a> {
                         JSPTemplateError::EnvVarLookupError(variable.clone()
                     )))
                 ))?;
+                log::trace!("Loader::process_node(...) Looked up EnvVar: {} and found {}", name, &var);
                 let entrytype = if metadata.is_volume() {EntryType::Volume} else {EntryType::Directory};
                 self.keymap.insert(
                     name.clone(), 
