@@ -18,6 +18,10 @@ use jsp::{
     validate_path, 
     JSPError, 
     get_graph,
+    get_disk_service,
+    DiskType,
+    gen_terms_from_strings,
+    find,
 };
 
 use petgraph;
@@ -46,9 +50,10 @@ struct Opt {
     #[structopt( short = "i", long = "input", parse(from_os_str) )]
     graph: Option<PathBuf>,
 
-    /// Jobsystem path to validate (eg /dd/shows/FOOBAR)
-    #[structopt(name="INPUT", parse(from_os_str))]
-    input: Option<PathBuf>,
+    /// one or more search tearms of the form key:value , or a 
+    /// fullpath, depending upon other field
+    #[structopt(name="TERMS")]
+    input: Vec<String>,
 
     #[structopt(subcommand)]
     subcmd: Option<Subcommand>,
@@ -95,7 +100,6 @@ enum Subcommand {
     }
 }
 
-
 fn main() -> Result<(), failure::Error> {
 
     // Slurp in env vars from .env files in the path.
@@ -107,7 +111,7 @@ fn main() -> Result<(), failure::Error> {
  
     if args.dot.is_some() {
         if let Some(mut output) = args.dot {
-            if args.input.is_some() {
+            if args.input.len() > 0{
                 log::warn!("INPUT not compatible with --dot argument. It will be ignored");
             }
             output = diskutils::convert_relative_pathbuf_to_absolute(output)?;
@@ -134,17 +138,36 @@ fn main() -> Result<(), failure::Error> {
     //
     // Validate supplied argument to determine whether it is a valid path or not
     //
-    } else if let Some(mut input) = args.input {
-        input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
-        match validate_path(&input, &graph) {
-            Ok(nodepath) => {
-                report_success(nodepath);
-            },
-            Err(JSPError::ValidationFailure{entry, node, depth}) => {
-                report_failure(input.as_os_str(), &entry, node, depth, &graph, true );
+    } else if args.input.len() > 0 {
+        let input = args.input;
+        
+        let diskservice = get_disk_service(DiskType::Local, &graph);
+        if /*full_path == true ||*/  input.len() > 0 && input[0].contains("/")  {
+            let mut input = PathBuf::from(&input[0]);
+            input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
+            match validate_path(&input, &graph) {
+                Ok(nodepath) => {
+                    report_success(nodepath);
+                },
+                Err(JSPError::ValidationFailure{entry, node, depth}) => {
+                    report_failure(input.as_os_str(), &entry, node, depth, &graph, true );
+                }
+                Err(_) => panic!("JSPError type returned invalid")
             }
-            Err(_) => panic!("JSPError type returned invalid")
-        }
+         } else {
+
+            let terms = gen_terms_from_strings(input)?;
+
+            match find::find_path_from_terms(terms, &graph) {
+                Ok(( _path,  nodepath)) => { 
+                    //let path_str = path.to_str().expect("unable to convert path to str. Does it contain non-ascii chars?");
+                    report_success(nodepath);
+                },
+                Err(e) => {
+                    return Err(e)?;
+                },
+            };
+         }
     //
     // Don't know what you are thinking. I will print help and get out of your way
     //

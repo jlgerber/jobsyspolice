@@ -160,8 +160,7 @@ pub fn go (
 }
 
 
-#[inline]
-fn gen_terms_from_strings(mut terms: Vec<String>) -> Result<Vec<SearchTerm>, JSPError> {
+pub fn gen_terms_from_strings(mut terms: Vec<String>) -> Result<Vec<SearchTerm>, JSPError> {
 
     let lspec_term;
     if terms.len() == 0 {
