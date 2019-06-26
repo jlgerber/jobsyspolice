@@ -96,6 +96,17 @@ jspgo .aa.
 jspgo .rd.
 jspgo ..9999
 
+jspgo dev01..
+jspgo dev02.
+
+jspgo dev01.rd.9999
+jspgo ... work:jgerber
+jspmk .. work:jgerber
+jspgo .. work:jgerber
+
+jspgo . work:jgerber
+jspgo . work:jgerber
+
 jspgo dev01
 jspgo /dd/shows/DEV01/RD
  
