@@ -252,7 +252,7 @@ impl<'a> Loader<'a> {
             } 
             // `rd = $$rd_re`
             SNode::EnvVar{ref name, ref variable, ref metadata} => {
-                let var = std::env::var(variable).or_else(|errval|
+                let var = std::env::var(variable).or_else(|_errval|
                     Err(JSPTemplateLineError::from((
                         statemachine.line_number(),
                         line.to_owned(),
