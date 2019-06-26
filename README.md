@@ -82,6 +82,7 @@ shot -> shared
 
 ## Demo
 ```
+sudo rm -rf  /dd/shows/*
 
 jspmk dev01.rd.0001 work:jgerber
 jspmk dev01.aa.0001 work:jgerber

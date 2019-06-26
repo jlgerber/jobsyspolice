@@ -250,6 +250,28 @@ impl<'a> Loader<'a> {
                     )
                 );
             } 
+            // `rd = $$rd_re`
+            SNode::EnvVar{ref name, ref variable, ref metadata} => {
+                let var = std::env::var(variable).or_else(|errval|
+                    Err(JSPTemplateLineError::from((
+                        statemachine.line_number(),
+                        line.to_owned(),
+                        statemachine.state().clone(),
+                        JSPTemplateError::EnvVarLookupError(variable.clone()
+                    )))
+                ))?;
+                let entrytype = if metadata.is_volume() {EntryType::Volume} else {EntryType::Directory};
+                self.keymap.insert(
+                    name.clone(), 
+                    self.graph.add_node( 
+                        Node::new_simple(
+                            NodeType::Simple(var.clone()),
+                            entrytype,
+                            new_jsp_metadata(metadata)
+                        )
+                    )
+                );
+            } 
             // `rd = "[a-z]+"`
             SNode::RegexSimple{ref name, ref re, ref metadata} => {
                 let regx = Regexp::new(format!("^{}$", re.as_str()).as_str())?;

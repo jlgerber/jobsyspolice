@@ -15,6 +15,7 @@ use crate::jspt::{Node, ParseResult, parse_metadata};
 pub fn parse_node(input: &str) -> IResult<&str, ParseResult> {
     alt((
         parse_node_pair,
+        parse_node_envvar,
         parse_node_revar,
         parse_node_regexcomplex,
         parse_node_regexsimple,
@@ -29,7 +30,7 @@ mod parse_node {
     //use nom::error::ErrorKind;
 
     #[test]
-    fn can_parse_revar_simple() {
+    fn can_parse_simple() {
         let result = parse_node(r#" rd "#);
         assert_eq!(result, Ok( ("", ParseResult::Node(Node::Simple("rd".to_string(), None)) ) ) );
     }
@@ -38,6 +39,12 @@ mod parse_node {
     fn can_parse_node_pair() {
         let result = parse_node(r#"rd = RD "#);
         assert_eq!(result, Ok( ("", ParseResult::Node(Node::new_pair("rd", "RD", None)) ) )) ;
+    }
+
+    #[test]
+    fn can_parse_node_envvar() {
+        let result = parse_node(r#"rd = $$rdexpr "#);
+        assert_eq!(result, Ok( ("", ParseResult::Node(Node::new_envvar("rd", "rdexpr",None)) )) ) ;
     }
 
     #[test]
@@ -195,6 +202,81 @@ mod parse_node_pair {
 
 }
 
+// parse a Node::EnvVar from input, with or without metadata. 
+// eg
+// rd = $rd
+fn parse_node_envvar(input: &str) -> IResult<&str,  ParseResult> {
+    alt((
+        parse_node_envvar_meta,
+        parse_node_envvar_nometa,
+    ))
+    (input)
+}
+
+// parse env variable node without metadata. regex node references a named regex. 
+// EG
+// `rd_node =   $$DD_RND`
+fn parse_node_envvar_nometa(input: &str) -> IResult<&str,  ParseResult> {
+    map ( 
+            tuple((
+                // drops zero or more spaces in front of a variable (upper lower case number _-)
+                preceded(space0, variable),
+                // drop zero or more spaces in front of '='
+                preceded(space0, char('=')), 
+                // drop zero or more spaces around variable preceded by $$ and drop zero or more spaces and returns
+                delimited( space0, preceded(tag("$$"),variable), multispace0) 
+            )),
+        | item| {
+            let (var,_,val) = item ;
+            ParseResult::Node( Node::new_envvar(var, val, None))
+        } 
+    ) 
+    (input)
+}
+
+// Parse a envvar variable node with metadata from a &str.
+// EG
+// rd = $rd [volume]
+fn parse_node_envvar_meta(input: &str) -> IResult<&str,  ParseResult> {
+    map ( 
+            tuple((
+                // drops zero or more spaces in front of a variable (upper lower case number _-)
+                preceded(space0, variable),
+                // drop zero or more spaces in front of '='
+                preceded(space0, char('=')), 
+                // drop zero or more spaces around variable preceded by $ and drop zero or more spaces and returns
+                delimited( space0, preceded(tag("$$"),variable), space0),
+                parse_metadata,
+            )),
+        | item| {
+            let (var,_,val, meta) = item ;
+            let meta = if meta.is_empty() {None} else {Some(meta)};
+            ParseResult::Node( Node::new_envvar(var, val, meta))
+        } 
+    ) 
+    (input)
+}
+
+
+#[cfg(test)]
+mod parse_node_envvar {
+    use super::*;
+    //use nom::error::ErrorKind;
+
+    #[test]
+    fn can_parse_node_envvar() {
+        let result = parse_node_envvar(r#"rd = $$rdexpr "#);
+        assert_eq!(result, Ok( ("", ParseResult::Node(Node::new_envvar("rd", "rdexpr", None)) ) )) ;
+    }
+
+    #[test]
+    fn can_parse_node_pair_with_return() {
+        let result = parse_node_envvar(r#" rd = $$rdexpr
+        "#);
+        assert_eq!(result, Ok( ("", ParseResult::Node(Node::new_envvar("rd", "rdexpr", None) )) ) );
+    }
+}
+
 // parse a Node::ReVar from input, with or without metadata. 
 // eg
 // rd = $rd
@@ -206,7 +288,7 @@ fn parse_node_revar(input: &str) -> IResult<&str,  ParseResult> {
     (input)
 }
 
-// parse regex variable node without metadata. regex node references a named regex. 
+// parse revar variable node without metadata. regex node references a named regex. 
 // EG
 // `rd_node =   $rd`
 fn parse_node_revar_nometa(input: &str) -> IResult<&str,  ParseResult> {
@@ -227,7 +309,7 @@ fn parse_node_revar_nometa(input: &str) -> IResult<&str,  ParseResult> {
     (input)
 }
 
-// Parse a regex variable node with metadata from a &str.
+// Parse a revar variable node with metadata from a &str.
 // EG
 // rd = $rd [volume]
 fn parse_node_revar_meta(input: &str) -> IResult<&str,  ParseResult> {

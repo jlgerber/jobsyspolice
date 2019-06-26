@@ -8,6 +8,8 @@ use ext_regex;
 /// results should return a JSPTemplateError for the error branch.
 #[derive(Debug, Fail)]
 pub enum JSPTemplateError {
+    #[fail(display = "Environment Variable Lookup Error  :{}", _0)]
+    EnvVarLookupError(String),
     /// When the StateMachine attempts a transition between two non-compatible
     /// states.
     #[fail(display = "Invalid State Transition from: {:?} to {:?}", _0, _1)]

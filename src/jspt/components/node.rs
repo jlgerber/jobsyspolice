@@ -23,6 +23,13 @@ pub enum Node {
     /// `rd = $rd_re`
     ReVar{name: String, variable: String, metadata: Option<JsptMetadata>}, 
 
+    /// Represents a variable assignment on a line in the node section
+    /// of the template. The variable refers to a named regular expression 
+    /// captured in the regex section of the template.
+    /// EG
+    /// `rd = $$rd_re`
+    EnvVar{name: String, variable: String, metadata: Option<JsptMetadata>}, 
+
     /// Represents a simple inline regular expression on a line in the 
     /// node section of the template. 
     /// EG
@@ -103,6 +110,27 @@ impl Node {
         }
     }
 
+    /// New up a Node::EnvVar, given a name, variable, and optionally, metadata.
+    /// 
+    /// # Parameters
+    /// * `name` - The name of the Node, provided by a type that implements
+    ///            `Into<String>`. 
+    /// * `variable` - The regex variable name, provided by a type that implements
+    ///                `Into<String>`.
+    /// * `metadata` - a Some wrapped Metadata instance, or None. 
+    /// 
+    /// # Returns
+    /// A `Node` instance.
+    pub fn new_envvar<I>(name: I, variable: I, metadata: Option<JsptMetadata>) -> Node 
+    where 
+        I:Into<String> 
+    {
+        Node::EnvVar {
+            name: name.into(),
+            variable: variable.into(),
+            metadata
+        }
+    }
     /// New up a Node::RegexSimple, given a name, a regular expression, and optionally,
     /// a Metadata instance.
     /// 
