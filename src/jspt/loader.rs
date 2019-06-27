@@ -363,6 +363,9 @@ fn new_jsp_metadata( meta: &Option<JsptMetadata> ) -> JspMetadata {
             let varname = meta.varname().unwrap();
             jspmeta.set_varname(Some(varname.to_string()));
         }
+
+        jspmeta.set_autocreate(meta.is_autocreate());
+        
     }
     jspmeta
 }
