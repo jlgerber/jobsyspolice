@@ -18,8 +18,8 @@ use jsp::{
     validate_path, 
     JSPError, 
     get_graph,
-    get_disk_service,
-    DiskType,
+    //get_disk_service,
+    //DiskType,
     gen_terms_from_strings,
     find,
 };
@@ -141,7 +141,7 @@ fn main() -> Result<(), failure::Error> {
     } else if args.input.len() > 0 {
         let input = args.input;
         
-        let diskservice = get_disk_service(DiskType::Local, &graph);
+        //let diskservice = get_disk_service(DiskType::Local, &graph);
         if /*full_path == true ||*/  input.len() > 0 && input[0].contains("/")  {
             let mut input = PathBuf::from(&input[0]);
             input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
