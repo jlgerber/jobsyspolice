@@ -101,7 +101,7 @@ mod parse_components_tests {
         );
     }
 
-     #[test]
+    #[test]
     fn can_parse_volume_and_owner_and_perms_and_varname() {
         let cmp = parse_components("[ volume , owner : jgerber, perms: 751, varname: JG_SHOW]");
         assert_eq!(
@@ -111,6 +111,25 @@ mod parse_components_tests {
                 vec![
                      MetadataComponent::Volume, 
                      MetadataComponent::Owner("jgerber".to_string()),
+                    MetadataComponent::Permissions("751".to_string()),
+                    MetadataComponent::EnvVarName("JG_SHOW".to_string())
+
+                ]
+            ))
+        );
+    }
+
+    #[test]
+    fn can_parse_volume_and_owner_and_perms_and_varname_and_autocreate() {
+        let cmp = parse_components("[ autocreate, volume , owner : jgerber, perms: 751, varname: JG_SHOW]");
+        assert_eq!(
+           cmp,
+            Ok((
+                "",
+                vec![
+                    MetadataComponent::Autocreate, 
+                    MetadataComponent::Volume, 
+                    MetadataComponent::Owner("jgerber".to_string()),
                     MetadataComponent::Permissions("751".to_string()),
                     MetadataComponent::EnvVarName("JG_SHOW".to_string())
 
