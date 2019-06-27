@@ -41,6 +41,7 @@ use std::{
 pub fn mk(
     mut terms: Vec<String>, 
     graph: &JGraph, 
+    ignore_volume: bool,
     full_path: bool, 
     verbose: bool
 ) -> Result<(), JSPError> {
@@ -56,7 +57,7 @@ pub fn mk(
         let mut input = PathBuf::from(terms.pop().expect("uanble to unwrap"));
         input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
 
-        match diskservice.mk(input.as_path()) {
+        match diskservice.mk(input.as_path(), ignore_volume) {
 
             Ok(_) => println!("{}{}{}", cr, "Success".bright_blue(), cr),
             Err(JSPError::ValidationFailure{entry, node, depth}) => {
@@ -69,7 +70,7 @@ pub fn mk(
 
         let _input = match find::find_path_from_terms(terms, &graph) {
             Ok(( path,  _)) => { 
-                match diskservice.mk(path.as_path()) {
+                match diskservice.mk(path.as_path(), ignore_volume) {
                     Ok(_) => println!("{}{}{}", cr, "Success".bright_blue(), cr),
                     Err(JSPError::ValidationFailure{entry, node, depth}) => {
                         report_failure(path.as_os_str(), &entry, node, depth, &graph, verbose );

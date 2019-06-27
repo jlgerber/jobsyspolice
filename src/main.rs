@@ -69,6 +69,11 @@ enum Subcommand {
         #[structopt(name="TERMS")]
         terms: Vec<String>,
         
+        /// Ignore the volume tag in the template and treat those nodes
+        /// like regular directories. 
+        #[structopt(short = "n", long = "novolume")]
+        novolume: bool,
+
         /// accept a fullpath instead of key:value pairs
         #[structopt(short = "f", long = "fullpath")]
         full_path: bool,
@@ -122,8 +127,8 @@ fn main() -> Result<(), failure::Error> {
     //
     // Handle Directory Creation via the mk subcommand
     //
-    } else if let Some(Subcommand::Mk{terms, full_path, verbose}) = args.subcmd {
-        match mk(terms, &graph, full_path, verbose){
+    } else if let Some(Subcommand::Mk{terms, novolume, full_path, verbose}) = args.subcmd {
+        match mk(terms, &graph, novolume, full_path, verbose){
             Ok(()) => (),
             Err(e) => report_simple_failure(e.to_string().as_str(), verbose)
         }

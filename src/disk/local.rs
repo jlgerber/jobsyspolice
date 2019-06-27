@@ -27,8 +27,8 @@ impl<'a> DiskService<'a> {
 // requires coreutils be installed. mac only right now. sudo port install coreutils
 impl<'a> Disk for DiskService<'a> {
 
-    fn mk(&self, path: &Path ) -> Result<(), JSPError> {
-        log::info!("local::Disk.mk(path: {:?})", path);
+    fn mk(&self, path: &Path, ignore_volume: bool) -> Result<(), JSPError> {
+        log::info!("local::Disk.mk(path: {:?}, ignore_volume: {})", path, ignore_volume);
 
         let nodepath = validate_path(path, self.graph)?;
         // we need to stash information when we reach the last node

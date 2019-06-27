@@ -28,6 +28,11 @@ struct Opt {
     #[structopt(name="TERMS")]
     terms: Vec<String>,
     
+    /// Ignore the volume tag in the template and treat those nodes
+    /// like regular directories. 
+    #[structopt(short = "n", long = "novolume")]
+    novolume: bool,
+
     /// accept a fullpath instead of key:value pairs
     #[structopt(short = "f", long = "fullpath")]
     full_path: bool,
@@ -47,7 +52,7 @@ fn main() -> Result<(), failure::Error> {
 
     let (graph,  _keymap,  _regexmap) = get_graph( args.graph)?;
 
-    match mk(args.terms, &graph, args.full_path, args.verbose) {
+    match mk(args.terms, &graph, args.novolume, args.full_path, args.verbose) {
             Ok(()) => (),
             Err(e) => report_simple_failure(e.to_string().as_str(), args.verbose)
         }
