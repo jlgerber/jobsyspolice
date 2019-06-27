@@ -26,11 +26,9 @@ colored = "1.8.0"
 nom = "5.0.0"
 ext_regex = {package = "regex", version = "1.1.7"}
 
-
 [dependencies.levelspecter]
 git = "https://github.com/jlgerber/levelspecter.git"
 features = ["case-insensitive"]
-
 
 [dev-dependencies]
 env_logger = "0.6.1"

@@ -24,6 +24,7 @@ pub fn parse_metadata(input: &str) -> IResult<&str, JsptMetadata> {
                     MetadataComponent::EnvVarName(name) => metadata = metadata.set_varname(Some(name)),
                     MetadataComponent::Owner(name) => metadata = metadata.set_owner(Some(name)),
                     MetadataComponent::Volume => metadata = metadata.set_volume(true),
+                    MetadataComponent::Autocreate => metadata = metadata.set_autocreate(true),
                     MetadataComponent::Separator => {
                         log::warn!("parse_metadata encountered Separateor");
                     }
@@ -40,6 +41,7 @@ pub fn parse_components(input: &str) -> IResult<&str, Vec<MetadataComponent>> {
         separated_nonempty_list(
             parse_comma,
             alt((
+                parse_autocreate,
                 parse_volume,
                 parse_permissions,
                 parse_owner,
@@ -128,6 +130,33 @@ fn parse_comma(input:  &str) -> IResult<&str, MetadataComponent> {
     )(input)
 }
 
+
+fn parse_autocreate(input: &str) -> IResult<&str, MetadataComponent> {
+    map(
+        delimited(space0, tag("autocreate"), space0),
+        |_item| {
+            MetadataComponent::Autocreate
+        }
+    )(input)
+}
+
+
+#[cfg(test)]
+mod autocreate_tests {
+    use super::*;
+
+    #[test]
+    fn can_parse_autocreate_no_spaces() {
+       let owner = parse_autocreate("autocreate");
+       assert_eq!(owner, Ok(("", MetadataComponent::Autocreate))) ;
+    }
+
+    #[test]
+    fn can_parse_autocreate_spaces() {
+       let owner = parse_autocreate("  autocreate   ");
+       assert_eq!(owner, Ok(("", MetadataComponent::Autocreate))) ;
+    }
+}
 
 fn parse_volume(input: &str) -> IResult<&str, MetadataComponent> {
     map(

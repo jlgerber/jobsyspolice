@@ -1,6 +1,7 @@
 /// Potential JsptMetadata associated with a `Node` in the `JGraph`.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum MetadataComponent {
+    Autocreate,
     Volume,
     Permissions(String),
     EnvVarName(String),
@@ -21,6 +22,7 @@ pub enum MetadataComponent {
 /// `[ volume, owner:$me, perms: 777 ]`
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct JsptMetadata {
+    autocreate: bool,
     volume: bool,
     permissions: Option<String>,
     varname: Option<String>,
@@ -32,6 +34,7 @@ impl JsptMetadata {
     /// and all of its optional fields are set to None. 
     pub fn new() -> Self {
         Self {
+            autocreate: false,
             volume: false,
             permissions: None,
             varname: None,
@@ -42,7 +45,7 @@ impl JsptMetadata {
     /// Determine whether the JsptMetadata instance is empty, defined as the volume field being false, 
     /// and all of the optional terms being None. 
     pub fn is_empty(&self) -> bool {
-        self.volume == false && self.permissions.is_none() && self.varname.is_none() && self.owner.is_none()
+        self.autocreate == false && self.volume == false && self.permissions.is_none() && self.varname.is_none() && self.owner.is_none()
     }
 
     /// Set volume and get back moved self. This is designed to be used in 
@@ -85,6 +88,14 @@ impl JsptMetadata {
         self.volume
     }
 
+    pub fn set_autocreate(mut self, autocreate: bool) -> Self {
+        self.autocreate = autocreate;  
+        self  
+    }
+
+    pub fn is_autocreate(&self) -> bool {
+        self.autocreate
+    }
     /// Set permissions, passing in an Option of a type which we 
     /// can get a string from (via into). This method consumes and
     /// returns `self`, so it is convenient when using in a chained,
@@ -265,6 +276,7 @@ mod tests {
     fn can_create_metadata() {
         let md = JsptMetadata::new();
         let expect = JsptMetadata {
+            autocreate: false,
             volume: false,
             permissions: None,
             varname: None,
@@ -277,6 +289,7 @@ mod tests {
     fn can_create_metadata_and_set_volume() {
         let md = JsptMetadata::new().set_volume(true);
         let expect = JsptMetadata {
+            autocreate: false,
             volume: true,
             permissions: None,
             varname: None,
@@ -289,6 +302,7 @@ mod tests {
     fn can_create_metadata_and_set_owner() {
         let md = JsptMetadata::new().set_volume(true).set_owner(Some("jgerber"));
         let expect = JsptMetadata {
+            autocreate: false,
             volume: true,
             permissions: None,
             varname: None,
@@ -301,6 +315,7 @@ mod tests {
     fn can_create_metadata_and_set_varname() {
         let md = JsptMetadata::new().set_volume(true).set_owner(Some("jgerber")).set_varname(Some("jg_show"));
         let expect = JsptMetadata {
+            autocreate: false,
             volume: true,
             permissions: None,
             varname: Some("jg_show".to_string()),
@@ -318,6 +333,27 @@ mod tests {
                     .set_permissions(Some("777"));
 
         let expect = JsptMetadata {
+            autocreate: false,
+            volume: true,
+            permissions: Some("777".to_string()),
+            varname: Some("jg_show".to_string()),
+            owner: Some("jgerber".to_string()),
+        };
+        assert_eq!(md, expect);
+    }
+
+
+     #[test]
+    fn can_create_set_autocreate() {
+        let md = JsptMetadata::new()
+                    .set_autocreate(true)
+                    .set_volume(true)
+                    .set_owner(Some("jgerber"))
+                    .set_varname(Some("jg_show"))
+                    .set_permissions(Some("777"));
+
+        let expect = JsptMetadata {
+            autocreate: true,
             volume: true,
             permissions: Some("777".to_string()),
             varname: Some("jg_show".to_string()),

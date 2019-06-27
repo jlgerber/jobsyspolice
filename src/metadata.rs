@@ -12,6 +12,7 @@ pub struct Metadata {
     perms: Option<PermsType>, //todo: change rep
     #[serde(skip_serializing_if = "Option::is_none")]
     varname: Option<String>,
+    autocreate: bool
 }
 
 impl Metadata {
@@ -22,16 +23,18 @@ impl Metadata {
             owner: None,
             perms: None,
             varname: None,
+            autocreate: false
         }
     }
 
     /// Alternate constructor
-    pub fn from_components(owner: Option<User>, perms: Option<PermsType>, varname: Option<String>) -> Self 
+    pub fn from_components(owner: Option<User>, perms: Option<PermsType>, varname: Option<String>, autocreate: bool) -> Self 
     {
         Self {
             owner, 
             perms,
-            varname
+            varname,
+            autocreate
         }
     }
 
@@ -120,6 +123,17 @@ impl Metadata {
     /// Get a mutable varname
     pub fn varname_mut(&mut self) -> &mut Option<String> {
         &mut self.varname
+    }
+
+    /// Get autocreate
+    pub fn autocreate(&self) -> bool {
+        self.autocreate
+    }
+
+    /// set the autocreate state
+    pub fn set_autocreate(&mut self, autocreate: bool) -> &mut Self {
+        self.autocreate = autocreate;
+        self
     }
 
     /// given a mutable reference to self, create a 

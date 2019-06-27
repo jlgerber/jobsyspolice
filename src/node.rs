@@ -2,7 +2,7 @@ use crate::{ EntryType, NodeType, User, Metadata};
 use serde::{ Deserialize, Serialize, self };
 #[allow(unused_imports)]
 use log;
-use std::fmt::{ Display, Formatter, self };
+use std::{fmt::{ Display, Formatter, self} };
 
 /// The Node caries information about a specific
 /// directory or file within the candidate jobsystem
@@ -42,11 +42,11 @@ impl Node {
     ///
     /// # Returns
     ///   A new instance of Node
-    pub fn new(identity: NodeType, entry_type: EntryType, owner: Option<User>, perms: Option<String>, varname: Option<String>) -> Self {
+    pub fn new(identity: NodeType, entry_type: EntryType, owner: Option<User>, perms: Option<String>, varname: Option<String>, autocreate: bool) -> Self {
         Self { 
             identity, 
             entry_type,
-            metadata:  Metadata::from_components(owner, perms, varname)
+            metadata:  Metadata::from_components(owner, perms, varname, autocreate)
         }
     }
 
@@ -187,7 +187,7 @@ impl PartialEq<std::ffi::OsStr> for Node {
 
 impl std::default::Default for Node {
     fn default() -> Node {
-        Node::new(NodeType::Simple(s!("NONE")), EntryType::Directory, None, None, None)
+        Node::new(NodeType::Simple(s!("NONE")), EntryType::Directory, None, None, None, false)
     }
 }
 
@@ -202,6 +202,7 @@ macro_rules!  jspnode {
             None,
             None,
             None,
+            false,
         )
     );
     // jspnode!("foo", "owner" => "bob")
@@ -212,6 +213,7 @@ macro_rules!  jspnode {
             None,
             None,
             None,
+            false,
         );
         $(
             match $key {
@@ -223,6 +225,7 @@ macro_rules!  jspnode {
                     }
                 }
                 "varname" => {n.metadata_mut().set_varname(Some(String::from($val)));}
+                "autocreate" => {n.metadata_mut().set_autocreate($val.parse().unwrap_or_else(|_v| false));}
                 _ => ()
             }
         )+
@@ -238,7 +241,8 @@ macro_rules!  jspnode {
         EntryType::Directory,
         None,
         None, 
-        None));
+        None,
+        false));
     ($name:expr, $regex:expr, $($key:expr => $val:expr),+) => ({
         let mut n = Node::new(
         NodeType::RegEx {
@@ -249,7 +253,8 @@ macro_rules!  jspnode {
         EntryType::Directory,
         None,
         None,
-        None);
+        None,
+        false);
         $(
             match $key {
                 "owner" => {n.metadata_mut().set_owner(Some(crate::User::from($val)));}
@@ -260,6 +265,7 @@ macro_rules!  jspnode {
                     }
                 }
                 "varname" => {n.metadata_mut().set_varname(Some(String::from($val)));}
+                "autocreate" => {n.metadata_mut().set_autocreate($val.parse().unwrap_or_else(|_v| false));}
                 _ => ()
             }
         )+
@@ -275,7 +281,8 @@ macro_rules!  jspnode {
             EntryType::Directory,
             None,
             None,
-            None
+            None,
+            false,
         )
     );
     ($name:expr, $regex:expr, $exclude:expr, $($key:expr => $val:expr),+) => ({
@@ -288,7 +295,8 @@ macro_rules!  jspnode {
             EntryType::Directory,
             None,
             None,
-            None
+            None, 
+            false,
         );
         $(
             match $key {
@@ -300,6 +308,7 @@ macro_rules!  jspnode {
                     }
                 }
                 "varname" => {n.metadata_mut().set_varname(Some(String::from($val)));}
+                "autocreate" => {n.metadata_mut().set_autocreate($val.parse().unwrap_or_else(|_v| false));}
                 _ => ()
             }
         )+
@@ -346,7 +355,7 @@ mod tests {
         let simple = Node::new(
             NodeType::Simple(s!("foobar")),
             EntryType::Directory,
-            None, None, None
+            None, None, None, false
         );
 
         let osstr = OsStr::new("foobar");
@@ -362,7 +371,7 @@ mod tests {
                 exclude: None,
             },
             EntryType::Directory,
-            None, None, None
+            None, None, None, false
         );
         let osstr = OsStr::new("AD1A");
         assert_eq!(re, *osstr);
@@ -377,7 +386,7 @@ mod tests {
                 exclude: Some(Regexp::new(r"^(SHARED|etc)$").unwrap()),
             },
             EntryType::Directory,
-            None, None, None
+            None, None, None, false
         );
         let osstr = OsStr::new("SHARE");
         assert_eq!(re, *osstr);
@@ -392,7 +401,7 @@ mod tests {
                 exclude: Some(Regexp::new(r"^(SHARED|etc)$").unwrap()),
             },
             EntryType::Directory,
-            None, None, None
+            None, None, None, false
         );
         let osstr = OsStr::new("SHARED");
         assert_ne!(re, *osstr);
@@ -407,7 +416,7 @@ mod tests {
                 exclude: None,
             },
             EntryType::Directory,
-            None, None, None
+            None, None, None, false
         );
         // the 1 on the front should make the pattern match fail
         let osstr = OsStr::new("1AD1A");
@@ -419,7 +428,7 @@ mod tests {
         let re = Node::new(
             NodeType::Root,
             EntryType::Root,
-            None, None, None
+            None, None, None, false
         );
         assert_eq!(re.display_name(), s!("Root()"));
     }
@@ -433,7 +442,7 @@ mod tests {
                 exclude: None,
             },
             EntryType::Directory,
-            None, None, None
+            None, None, None, false
         );
         assert_eq!(re.display_name(), s!("sequence regex: '^[A-Z]+[A-Z 0-9]*$'"));
     }
@@ -447,7 +456,7 @@ mod tests {
                 exclude: None,
             },
             EntryType::Volume,
-            None, None, None
+            None, None, None, false
         );
         assert_eq!(re.display_name(), s!("sequence regex: '^[A-Z]+[A-Z 0-9]*$'"));
     }
@@ -461,7 +470,7 @@ mod tests {
                 exclude: Some(Regexp::new(r"^(SHARED|etc)$").unwrap()),
             },
             EntryType::Volume,
-            None, None, None
+            None, None, None, false
         );
         assert_eq!(re.display_name(), s!("sequence regex: '^[A-Z]+[A-Z 0-9]*$' exclude: '^(SHARED|etc)$'"));
     }
@@ -471,7 +480,7 @@ mod tests {
         let re = Node::new(
             NodeType::Simple(s!("DEV01")),
             EntryType::Directory,
-            None, None, None
+            None, None, None, false
         );
         assert_eq!(re.display_name(), s!("DEV01"));
     }
@@ -481,7 +490,7 @@ mod tests {
         let re = Node::new(
             NodeType::Simple(s!("DEV01")),
             EntryType::Volume,
-            None, None, None
+            None, None, None, false 
         );
         assert_eq!(re.display_name(), s!("DEV01"));
     }
