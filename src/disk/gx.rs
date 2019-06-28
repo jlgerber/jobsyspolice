@@ -3,7 +3,6 @@ use crate::{ diskutils, JGraph, validate_path, JSPError, EntryType, User, consta
 use super::{ Disk, Path };
 use std::{ path::PathBuf };
 use log;
-
 /// gx::DiskService is, as it sounds, an implementation of Disk that
 /// works for local filesystems.
 #[derive(Debug)]
@@ -80,8 +79,13 @@ impl<'a> Disk for DiskService<'a> {
                         // the absolute root directory of the path needs to be created already...
                         let parent_uid = diskutils::get_owner_for_path(&create_path.parent().expect("could not get parent"))?;
                         // set the process owner to the parent of the directory we wish to create
-                        nix::unistd::setresuid(parent_uid, parent_uid, parent_uid);
-                        diskutils::create_dir(&create_path, uid, uperms)?
+                        //nix::unistd::setresuid(parent_uid, parent_uid, parent_uid);
+                        if let User::Uid(id) = parent_uid {
+                            nix::unistd::setuid(nix::unistd::Uid::from_raw(id))?;
+                            diskutils::create_dir(&create_path, uid, uperms)?
+                        } else {
+                            panic!("unable to unwrap user id from parent_id");
+                        }
 
                     } 
                     // now cache uid.
@@ -132,4 +136,3 @@ impl<'a> Disk for DiskService<'a> {
         &self.perms
     }
 }
-

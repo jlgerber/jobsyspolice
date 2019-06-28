@@ -16,17 +16,24 @@ pub trait Disk {
 }
 
 pub mod local;
+pub mod gx;
 
 /// The type of the DiskService. There should be one variant per implementation
 #[derive(Debug, PartialEq, Eq)]
 pub enum DiskType {
     Local,
+    Gx,
 }
 
 /// Retrieve the disk service given a DiskType
 pub fn get_disk_service<'a>(disk_type: DiskType, graph: &'a JGraph) ->  Box<dyn Disk + 'a> {
     match disk_type {
         DiskType::Local => Box::new(local::DiskService::new(
+            &graph,
+            String::from("jobsys"),
+            String::from("751")
+        )),
+        DiskType::Gx => Box::new(gx::DiskService::new(
             &graph,
             String::from("jobsys"),
             String::from("751")
