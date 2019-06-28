@@ -193,8 +193,8 @@ fn replace_capture_group(regstr: &str, key: &str, replacement: &str) -> Option<S
 /// ```
 pub fn find<'a>(criteria: VecDeque<String>, graph: &'a JGraph) -> Result<NodePath<'a>, JSPError> {
     let idx = graph.node_references().next().unwrap().0;
-    let  np = vec![idx];
-    let vec_nodes = Rc::new(RefCell::new(np));
+    let np = vec![idx];
+    let vec_nodes   = Rc::new(RefCell::new(np));
     let criteria_rc = Rc::new(RefCell::new(criteria));
 
     match find_recurse(criteria_rc.clone(), vec_nodes, graph) {
