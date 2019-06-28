@@ -44,16 +44,16 @@ impl ReturnValue {
 
     /// Is the current ReturnValue instance a failure?
     pub fn is_failure(&self) -> bool {
-        return !self.is_success()
+        !self.is_success()
     }
 
     /// Return the depth of the ReturnValue. If the ReturnValue
     /// instance is Success, always return 0. Otherwise, return
     /// the value captured in the Failure case.
     pub fn depth(&self) -> u8 {
-        match self {
-            &ReturnValue::Success(_) => 0,
-            &ReturnValue::Failure{ entry:_, node:_, depth:d } => d,
+        match *self {
+            ReturnValue::Success(_) => 0,
+            ReturnValue::Failure{ depth:d, .. } => d,
         }
     }
 }
@@ -106,7 +106,7 @@ mod tests {
     fn equality_test_failure() {
         let n1  = NIndex::new(1);
         let entry = OsString::from("foob");
-        let rv1 = ReturnValue::Failure{ entry: entry, node: n1, depth: 10 };
+        let rv1 = ReturnValue::Failure{ entry, node: n1, depth: 10 };
         let v2 =Vec::new();
         let rv2 = ReturnValue::new_success(v2);
         assert_ne!(rv1, rv2);
@@ -118,7 +118,7 @@ mod tests {
 
         let entry = OsString::from("foob");
         let rv1 = ReturnValue::Failure{ entry: entry.clone(), node: n1.clone(), depth: 10 };
-        let rv2 = ReturnValue::Failure{ entry: entry, node: n1, depth:9};
+        let rv2 = ReturnValue::Failure{ entry, node: n1, depth:9};
         assert!(rv1 > rv2);
     }
 
@@ -130,7 +130,7 @@ mod tests {
         let entry = OsString::from("foob");
         let entry2 = OsString::from("bla");
 
-        let rv1 = ReturnValue::Failure{ entry: entry, node: n1, depth: 10 };
+        let rv1 = ReturnValue::Failure{ entry, node: n1, depth: 10 };
         let rv2 = ReturnValue::Failure{ entry: entry2, node: n2, depth: 9 };
         assert!(rv1 > rv2);
     }

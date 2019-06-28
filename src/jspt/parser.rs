@@ -102,7 +102,7 @@ pub fn parse(input: &str) -> Result<(), String> {
         Ok(("", ParseResult::Regex(r)))         => println!("Regex   {:?}", r),
         Ok(("", ParseResult::Node(n)))          => println!("Node    {:?}", n),
         Ok(("", ParseResult::Edges(e)))         => println!("Edges   {:?}", e),
-        Ok(("", ParseResult::Empty))            => println!(""),
+        Ok(("", ParseResult::Empty))            => println!(),
 
         Err(e) => return Err(format!("Error {:?}", e)),
         _ => println!("unexpected result"),

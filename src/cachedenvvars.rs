@@ -7,6 +7,15 @@ use log;
 #[derive(Debug)]
 pub struct CachedEnvVars(Vec<String>);
 
+impl std::default::Default for CachedEnvVars {
+    fn default() -> CachedEnvVars {
+        log::info!("CachedEnvVars::default()");
+        let var = env::var(constants::JSP_TRACKING_VAR).unwrap_or_else(|_| String::from(""));
+        let varnames = var.split(':').filter(|x| x.trim() != "").map(|x| x.to_owned()).collect::<Vec<String>>();
+        Self(varnames)
+    }
+}
+
 impl CachedEnvVars {
 
     /// New up a CachedEnvVars
@@ -17,14 +26,12 @@ impl CachedEnvVars {
     /// # Returns 
     /// CachedEnvVars instance
     pub fn new() -> Self {
-        log::info!("CachedEnvVars new()");
-        let var = env::var(constants::JSP_TRACKING_VAR).unwrap_or(String::from(""));
-        let varnames = var.split(":").filter(|x| x.trim() != "").map(|x| x.to_owned()).collect::<Vec<String>>();
-        Self(varnames)
+        log::info!("CachedEnvVars::new()");
+        CachedEnvVars::default()
     }
     
     /// Return an iterator over CachedEvnVars
-    pub fn iter<'a>(&'a self) -> IterCachedEnvVars<'a> {
+    pub fn iter(&self) -> IterCachedEnvVars {
         IterCachedEnvVars::new(self)
     }
 
@@ -41,6 +48,7 @@ impl CachedEnvVars {
     /// String of commands in a compatible shell which, when eval'ed, will reset the
     /// caller's environment 
     pub fn clear(&self, clearer: &Box<dyn ShellEnvManager>) -> String  {
+   // pub fn clear(&self, clearer: &dyn ShellEnvManager) -> String  {
         let mut result = String::new();
         for var in self.iter() {
             result.push_str( clearer.clear_env_var(var).as_str() );
@@ -120,6 +128,7 @@ mod tests {
         
         let cache = CachedEnvVars::new();
         let bash: Box<dyn ShellEnvManager> = Box::new(bash::Shell::new());
+        //let bash = bash::Shell::new();
         let clearstr = cache.clear(&bash);
         let expect = String::from("unset DD_SHOW;unset DD_SEQUENCE;unset DD_SHOT;");
         assert_eq!(clearstr, expect);

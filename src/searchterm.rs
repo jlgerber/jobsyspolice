@@ -58,7 +58,7 @@ impl std::str::FromStr for SearchTerm {
     type Err = JSPError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut pieces = s.split(":").map(|x| x.to_owned()).collect::<Vec<String>>();
+        let mut pieces = s.split(':').map(|x| x.to_owned()).collect::<Vec<String>>();
         if pieces.len() != 2 {
             return Err(JSPError::SearchTermError(format!("Cannot construct SearchTerm from {}", s)));
         }
@@ -86,13 +86,18 @@ pub struct Search {
     terms: VecDeque<SearchTerm>
 }
 
+impl std::default::Default for Search {
+    fn default() -> Search {
+        Self {
+            terms: VecDeque::new()
+        }
+    }
+}
 impl Search {
 
     /// New up the Search entity
     pub fn new() -> Self {
-        Self {
-            terms: VecDeque::new()
-        }
+        Search::default()
     }
 
     /// Add a term to the front of the Search
@@ -143,6 +148,11 @@ impl Search {
     /// Return the number of SearchTerms within the Search.
     pub fn len(&self) -> usize {
         self.terms.len()
+    }
+
+    /// Test to see if the SearchTerm is empty
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 
     /// Retrieve an Option wrapped reference to a SearchTerm, given

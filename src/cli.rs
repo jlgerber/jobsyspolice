@@ -46,14 +46,14 @@ pub fn mk(
     verbose: bool
 ) -> Result<(), JSPError> {
     
-    if terms.len() == 0 {
+    if terms.is_empty() {
         return Err(JSPError::EmptyArgumentListError);
     }
     
     let cr = if verbose {"\n"} else {""};
     let diskservice = get_disk_service(DiskType::Local, graph);
 
-    if full_path || ( terms.len() > 0 && terms[0].contains("/") ) {
+    if full_path || ( !terms.is_empty() && terms[0].contains('/') ) {
         let mut input = PathBuf::from(terms.pop().expect("uanble to unwrap"));
         input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
 
@@ -68,7 +68,7 @@ pub fn mk(
     } else {
         let terms = gen_terms_from_strings(terms)?;
 
-        let _input = match find::find_path_from_terms(terms, &graph) {
+        match find::find_path_from_terms(terms, &graph) {
             Ok(( path,  _)) => { 
                 match diskservice.mk(path.as_path(), ignore_volume) {
                     Ok(_) => println!("{}{}{}", cr, "Success".bright_blue(), cr),
@@ -81,7 +81,7 @@ pub fn mk(
             Err(e) => {
                 eprintln!("{}{}{}", cr, e.to_string().as_str().bright_red(), cr)
             },
-        };
+        }
     }
     Ok(()) 
 }
@@ -113,14 +113,14 @@ pub fn go (
     full_path: bool, 
     verbose: bool
 ) -> Result<(),JSPError> {
-    if terms.len() == 0 {
+    if terms.is_empty() {
         return Err(JSPError::EmptyArgumentListError);
     }
-    let myshell = myshell.unwrap_or("bash".to_string());
+    let myshell = myshell.unwrap_or_else(|| "bash".to_string());
     let myshelldyn = SupportedShell::from_str(myshell.as_str())?.get();
 
     let cr = if verbose {"\n"} else {""};
-    if full_path == true || ( terms.len() > 0 && terms[0].contains("/") ) {
+    if full_path || ( !terms.is_empty() && terms[0].contains('/') ) {
         // Parse the full path, as opposed to SearchTerms
         let mut input = PathBuf::from(terms.pop().expect("uanble to unwrap"));
         input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
@@ -136,6 +136,7 @@ pub fn go (
             Err(JSPError::ValidationFailure{entry, node, depth}) => {
                 report_failure(input.as_os_str(), &entry, node, depth, &graph, verbose );
             }
+            // todo, make more explicit
             Err(_) => panic!("JSPError type returned invalid")
         }
     // Parse SearchTerms 
@@ -164,7 +165,7 @@ pub fn go (
 pub fn gen_terms_from_strings(mut terms: Vec<String>) -> Result<Vec<SearchTerm>, JSPError> {
 
     let lspec_term;
-    if terms.len() == 0 {
+    if terms.is_empty() {
         lspec_term = Vec::new();
     } else if terms.len() == 1 {
         lspec_term = vec![terms.pop().unwrap()];
@@ -208,7 +209,7 @@ pub fn gen_terms_from_strings(mut terms: Vec<String>) -> Result<Vec<SearchTerm>,
 
 #[inline]
 fn process_go_success(path: PathBuf, nodepath: &NodePath, myshell: Box<dyn ShellEnvManager>) {
-    
+
     log::info!("process_go_success(...)");
     
     let components = path.components().map(|x| {
@@ -239,7 +240,7 @@ fn process_go_success(path: PathBuf, nodepath: &NodePath, myshell: Box<dyn Shell
     // we can clear them out on subsequent runs. This solves the scenario where you navigate
     // deep into the tree, and then later navigate to a shallower level; you don't want the 
     // variables tracking levels deeper than the current depth to be set. 
-    if varnames.len() > 0 {
+    if !varnames.is_empty() {
         print!("{}", &myshell.set_env_var(constants::JSP_TRACKING_VAR, varnames.join(":").as_str())) ;
     } else {
         print!("{}", &myshell.unset_env_var(constants::JSP_TRACKING_VAR));
@@ -251,7 +252,7 @@ fn process_go_success(path: PathBuf, nodepath: &NodePath, myshell: Box<dyn Shell
 #[inline]
 fn print_go_failure(path_str: &str, myshell: bool, verbose: bool) {
     let cr = if verbose { "\n" } else {""};
-    if myshell == false {
+    if !myshell {
         println!("echo {}Error: Path does not exist: {}{}", cr, path_str.bright_blue(), cr);
     } else {
         eprintln!("{}Error: Path does not exist: '{}'{}", cr, path_str.bright_blue(), cr);

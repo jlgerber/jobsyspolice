@@ -3,10 +3,16 @@ use crate::ShellEnvManager;
 /// Struct which implements the `ShellEnvManager` trait for Bash.
 pub struct Shell {}
 
+impl std::default::Default for Shell {
+    fn default() -> Shell {
+        Shell {}
+    }
+}
+
 impl Shell {
     /// New up an instance of Shell
     pub fn new() -> Self {
-        Self {}
+        Shell::default()
     }
 }
 

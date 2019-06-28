@@ -15,16 +15,21 @@ pub struct Metadata {
     autocreate: bool
 }
 
-impl Metadata {
-
-    /// New up a Metadata instance
-    pub fn new() -> Self {
-        Self {
+impl std::default::Default for Metadata {
+    fn default() -> Metadata {
+        Self {  
             owner: None,
             perms: None,
             varname: None,
             autocreate: false
         }
+    }
+}
+impl Metadata {
+
+    /// New up a Metadata instance
+    pub fn new() -> Self {
+        Metadata::default()
     }
 
     /// Alternate constructor
@@ -46,7 +51,7 @@ impl Metadata {
     /// Set the owner for Metadata
     pub fn set_owner(&mut self, user: Option<User>) -> &Self {
         self.owner = user;
-        return self
+        self
     }
 
     /// Get the owner
@@ -75,7 +80,7 @@ impl Metadata {
     /// Set the perms for Metadata
     pub fn set_perms(&mut self, perms: Option<PermsType>) -> &mut Self  {
         self.perms = perms;
-        return self
+        self
     }
 
     /// Get the perms
@@ -104,7 +109,7 @@ impl Metadata {
     pub fn set_varname(&mut self, varname: Option<String>) -> &mut Self {
         log::info!("Metadata.set_varname({:?})", varname);
         self.varname = varname;
-        return self
+        self
     }
 
     /// Get the varname

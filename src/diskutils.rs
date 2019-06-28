@@ -61,11 +61,11 @@ pub fn get_uid_for_owner(owner: &User, node: &Node, dir: &str) -> Result<u32, JS
 
     log::info!("get_uid_for_owner(owner: {:?}, node: {:?}, dir: {})", owner, node, dir);
 
-    let owner = match &owner {
-        &User::Named(name) => {
+    let owner = match owner {
+        User::Named(name) => {
             name.clone()
         }
-        &User::Me => {
+        User::Me => {
             let user = match env::var(constants::USER_ENV_VAR) {
                 Ok(u) => u,
                 Err(_) => {
@@ -76,10 +76,10 @@ pub fn get_uid_for_owner(owner: &User, node: &Node, dir: &str) -> Result<u32, JS
             if user == "root" {panic!("get_uid_for_owner(...) Attempt to change ownership to root not allowed");}
             user
         }
-        &User::Captured(key) => {
+        User::Captured(key) => {
             log::info!("get_uid_for_owner(...) User::Captured({})", key);
 
-            if let NodeType::RegEx{name: _, pattern, exclude: _} = node.identity() {
+            if let NodeType::RegEx{ pattern, ..} = node.identity() {
                 let caps = pattern.captures(dir).ok_or(JSPError::MissingOwnerInRegex)?;
                 let owner = caps.name(key).ok_or(JSPError::MissingOwnerInRegex)?.as_str();
                 log::debug!("get_uid_for_owner(...) returning owner {}", owner);
@@ -89,11 +89,11 @@ pub fn get_uid_for_owner(owner: &User, node: &Node, dir: &str) -> Result<u32, JS
                 return Err(JSPError::MissingOwnerInRegex);
             }
         }
-        &User::Uid(uid) => {
+        User::Uid(uid) => {
             return Ok(*uid);
         }
     };
-    Ok(get_user_by_name(&owner).ok_or( JSPError::InvalidUserName(owner.to_string()))?.uid())
+    Ok(get_user_by_name(&owner).ok_or_else(|| JSPError::InvalidUserName(owner.to_string()))?.uid())
 }
 
 /// given a path, retrieve the owner of the path
@@ -113,12 +113,10 @@ pub fn get_owner_for_path(path: &Path) -> Result<User, JSPError> {
 pub fn convert_relative_pathbuf_to_absolute(path: PathBuf) -> Result<PathBuf, JSPError> {
     let mut curdir = std::env::current_dir()?;
     if path.starts_with(".") || !path.starts_with("/") {
-        let mut doit = false;
-        if path.starts_with("..") {
-            doit = true;
-        }
+        let doit = path.starts_with("..");
+        
         curdir = curdir.join(path);
-        if doit == true {
+        if doit {
             curdir = curdir.iter().fold(PathBuf::new(), |mut acc, x| {
                 if x == DOUBLEDOT.as_os_str() ||  x == DOT.as_os_str() {
                     acc.pop();

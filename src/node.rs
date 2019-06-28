@@ -178,8 +178,8 @@ impl PartialEq<std::ffi::OsStr> for Node {
             NodeType::Root => false,
             NodeType::Untracked => true,
             NodeType::Simple(strval) => strval.as_str() == other,
-            NodeType::RegEx { name: _, pattern, exclude: None } => pattern.is_match(other.to_str().unwrap()),
-            NodeType::RegEx { name: _, pattern, exclude: Some(exc) } => !exc.is_match(other.to_str().unwrap()) && pattern.is_match(other.to_str().unwrap()),
+            NodeType::RegEx { pattern, exclude: None, .. } => pattern.is_match(other.to_str().unwrap()),
+            NodeType::RegEx {  pattern, exclude: Some(exc), .. } => !exc.is_match(other.to_str().unwrap()) && pattern.is_match(other.to_str().unwrap()),
 
         }
     }

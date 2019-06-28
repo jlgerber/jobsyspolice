@@ -18,7 +18,7 @@ pub fn report_success(nodepath: NodePath) {
         eprintln!("{:?}", n.display_name());
     }
 
-    println!("");
+    println!();
 }
 
 /// Report failed task to user, given context

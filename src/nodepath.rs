@@ -76,7 +76,7 @@ impl<'a> NodePath<'a> {
     pub fn append(mut self, other: &mut Vec<NIndex>) -> Result<Self, JSPError> {
         for nd in other.iter() {
             if !self.graph.node_indices().any(|x| &x == nd) {
-                return Err(JSPError::MissingIndex(nd.clone()));
+                return Err(JSPError::MissingIndex(*nd));
             }
         }
         self.nodes.append(other);
@@ -172,7 +172,7 @@ impl<'a> NodePath<'a> {
     pub fn replace_nodes(mut self, n: Vec<NIndex>) -> Result<Self, JSPError> {
         for nd in &n {
             if !self.graph.node_indices().any(|x| &x == nd) {
-                return Err(JSPError::MissingIndex(nd.clone()));
+                return Err(JSPError::MissingIndex(*nd));
             }
         }
         self.nodes = n;
@@ -240,6 +240,7 @@ impl<'a> NodePath<'a> {
         self.nodes.len()
     }
 
+    // TODO: implement IntoIterator trait
     /// NodePathIntoIterator consumes NodePath.
     pub fn into_iter(self) -> NodePathIntoIterator<'a> {
         NodePathIntoIterator{nodepath: self, index: 0}

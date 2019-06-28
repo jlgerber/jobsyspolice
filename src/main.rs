@@ -116,7 +116,7 @@ fn main() -> Result<(), failure::Error> {
  
     if args.dot.is_some() {
         if let Some(mut output) = args.dot {
-            if args.input.len() > 0{
+            if !args.input.is_empty(){
                 log::warn!("INPUT not compatible with --dot argument. It will be ignored");
             }
             output = diskutils::convert_relative_pathbuf_to_absolute(output)?;
@@ -143,11 +143,11 @@ fn main() -> Result<(), failure::Error> {
     //
     // Validate supplied argument to determine whether it is a valid path or not
     //
-    } else if args.input.len() > 0 {
+    } else if !args.input.is_empty() {
         let input = args.input;
         
         //let diskservice = get_disk_service(DiskType::Local, &graph);
-        if /*full_path == true ||*/  input.len() > 0 && input[0].contains("/")  {
+        if /*full_path == true ||*/  !input.is_empty() && input[0].contains('/')  {
             let mut input = PathBuf::from(&input[0]);
             input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
             match validate_path(&input, &graph) {

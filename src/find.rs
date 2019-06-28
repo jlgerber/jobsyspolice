@@ -247,7 +247,7 @@ fn find_recurse<'a>(
                 let node = &graph[nindex];
                 log::debug!("find_recurse(...) for nindex in neighbors()... node: {:?}, nindex: {:?}", node, nindex);
                 match node.identity() {
-                    NodeType::RegEx{name, pattern:_, exclude: _} =>  {
+                    NodeType::RegEx{name, ..} =>  {
                         log::debug!("NodeType::RegEx - find_recurse(...)");
                         if name == &candidate_node_name {
                             log::debug!("NodeType::RegEx - find_recurse(...) {} == {}", name, &candidate_node_name);
@@ -312,10 +312,10 @@ fn find_recurse<'a>(
             }
             // made it through all of the children without returning
             // a successful match, so we must be in a failure state.
-            return FindValue::Failure(nodepath);
+            FindValue::Failure(nodepath)
         }
         None => {
-            return FindValue::Failure(nodepath);
+            FindValue::Failure(nodepath)
         }
     }
 }

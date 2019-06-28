@@ -96,7 +96,9 @@ pub fn is_perm_char(c: char) -> bool {
 
 /// Parser which parses contiguous perm chars. 
 pub fn perm_chars(input: &str) -> IResult<&str, &str> {
-  input.split_at_position1_complete(|item| !is_perm_char(char::from(item)), ErrorKind::Alpha)
+  //input.split_at_position1_complete(|item| !is_perm_char(char::from(item)), ErrorKind::Alpha)
+  input.split_at_position1_complete(|item| !is_perm_char(item), ErrorKind::Alpha)
+
 }
 
 #[cfg(test)]
@@ -112,7 +114,8 @@ mod perms_test {
 /// Parser which parses contiguous indent chars using the `is_ident_char` function.
 /// ident chars are defined as being uppercase letters, lowercase letters, numbers, or underscores
 pub fn variable(input: &str) -> IResult<&str, &str> {
-  input.split_at_position1_complete(|item| !is_ident_char(char::from(item )), ErrorKind::Alpha)
+  //input.split_at_position1_complete(|item| !is_ident_char(char::from(item )), ErrorKind::Alpha)
+  input.split_at_position1_complete(|item| !is_ident_char(item ), ErrorKind::Alpha)
 }
 
 #[cfg(test)]
@@ -143,7 +146,8 @@ mod variable {
 // Parser which parses contigous regular expression characters, as defined by the is_regex_char. 
 // Note that we do not accept spaces, single or double quotes
 fn regex_str(input: &str) -> IResult<&str, &str> {
-  input.split_at_position1_complete(|item| !is_regex_char(char::from(item)), ErrorKind::Alpha)
+  //input.split_at_position1_complete(|item| !is_regex_char(char::from(item)), ErrorKind::Alpha)
+  input.split_at_position1_complete(|item| !is_regex_char(item), ErrorKind::Alpha)
 }
 
 #[cfg(test)]

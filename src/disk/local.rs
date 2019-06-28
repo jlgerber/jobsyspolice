@@ -58,8 +58,8 @@ impl<'a> Disk for DiskService<'a> {
                 uperms = u32::from_str_radix(&gperms,8).expect("couldnt convert gperms to perms");
             }
 
-            match node.entry_type() {
-                &EntryType::Directory | &EntryType::Volume => {
+            match *node.entry_type() {
+                EntryType::Directory | EntryType::Volume => {
                     log::debug!("local::DiskService.mk(...) EntryType::Directory or Volume");
 
                     // we need the owner to look up the uid
@@ -91,7 +91,7 @@ impl<'a> Disk for DiskService<'a> {
                     }
                 }
 
-                &EntryType::Untracked => {
+                EntryType::Untracked => {
                     log::trace!("local::DiskService.mk(...) EntryType::Untracked");
                     if !create_path.exists() {
                         log::debug!("local::DiskService.mk(...) {:?} does not exist. attempting to create", &create_path);
@@ -112,9 +112,9 @@ impl<'a> Disk for DiskService<'a> {
                     }
                 }
 
-                &EntryType::Root => {
+                EntryType::Root => {
                     log::trace!("local::DiskService.mk(...) EntryType::Root");
-                    ()},
+                },
             }
         }
         Ok(())

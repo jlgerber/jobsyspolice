@@ -29,10 +29,8 @@ pub struct JsptMetadata {
     owner: Option<String>
 }
 
-impl JsptMetadata {
-    /// new up an empty `JsptMetadata` instance. By default, JsptMetadata is not a volume,
-    /// and all of its optional fields are set to None. 
-    pub fn new() -> Self {
+impl std::default::Default for JsptMetadata {
+    fn default() -> JsptMetadata {
         Self {
             autocreate: false,
             volume: false,
@@ -41,11 +39,18 @@ impl JsptMetadata {
             owner: None,
         }
     }
+}
+impl JsptMetadata {
+    /// new up an empty `JsptMetadata` instance. By default, JsptMetadata is not a volume,
+    /// and all of its optional fields are set to None. 
+    pub fn new() -> Self {
+        JsptMetadata::default()
+    }
 
     /// Determine whether the JsptMetadata instance is empty, defined as the volume field being false, 
     /// and all of the optional terms being None. 
     pub fn is_empty(&self) -> bool {
-        self.autocreate == false && self.volume == false && self.permissions.is_none() && self.varname.is_none() && self.owner.is_none()
+        !self.autocreate && !self.volume  && self.permissions.is_none() && self.varname.is_none() && self.owner.is_none()
     }
 
     /// Set volume and get back moved self. This is designed to be used in 

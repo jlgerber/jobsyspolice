@@ -187,7 +187,7 @@ impl<'a> Loader<'a> {
                     JSPTemplateError::KeyMapLookupError(edge.to.clone())
                 ))
             )?;
-            self.graph.extend_with_edges(&[(from_node.clone(), to_node.clone())]);
+            self.graph.extend_with_edges(&[(*from_node, *to_node)]);
         }
         Ok(())
     }

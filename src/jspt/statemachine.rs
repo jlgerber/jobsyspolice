@@ -47,14 +47,19 @@ pub struct StateMachine {
     )
 }
 
-impl StateMachine {
-    /// New up a StateMachine instance
-    pub fn new() -> StateMachine {
+impl std::default::Default for StateMachine {
+    fn default() -> StateMachine {
         StateMachine {
             state: State::Start,
             line: Cell::new(0),
             parsers: (start_parser, regex_parser, node_parser, edge_parser),
         }
+    }
+}
+impl StateMachine {
+    /// New up a StateMachine instance
+    pub fn new() -> StateMachine {
+        StateMachine::default()
     }
 
     /// Get the current line number being parsed. The line number is managed
@@ -138,13 +143,13 @@ impl StateMachine {
                             self.state = new_state;
                         }
 
-                        return Ok(value);
+                        Ok(value)
                     },  
                     Err(e) => {
-                        return Err(
+                        Err(
                             JSPTemplateLineError::from(
                                 ( self.line.get(), input.to_owned(), self.state.clone(), JSPTemplateError::from(e)) )
-                            );
+                        )
                     },
                 }
             }, 
