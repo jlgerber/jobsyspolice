@@ -1,9 +1,42 @@
 use crate::{User};
 use serde::{Serialize, Deserialize};
+use std::cmp::PartialEq;
 
 pub type PermsType = String;
 
+/// Used to search for Specific Metadata in the Graph
+#[derive(Debug, Clone, Copy)]
+pub enum MetadataTerm {
+    Owner,
+    Perms,
+    Varname,
+    Autocreate,
+}
+
+impl PartialEq<MetadataTerm> for MetadataTerm {
+    fn eq(&self, other: &MetadataTerm) -> bool {
+        self == other
+    }
+}
+
+// Metata == MetadataTerm comparisons
+impl PartialEq<Metadata> for MetadataTerm {
+    fn eq(&self, other: &Metadata) -> bool {
+        match self {
+            &MetadataTerm::Owner => {
+                other.has_owner()
+            }
+            &MetadataTerm::Perms => other.has_perms(),
+            &MetadataTerm::Varname => other.has_varname(),
+            &MetadataTerm::Autocreate => other.autocreate(),
+        }
+    }
+}
+
+impl Eq for MetadataTerm {}
+
 /// Metadata structure
+//TODO: Move volume to Metadata
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone)]
 pub struct Metadata {
     #[serde(skip_serializing_if = "Option::is_none")]
