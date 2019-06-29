@@ -488,8 +488,8 @@ fn find_rel_recurse<'a>(
                    find_rel_recurse(nindex, criteria, current.clone(), nodepaths, graph)
                 } else {
                     // do we have any captured current indices which need to be 
-                    // turned into nodepaths?
-                    update_nodepaths(nodepaths, current.clone(), graph)
+                    // turned into nodepaths? update_and_return_nodepaths() returns nodepaths
+                    update_and_return_nodepaths(nodepaths, current.clone(), graph)
                     /*
                     if current.borrow().len() > 0 {
                         let my_current = Rc::new(RefCell::new(Vec::new()));
@@ -534,7 +534,7 @@ fn find_rel_recurse<'a>(
             NodeType::Untracked => {
                 // we check to see if current has anything in it. If it does, we need to 
                 // create a new nodepath from the stuff inside
-                update_nodepaths(nodepaths, current.clone(), graph)
+                update_and_return_nodepaths(nodepaths, current.clone(), graph)
                 // if current.borrow().len() > 0 {
                 //     let my_current = Rc::new(RefCell::new(Vec::new()));
                 //     {
@@ -555,7 +555,12 @@ fn find_rel_recurse<'a>(
 }
 
 // update the nodepaths if the current list of NIndex is not empty. reset the vec, and return the nodepaths
-fn update_nodepaths<'b>(mut nodepaths: Vec<NodePath<'b>>,current: Rc<RefCell<Vec<NIndex>>>, graph: &'b JGraph) -> Vec<NodePath<'b>> {
+fn update_and_return_nodepaths<'b>(
+    mut nodepaths: Vec<NodePath<'b>>,
+    current: Rc<RefCell<Vec<NIndex>>>, 
+    graph: &'b JGraph
+) -> Vec<NodePath<'b>> 
+{
      if current.borrow().len() > 0 {
         let my_current = Rc::new(RefCell::new(Vec::new()));
         {
