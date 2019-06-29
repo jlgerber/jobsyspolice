@@ -104,12 +104,28 @@ impl Node {
             NodeType::Root => name.push_str("Root()"),
             NodeType::Untracked => name.push_str("Untracked()"),
         }
+
+        let mut meta = Vec::new();
+
         if let Some(ref n) = self.metadata().owner() {
-            name.push_str(format!(" [{}]", n).as_str());
+            meta.push(format!("owner:{}",n));
+            //name.push_str(format!(" [{}]", n).as_str());
         }
+
         if let Some(ref n) = self.metadata().perms() {
-            name.push_str(format!(" [{}]", n).as_str());
+            meta.push(format!("perms:{}", n));
+            //name.push_str(format!(" [{}]", n).as_str());
         }
+        
+        if self.metadata().autocreate() {
+            meta.push(String::from("autocreate"));
+            //name.push_str(format!(" [{}]", n).as_str());
+        }
+
+        if meta.len() > 0 {
+            name.push_str(format!(" [{}]", meta.join(", ")).as_str());
+        }
+
         name
     }
 
@@ -499,7 +515,28 @@ mod tests {
     #[test]
     fn macro_simple_name_for_vol_simple() {
         let re = jspnode!("DEV01", "perms" => "777");
-        assert_eq!(re.display_name(), s!("DEV01 [777]"));
+        assert_eq!(re.display_name(), s!("DEV01 [perms:777]"));
+    }
+
+
+    #[test]
+    fn macro_simple_name_for_vol_owner() {
+        let re = jspnode!("DEV01", "owner" => "jgerber");
+        assert_eq!(re.display_name(), s!("DEV01 [owner:jgerber]"));
+    }
+
+    #[test]
+    fn macro_simple_name_for_vol_auto() {
+        let re = jspnode!("DEV01", "autocreate" => "true");
+        //assert!(re.metadata().autocreate());
+        assert_eq!(re.display_name(), s!("DEV01 [autocreate]"));
+    }
+
+    #[test]
+    fn macro_simple_name_for_vol_multi() {
+        let re = jspnode!("DEV01", "autocreate" => "true", "owner" => "jgerber");
+        //assert!(re.metadata().autocreate());
+        assert_eq!(re.display_name(), s!("DEV01 [owner:jgerber, autocreate]"));
     }
 
 }

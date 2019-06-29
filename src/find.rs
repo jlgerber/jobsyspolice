@@ -553,6 +553,7 @@ fn find_rel_recurse<'a>(
     }
     nodepaths
 }
+
 // update the nodepaths if the current list of NIndex is not empty. reset the vec, and return the nodepaths
 fn update_nodepaths<'b>(mut nodepaths: Vec<NodePath<'b>>,current: Rc<RefCell<Vec<NIndex>>>, graph: &'b JGraph) -> Vec<NodePath<'b>> {
      if current.borrow().len() > 0 {
