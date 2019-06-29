@@ -334,7 +334,35 @@ impl<'a> NodePath<'a> {
                 NodeType::Untracked => {acc.push_str("untracked/"); acc}
             }
         })
+    }
 
+    /// Generate a pathbuf from a NodePath. This will fail if, for istance, the 
+    /// NodePath contains RegEx nodes that cannot be resolved. This method is used
+    /// by find_rel
+    /// 
+    /// # Returns
+    /// PathBuf if successful
+    /// JSPError::NodePathConversionFailure otherwise
+    pub fn to_pathbuf(&self) -> Result<std::path::PathBuf, JSPError> {
+        use std::path::PathBuf;
+        let mut err = None;
+        let r = self.nodes.iter().fold(PathBuf::new(), |mut acc, x| {
+            let node = &self.graph[*x];
+            
+            match node.identity() {
+                NodeType::Root => {acc.push("/"); acc},
+                NodeType::RegEx{..} => {err=Some(JSPError::NodePathConversionFailure(node.identity().clone())); acc},
+                NodeType::Simple(name)=> { acc.push(name.as_str()); acc},
+                NodeType::Untracked => {acc }
+            }
+        });
+
+        if let Some(err) = err {
+            Err(err)
+        } else {
+            Ok(r)
+        }
+    
     }
 }
 
@@ -593,6 +621,24 @@ mod tests {
         np.push(idx).unwrap();
         let node_r = &np[10];
         assert_eq!(&Node::new_untracked() , node_r);
+    }
+
+    #[test]
+    fn can_convert_to_nodepath() {
+        use crate::{ JGraph, jspnode, Node, NodeType, EntryType, NodePath };
+        let mut graph = JGraph::new();
+        let root = Node::new_root();
+        graph.add_node(root);
+        let mut ids = Vec::new();
+        ids.push(graph.add_node(jspnode!("FOO")));
+        ids.push(graph.add_node(jspnode!("BAR")));
+        ids.push(graph.add_node(jspnode!("BLA", "owner" => "jgerber")));
+
+        let mut np = NodePath::new(&graph);
+        ids.iter().for_each(|id| np.push(*id).unwrap());
+     
+        let result = np.to_pathbuf().unwrap();
+        assert_eq!(result , std::path::PathBuf::from("FOO/BAR/BLA"));
     }
 
     #[test]
