@@ -24,7 +24,7 @@ impl<'a> DiskService<'a> {
     }
 }
 
-// requires coreutils be installed. mac only right now. sudo port install coreutils
+// TODO: requires coreutils be installed. mac only right now. sudo port install coreutils
 impl<'a> Disk for DiskService<'a> {
 
     fn mk(&self, path: &Path, ignore_volume: bool) -> Result<(), JSPError> {

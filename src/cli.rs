@@ -66,13 +66,14 @@ pub fn mk(
     if full_path || ( !terms.is_empty() && terms[0].contains('/') ) {
         let mut input = PathBuf::from(terms.pop().expect("uanble to unwrap"));
         input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
+        
         // use closure from above
         make_dir(input.as_path(), ignore_volume);
     } else {
         let terms = gen_terms_from_strings(terms)?;
-
+        // returns (PathBuf, NodePath)
         match find::find_path_from_terms(terms, &graph) {
-            Ok(( path,  _)) => { 
+            Ok(( path,  _nodepath)) => { 
                 // reuse closure from above. nice feature eh?
                 make_dir(path.as_path(), ignore_volume);
             },
@@ -81,6 +82,8 @@ pub fn mk(
             },
         }
     }
+    // now we any autodirs
+    //let autodirs = find_rel();
     Ok(()) 
 }
 
