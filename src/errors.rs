@@ -1,4 +1,4 @@
-use crate::NIndex;
+use crate::{NIndex, NodeType};
 use failure::Fail;
 use nix;
 use std::{ffi::OsString, io, num, path::PathBuf };
@@ -19,6 +19,9 @@ pub enum JSPError {
 
     #[fail(display = "FindFailure. Encountered issue: '{}'", _0)]
     FindFailure (String),
+
+    #[fail(display = "Failed to convert NodeType: {:?} to PathBuf ", _0)]
+    NodePathConversionFailure (NodeType),
 
     #[fail(display = "Unknown Shell: '{}'", _0)]
     UnknownShell (String),
