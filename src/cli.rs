@@ -52,10 +52,10 @@ pub fn mk(
     
     let cr = if verbose {"\n"} else {""};
     let diskservice = get_disk_service(DiskType::Local, graph);
-
+    // define closure to reuse in two branches below, as well as capture cr, graph, verbose
     let make_dir = |path: &Path, ignore_volume: bool| {
         match diskservice.mk(path, ignore_volume) {
-            Ok(_) => println!("{}{}{}", cr, "Success".bright_blue(), cr),
+            Ok(_) => println!("{}{} {}{}", cr, "Created:".bright_blue(), path.display(), cr),
             Err(JSPError::ValidationFailure{entry, node, depth}) => {
                 report_failure(path.as_os_str(), &entry, node, depth, &graph, verbose );
             },
@@ -66,29 +66,15 @@ pub fn mk(
     if full_path || ( !terms.is_empty() && terms[0].contains('/') ) {
         let mut input = PathBuf::from(terms.pop().expect("uanble to unwrap"));
         input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
-
+        // use closure from above
         make_dir(input.as_path(), ignore_volume);
-        // match diskservice.mk(input.as_path(), ignore_volume) {
-
-        //     Ok(_) => println!("{}{}{}", cr, "Success".bright_blue(), cr),
-        //     Err(JSPError::ValidationFailure{entry, node, depth}) => {
-        //         report_failure(input.as_os_str(), &entry, node, depth, &graph, verbose );
-        //     },
-        //     Err(e) => println!("{}{}{}{}{}",cr, "Failure".bright_red(),e.to_string(),cr, cr),
-        // }
     } else {
         let terms = gen_terms_from_strings(terms)?;
 
         match find::find_path_from_terms(terms, &graph) {
             Ok(( path,  _)) => { 
+                // reuse closure from above. nice feature eh?
                 make_dir(path.as_path(), ignore_volume);
-                // match diskservice.mk(path.as_path(), ignore_volume) {
-                //     Ok(_) => println!("{}{}{}", cr, "Success".bright_blue(), cr),
-                //     Err(JSPError::ValidationFailure{entry, node, depth}) => {
-                //         report_failure(path.as_os_str(), &entry, node, depth, &graph, verbose );
-                //     },
-                //     Err(e) => println!("{}{}{}{}{}",cr, "Failure".bright_red(),e.to_string(),cr, cr),
-                // }
             },
             Err(e) => {
                 eprintln!("{}{}{}", cr, e.to_string().as_str().bright_red(), cr)
