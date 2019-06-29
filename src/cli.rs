@@ -53,30 +53,42 @@ pub fn mk(
     let cr = if verbose {"\n"} else {""};
     let diskservice = get_disk_service(DiskType::Local, graph);
 
+    let make_dir = |path: &Path, ignore_volume: bool| {
+        match diskservice.mk(path, ignore_volume) {
+            Ok(_) => println!("{}{}{}", cr, "Success".bright_blue(), cr),
+            Err(JSPError::ValidationFailure{entry, node, depth}) => {
+                report_failure(path.as_os_str(), &entry, node, depth, &graph, verbose );
+            },
+            Err(e) => println!("{}{}{}{}{}",cr, "Failure".bright_red(),e.to_string(),cr, cr),
+        }
+    };
+
     if full_path || ( !terms.is_empty() && terms[0].contains('/') ) {
         let mut input = PathBuf::from(terms.pop().expect("uanble to unwrap"));
         input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
 
-        match diskservice.mk(input.as_path(), ignore_volume) {
+        make_dir(input.as_path(), ignore_volume);
+        // match diskservice.mk(input.as_path(), ignore_volume) {
 
-            Ok(_) => println!("{}{}{}", cr, "Success".bright_blue(), cr),
-            Err(JSPError::ValidationFailure{entry, node, depth}) => {
-                report_failure(input.as_os_str(), &entry, node, depth, &graph, verbose );
-            },
-            Err(e) => println!("{}{}{}{}{}",cr, "Failure".bright_red(),e.to_string(),cr, cr),
-        }
+        //     Ok(_) => println!("{}{}{}", cr, "Success".bright_blue(), cr),
+        //     Err(JSPError::ValidationFailure{entry, node, depth}) => {
+        //         report_failure(input.as_os_str(), &entry, node, depth, &graph, verbose );
+        //     },
+        //     Err(e) => println!("{}{}{}{}{}",cr, "Failure".bright_red(),e.to_string(),cr, cr),
+        // }
     } else {
         let terms = gen_terms_from_strings(terms)?;
 
         match find::find_path_from_terms(terms, &graph) {
             Ok(( path,  _)) => { 
-                match diskservice.mk(path.as_path(), ignore_volume) {
-                    Ok(_) => println!("{}{}{}", cr, "Success".bright_blue(), cr),
-                    Err(JSPError::ValidationFailure{entry, node, depth}) => {
-                        report_failure(path.as_os_str(), &entry, node, depth, &graph, verbose );
-                    },
-                    Err(e) => println!("{}{}{}{}{}",cr, "Failure".bright_red(),e.to_string(),cr, cr),
-                }
+                make_dir(path.as_path(), ignore_volume);
+                // match diskservice.mk(path.as_path(), ignore_volume) {
+                //     Ok(_) => println!("{}{}{}", cr, "Success".bright_blue(), cr),
+                //     Err(JSPError::ValidationFailure{entry, node, depth}) => {
+                //         report_failure(path.as_os_str(), &entry, node, depth, &graph, verbose );
+                //     },
+                //     Err(e) => println!("{}{}{}{}{}",cr, "Failure".bright_red(),e.to_string(),cr, cr),
+                // }
             },
             Err(e) => {
                 eprintln!("{}{}{}", cr, e.to_string().as_str().bright_red(), cr)
@@ -85,6 +97,8 @@ pub fn mk(
     }
     Ok(()) 
 }
+
+
 
 /// Return shell commands that, wnen evaluated, result in a change of location in the job system 
 /// and initialization of environment variables defined in the template in relation to the path, 
@@ -246,7 +260,9 @@ fn process_go_success(path: PathBuf, nodepath: &NodePath, myshell: Box<dyn Shell
         print!("{}", &myshell.unset_env_var(constants::JSP_TRACKING_VAR));
     }
     // Now the final output of where we are actually gong.
-    println!("cd {};", path.as_os_str().to_str().unwrap());
+    let target_dir = path.as_os_str().to_str().unwrap();
+    println!("cd {};", target_dir);
+    println!("echo Changed Directory To: {}\n", target_dir);
 }
 
 #[inline]
