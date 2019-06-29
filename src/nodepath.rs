@@ -1,18 +1,13 @@
-use crate::Node;
-use crate::NodeType;
-use crate::NIndex;
-use crate::JGraph;
-use crate::JSPError;
+use crate::{Node, NodeType, NIndex, JGraph, JSPError};
 use std::{fmt, ops::Index, cmp::PartialEq};
-#[allow(unused_imports)]
-use log::{debug, trace};
+use log;
 use petgraph::{ graph::{ Neighbors, WalkNeighbors} };
 
 
 /// The NodePath stores a path of nodes in the JGraph. The nodes
 /// are represented internally as `NIndex`s. One may generate an
 /// iterator from the NodePath.
-//#[derive(Debug)]
+#[derive(Clone)]
 pub struct NodePath<'a> {
     pub graph: &'a JGraph,
     pub nodes: Vec<NIndex>,
@@ -24,9 +19,7 @@ impl<'a> fmt::Debug for NodePath<'a> {
         
         write!(f, "NodePath len:{} {{", self.nodes.len())?;
         let idxs = self.nodes.iter().map(|x| format!("{:?}", x)).collect::<Vec<String>>().join("/");
-        // for idx in &self.nodes {
-        //     write!(f, "{:?}", idx)?;
-        // }
+        
         write!(f, "{}", idxs)?;
         write!(f, "}}")
     }

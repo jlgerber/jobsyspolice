@@ -64,3 +64,6 @@ pub mod jspt;
 
 pub mod report;
 pub use report::*;
+
+pub mod validpath;
+pub use validpath::ValidPath;
