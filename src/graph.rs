@@ -250,18 +250,18 @@ pub mod testdata {
 
         /*   TOOLS  */
 
-        let tools = graph.add_node(jspnode!("tools")); // 0751 ddinst
-        let logs = graph.add_node(jspnode!("logs")); // 0771
+        let tools = graph.add_node(jspnode!("tools", "autocreate" => "true")); // 0751 ddinst
+        let logs = graph.add_node(jspnode!("logs", "autocreate" => "true")); // 0771
         let package = graph.add_node(jspnode!("package"));
         let extension = graph.add_node(jspnode!("extension"));
-        let bin = graph.add_node(jspnode!("bin"));
-        let etc = graph.add_node(jspnode!("etc")); //0751 ddinst
-        let lib = graph.add_node(jspnode!("lib")); //ddinst
+        let bin = graph.add_node(jspnode!("bin", "autocreate" => "true"));
+        let etc = graph.add_node(jspnode!("etc", "autocreate" => "true")); //0751 ddinst
+        let lib = graph.add_node(jspnode!("lib", "autocreate" => "true")); //ddinst
         let lib_sd = graph.add_node(
             jspnode!("lib_sd", r"^(config|cortex|dmx|houdini|integ|jspools|katana|lw|massive|max|maya|mentalray|mkfoldy|moco|mova|nfb|nuke|perl|python[0-9.]*|race|refchef|rman|scratch|setupenv|shader|shoot2x|submission|vray|wam|web)$") // 0771
         );
-        let prod = graph.add_node(jspnode!("prod", "perms"=>"755")); 
-        let docs = graph.add_node(jspnode!("docs", "perms"=>"771"));
+        let prod = graph.add_node(jspnode!("prod", "perms"=>"755","autocreate" => "true")); 
+        let docs = graph.add_node(jspnode!("docs", "perms"=>"771","autocreate" => "true"));
 
         /*   USER WORK  */
 
@@ -396,8 +396,6 @@ pub mod testdata {
             (tools, package),
             (tools, extension),
             (tools, bin),
-            (show, etc),
-            (show, color),
             (show, user),
               (user, work),
             (show, client_dd_edit),

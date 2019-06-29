@@ -1,7 +1,7 @@
 use crate::{ JGraph, JSPError, NodePath, NodeType, NIndex, Search, SearchTerm, MetadataTerm};
 use std::{ cell::RefCell, rc::Rc, collections::VecDeque, path::PathBuf };
 use log;
-use petgraph::{visit::IntoNodeReferences};
+use petgraph::{visit::IntoNodeReferences, Direction::Outgoing};
 use ext_regex::Regex;
 use lazy_static::lazy_static;
 
@@ -457,7 +457,7 @@ pub fn find_rel(starting_index: NIndex, criteria: MetadataTerm, graph: &JGraph)
     -> Result<Vec<NodePath>, JSPError> 
 {   
    let results = find_rel_recurse(starting_index, criteria, Rc::new(RefCell::new(Vec::new())), Vec::new(), graph);
-    
+    log::trace!("find_rel returning {:?}", results);
     Ok(results)
 }
 
@@ -475,36 +475,28 @@ fn find_rel_recurse<'a>(
     graph: &'a JGraph,
 ) -> Vec<NodePath<'a> > {
     //let mut nodepaths = nodepaths;
-   
-    for nindex in graph.neighbors(parent_idx)  {
+    log::trace!("find_rel_recurse called with current:{:?} nodepaths:{:?}", current.borrow(), nodepaths);
+    let mut cnt = -1;
+    let parent = &graph[parent_idx];
+    for nindex in graph.neighbors_directed(parent_idx, Outgoing)  {
         let node = &graph[nindex];
-        
+        cnt +=1;
         nodepaths = match node.identity() {
             // we either match our search and look deeper or not match and return what we have
             NodeType::Simple(val) => {
                 if criteria == *node.metadata()  {
+                    log::trace!("SIMPLE loop idx: {} criteria  {:?} matches node: {} index {:?} for parent: {:?}",cnt, criteria, val, nindex, parent);
                    // add idx to current
                    current.borrow_mut().push(nindex);
+                   
                    find_rel_recurse(nindex, criteria, current.clone(), nodepaths, graph)
                 } else {
+                    log::trace!("Simple val {} does NOT match criterial {:?}. calling update_and_return_nodepaths()", val, criteria);
                     // do we have any captured current indices which need to be 
                     // turned into nodepaths? update_and_return_nodepaths() returns nodepaths
-                    update_and_return_nodepaths(nodepaths, current.clone(), graph)
-                    /*
-                    if current.borrow().len() > 0 {
-                        let my_current = Rc::new(RefCell::new(Vec::new()));
-                        {
-                            std::mem::swap(&mut my_current.borrow_mut(), &mut current.borrow_mut());
-                        }
-                        let mut npath = Rc::try_unwrap(my_current)
-                                .unwrap()
-                                .into_inner();
-                        let mut np = NodePath::new(&graph);
-                        np.append_unchecked(&mut npath);
-                        nodepaths.push(np);
-                    }
+                    //update_and_return_nodepaths(nodepaths, current.clone(), graph)
                     nodepaths
-                    */
+                    
                 }
             }
            
@@ -512,19 +504,10 @@ fn find_rel_recurse<'a>(
                 if criteria == *node.metadata()  {
                     // cant match this currently
                     log::warn!("matched regex {} with metadata.currently not supported", name);
+                    update_and_return_nodepaths(nodepaths, current.clone(), graph)
+                } else {
+                    nodepaths
                 }
-                // now we need to swap them out so that I can unwrap mine
-                let my_current = Rc::new(RefCell::new(Vec::new()));
-                {
-                    std::mem::swap(&mut my_current.borrow_mut(), &mut current.borrow_mut());
-                }
-                let mut npath = Rc::try_unwrap(my_current)
-                          .unwrap()
-                          .into_inner();
-                let mut np = NodePath::new(&graph);
-                np.append_unchecked(&mut npath);
-                nodepaths.push(np);
-                nodepaths
             }
 
             NodeType::Root => {
@@ -534,24 +517,12 @@ fn find_rel_recurse<'a>(
             NodeType::Untracked => {
                 // we check to see if current has anything in it. If it does, we need to 
                 // create a new nodepath from the stuff inside
-                update_and_return_nodepaths(nodepaths, current.clone(), graph)
-                // if current.borrow().len() > 0 {
-                //     let my_current = Rc::new(RefCell::new(Vec::new()));
-                //     {
-                //         std::mem::swap(&mut my_current.borrow_mut(), &mut current.borrow_mut());
-                //     }
-                //     let mut npath = Rc::try_unwrap(my_current)
-                //             .unwrap()
-                //             .into_inner();
-                //     let mut np = NodePath::new(&graph);
-                //     np.append_unchecked(&mut npath);
-                //     nodepaths.push(np);
-                // }
-                // nodepaths
+                //update_and_return_nodepaths(nodepaths, current.clone(), graph)
+                nodepaths
             }
         }
     }
-    nodepaths
+    update_and_return_nodepaths(nodepaths, current.clone(), graph)
 }
 
 // update the nodepaths if the current list of NIndex is not empty. reset the vec, and return the nodepaths
@@ -564,24 +535,45 @@ fn update_and_return_nodepaths<'b>(
      if current.borrow().len() > 0 {
         let my_current = Rc::new(RefCell::new(Vec::new()));
         {
-            std::mem::swap(&mut my_current.borrow_mut(), &mut current.borrow_mut());
+            std::mem::swap(&mut *my_current.borrow_mut(), &mut *current.borrow_mut());
         }
         let mut npath = Rc::try_unwrap(my_current)
                 .unwrap()
                 .into_inner();
         let mut np = NodePath::new(&graph);
         np.append_unchecked(&mut npath);
+        log::trace!("update_and_return_nodepath() updating nodepaths with npath {:?} {}", &np, np.path_string().as_str());
         nodepaths.push(np);
     }
     nodepaths
 }
 
 #[cfg(test)]
-mod find_rel_rel_tests {
+mod find_rel_tests {
     use super::*;
+    use crate::{graph::testdata::build_graph, SearchTerm};
+    use env_logger;
+    use std::env;
+
+    fn init() {
+        let _ = env_logger::builder().is_test(true).try_init();
+    }
 
     #[test]
-    fn can_find_simple() {
-        unimplemented!();
+    fn can_find_autocreate_tagged_nodes_at_show() {
+        env::set_var("RUST_LOG", "error");
+        init();
+        let graph = build_graph();
+       
+        let result = find_path_from_terms(vec![SearchTerm::new("show", "DEV01")], &graph).unwrap();
+        assert_eq!(result.0, PathBuf::from("/dd/shows/DEV01"));
+        // now that we have set up the test, we need to do the finding
+        if let Some(idx) = result.1.index() {
+            let results = find_rel(idx, MetadataTerm::Autocreate,&graph).unwrap().iter().map(|x| x.path_string()).collect::<Vec<String>>();
+            let expect = vec!["docs/", "prod/", "lib/", "etc/", "logs/", "tools/bin/"].iter().map(|x| String::from(*x)).collect::<Vec<String>>();
+            assert_eq!(results, expect);
+        } else {
+            panic!("unable to get idx")
+        }
     }
 }

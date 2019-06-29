@@ -1,4 +1,5 @@
 use crate::Node;
+use crate::NodeType;
 use crate::NIndex;
 use crate::JGraph;
 use crate::JSPError;
@@ -21,10 +22,12 @@ pub struct NodePath<'a> {
 impl<'a> fmt::Debug for NodePath<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         
-        write!(f, "NodePath {{")?;
-        for idx in &self.nodes {
-            write!(f, "{:?}", idx)?;
-        }
+        write!(f, "NodePath len:{} {{", self.nodes.len())?;
+        let idxs = self.nodes.iter().map(|x| format!("{:?}", x)).collect::<Vec<String>>().join("/");
+        // for idx in &self.nodes {
+        //     write!(f, "{:?}", idx)?;
+        // }
+        write!(f, "{}", idxs)?;
         write!(f, "}}")
     }
 }
@@ -318,6 +321,20 @@ impl<'a> NodePath<'a> {
             }
         }
         true
+    }
+
+    /// return a string rep of the path
+    pub fn path_string(&self) -> String {
+        self.nodes.iter().fold(String::new(), |mut acc, x| {
+            let node = &self.graph[*x];
+            match node.identity() {
+                NodeType::Root => {acc.push_str("/"); acc},
+                NodeType::RegEx{name,..} => { acc.push_str("*"); acc.push_str(name.as_str()); acc.push_str("/"); acc},
+                NodeType::Simple(name)=> { acc.push_str(name.as_str()); acc.push_str("/"); acc},
+                NodeType::Untracked => {acc.push_str("untracked/"); acc}
+            }
+        })
+
     }
 }
 
