@@ -563,6 +563,9 @@ mod find_rel_tests {
     fn can_find_autocreate_tagged_nodes_at_show() {
         env::set_var("RUST_LOG", "error");
         init();
+         //
+        // NOTE that this test is contingent upon the setup done in graph::testdata::build_graph
+        //
         let graph = build_graph();
        
         let result = find_path_from_terms(vec![SearchTerm::new("show", "DEV01")], &graph).unwrap();
