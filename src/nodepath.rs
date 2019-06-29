@@ -2,7 +2,7 @@ use crate::Node;
 use crate::NIndex;
 use crate::JGraph;
 use crate::JSPError;
-use std::{ops::Index, cmp::PartialEq};
+use std::{fmt, ops::Index, cmp::PartialEq};
 #[allow(unused_imports)]
 use log::{debug, trace};
 use petgraph::{ graph::{ Neighbors, WalkNeighbors} };
@@ -11,11 +11,22 @@ use petgraph::{ graph::{ Neighbors, WalkNeighbors} };
 /// The NodePath stores a path of nodes in the JGraph. The nodes
 /// are represented internally as `NIndex`s. One may generate an
 /// iterator from the NodePath.
-#[derive(Debug)]
+//#[derive(Debug)]
 pub struct NodePath<'a> {
     pub graph: &'a JGraph,
     pub nodes: Vec<NIndex>,
     untracked: Node,
+}
+
+impl<'a> fmt::Debug for NodePath<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        
+        write!(f, "NodePath {{")?;
+        for idx in &self.nodes {
+            write!(f, "{:?}", idx)?;
+        }
+        write!(f, "}}")
+    }
 }
 
 impl<'a> PartialEq for NodePath<'a> {
