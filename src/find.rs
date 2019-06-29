@@ -489,6 +489,8 @@ fn find_rel_recurse<'a>(
                 } else {
                     // do we have any captured current indices which need to be 
                     // turned into nodepaths?
+                    update_nodepaths(nodepaths, current.clone(), graph)
+                    /*
                     if current.borrow().len() > 0 {
                         let my_current = Rc::new(RefCell::new(Vec::new()));
                         {
@@ -502,6 +504,7 @@ fn find_rel_recurse<'a>(
                         nodepaths.push(np);
                     }
                     nodepaths
+                    */
                 }
             }
            
@@ -531,27 +534,44 @@ fn find_rel_recurse<'a>(
             NodeType::Untracked => {
                 // we check to see if current has anything in it. If it does, we need to 
                 // create a new nodepath from the stuff inside
-                if current.borrow().len() > 0 {
-                    let my_current = Rc::new(RefCell::new(Vec::new()));
-                    {
-                        std::mem::swap(&mut my_current.borrow_mut(), &mut current.borrow_mut());
-                    }
-                    let mut npath = Rc::try_unwrap(my_current)
-                            .unwrap()
-                            .into_inner();
-                    let mut np = NodePath::new(&graph);
-                    np.append_unchecked(&mut npath);
-                    nodepaths.push(np);
-                }
-                nodepaths
+                update_nodepaths(nodepaths, current.clone(), graph)
+                // if current.borrow().len() > 0 {
+                //     let my_current = Rc::new(RefCell::new(Vec::new()));
+                //     {
+                //         std::mem::swap(&mut my_current.borrow_mut(), &mut current.borrow_mut());
+                //     }
+                //     let mut npath = Rc::try_unwrap(my_current)
+                //             .unwrap()
+                //             .into_inner();
+                //     let mut np = NodePath::new(&graph);
+                //     np.append_unchecked(&mut npath);
+                //     nodepaths.push(np);
+                // }
+                // nodepaths
             }
         }
     }
     nodepaths
 }
+// update the nodepaths if the current list of NIndex is not empty. reset the vec, and return the nodepaths
+fn update_nodepaths<'b>(mut nodepaths: Vec<NodePath<'b>>,current: Rc<RefCell<Vec<NIndex>>>, graph: &'b JGraph) -> Vec<NodePath<'b>> {
+     if current.borrow().len() > 0 {
+        let my_current = Rc::new(RefCell::new(Vec::new()));
+        {
+            std::mem::swap(&mut my_current.borrow_mut(), &mut current.borrow_mut());
+        }
+        let mut npath = Rc::try_unwrap(my_current)
+                .unwrap()
+                .into_inner();
+        let mut np = NodePath::new(&graph);
+        np.append_unchecked(&mut npath);
+        nodepaths.push(np);
+    }
+    nodepaths
+}
 
 #[cfg(test)]
-mod find_rel_recurse_tests {
+mod find_rel_rel_tests {
     use super::*;
 
     #[test]
