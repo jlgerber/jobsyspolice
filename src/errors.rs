@@ -35,6 +35,9 @@ pub enum JSPError {
     #[fail(display = "Validation Failure: {:?}, index: {:?} depth: {}", entry, node, depth)]
     ValidationFailure{ entry: OsString, node: NIndex, depth: u8 },
 
+    #[fail(display = "Validation Failure of {:?}: entry:{:?}, index: {:?} depth: {}", path, entry, node, depth)]
+    ValidationFailureAt{ path: OsString , entry: OsString, node: NIndex, depth: u8},
+
     #[fail(display = "Placeholder error")]
     Placeholder,
 
