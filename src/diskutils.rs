@@ -189,3 +189,22 @@ pub fn write_template_as_dotfile(output: &PathBuf, graph: &JGraph) {
         Ok(_) => ()
     };
 }
+
+/// Set the stickybit on the directory from the provided path.
+pub fn set_stickybit(path: &Path) -> Result<(), JSPError> {
+    log::debug!("diskutils::set_sticktbit({:?})", path);
+    use std::os::unix::fs::PermissionsExt;
+    // get filehandle
+    let stickybit = 0o1000;
+    let fh = std::fs::File::open(path)?;
+    let meta = fh.metadata()?;
+    let mut mode = meta.mode();
+    // if stickybit not set
+    if mode & stickybit == 0 {
+        mode |= stickybit;
+        let mut permissions = meta.permissions();
+        permissions.set_mode(mode);
+        fh.set_permissions(permissions)?;
+    }
+    Ok(())
+}

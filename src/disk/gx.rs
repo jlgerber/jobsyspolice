@@ -100,6 +100,9 @@ impl<'a> Disk for DiskService<'a> {
                         owner = diskutils::get_owner_for_path(&create_path)?;
                         log::trace!(" gx::DiskService.mk(...) last_managed_node owner : {:?} for path {:?}",
                                     owner, &create_path);
+                        if sticky {
+                            diskutils::set_stickybit(create_path.as_path())?;
+                        }
                     }
                 }
 
