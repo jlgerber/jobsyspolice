@@ -63,7 +63,6 @@ pub use cli::{gen_terms_from_strings};
 pub mod jspt;
 
 pub mod report;
-pub use report::{report_failure, report_simple_failure, validate_success};
 
 pub mod validpath;
 pub use validpath::ValidPath;
