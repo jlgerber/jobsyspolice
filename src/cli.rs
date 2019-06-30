@@ -54,7 +54,7 @@ pub fn validpath_from_terms<'a>(mut terms: Vec<String>, graph: &'a JGraph,  forc
         ValidPath::new_from_searchterms(terms, graph, force_fullpath)
     }
 }
-
+/*
 /// Make a series of directories if they do not already exist. 
 /// 
 /// # Parameters
@@ -120,7 +120,7 @@ pub fn mk(
     //let autodirs = find_rel();
     Ok(()) 
 }
-
+*/
 
 /// Make a series of directories if they do not already exist. 
 /// 
@@ -138,21 +138,19 @@ pub fn mk(
 /// * `verbose`   - Output is more extensive, colored, etc.
 /// 
 /// # Returns
-/// A Result wrapping a unit if successful, or a JSPError if unable to make the 
-/// provided directory.
-pub fn mk2<'a>(
+/// An Ok wrapped report::Success::Mk(ValidPath) if successful, 
+///An Err wrapped JSPError if unable to make the  provided directory.
+pub fn mk<'a>(
     validpath: ValidPath<'a>, 
     graph: &'a JGraph, 
     disktype: DiskType,
     ignore_volume: bool,
     verbose: bool
-//) -> Result<ValidPath<'a>, JSPError> {
 ) -> Result<report::Success<'a>, JSPError> {
 
-    let cr = if verbose {"\n"} else {""};
     let diskservice = get_disk_service(disktype, graph);
     match diskservice.mk(validpath.path(), ignore_volume) {
-        Ok(_) => { //println!("{}{} {}{}", cr, "Created:".bright_blue(), validpath.path().display(), cr);
+        Ok(_) => { 
             Ok(report::Success::Mk(validpath))
         },
         Err(JSPError::ValidationFailure{entry, node, depth}) => {
@@ -218,11 +216,13 @@ pub fn go (
     if terms.is_empty() {
         return Err(JSPError::EmptyArgumentListError);
     }
+
     let myshell = myshell.unwrap_or_else(|| "bash".to_string());
     let myshelldyn = SupportedShell::from_str(myshell.as_str())?.get();
 
     let cr = if verbose {"\n"} else {""};
     if full_path || ( !terms.is_empty() && terms[0].contains('/') ) {
+        
         // Parse the full path, as opposed to SearchTerms
         let mut input = PathBuf::from(terms.pop().expect("uanble to unwrap"));
         input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
@@ -232,10 +232,17 @@ pub fn go (
                 if !input.exists() {
                     eprintln!("{}{} does not exist{}", cr, input.to_str().unwrap().bright_blue(), cr);
                 } else {
+                    // Success::Go(PathBuf, NodePath<'a>, SupportedShell)
                     process_go_success(input, nodepath, myshelldyn);
                 }
             },
             Err(JSPError::ValidationFailure{entry, node, depth}) => {
+                /* getting ready to shift reporting to external
+                return Err(JSPError::ValidationFailureAt{
+                    path:  input.into_os_string(), 
+                    entry: entry.clone(), 
+                     node ,
+                    depth})*/
                 report_failure(input.as_os_str(), &entry, node, depth, &graph, verbose );
             }
             // todo, make more explicit
@@ -252,6 +259,7 @@ pub fn go (
                 if path.is_dir() {
                     process_go_success(path, &nodepath, myshelldyn);
                 } else {
+                    // GoFailure{path: String, myshell: bool, verbose:bool}
                     print_go_failure(path_str, true, verbose);
                 }
             },
