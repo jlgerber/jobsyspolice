@@ -8,9 +8,7 @@ use fern::{
     self
 };
 use jsp::{ 
-    report_failure,
-    report_simple_failure,
-    validate_success,
+    report,
     cli,
     diskutils, 
     validate_path, 
@@ -108,7 +106,7 @@ fn main() -> Result<(), failure::Error> {
     }  else if let Some(Subcommand::Go{terms, myshell, full_path, verbose}) = args.subcmd {
         match cli::go(terms, myshell, &graph, full_path, verbose) {
             Ok(()) => (),
-            Err(e) => report_simple_failure(e.to_string().as_str(), verbose)
+            Err(e) => report::simple_failure(e.to_string().as_str(), verbose)
         }
     //
     // Validate supplied argument to determine whether it is a valid path or not
@@ -122,10 +120,10 @@ fn main() -> Result<(), failure::Error> {
             input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
             match validate_path(&input, &graph) {
                 Ok(nodepath) => {
-                    validate_success(nodepath);
+                    report::validate_success(nodepath);
                 },
                 Err(JSPError::ValidationFailure{entry, node, depth}) => {
-                    report_failure(input.as_os_str(), &entry, node, depth, &graph, true );
+                    report::failure(input.as_os_str(), &entry, node, depth, &graph, true );
                 }
                 Err(_) => panic!("JSPError type returned invalid")
             }
@@ -135,7 +133,7 @@ fn main() -> Result<(), failure::Error> {
 
             match find::find_path_from_terms(terms, &graph) {
                 Ok(( _path,  nodepath)) => { 
-                    validate_success(nodepath);
+                    report::validate_success(nodepath);
                 },
                 Err(e) => {
                     return Err(e)?;

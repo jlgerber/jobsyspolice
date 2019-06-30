@@ -5,7 +5,7 @@ use crate::{
     find,
     JGraph,
     JSPError,
-    NIndex,
+    //NIndex,
     NodePath,
     SearchTerm,
     SupportedShell,
@@ -21,8 +21,8 @@ use levelspecter::{LevelSpec, LevelName};
 use std::{
     collections::VecDeque,
     env,
-    ffi::OsString,
-    path::{Path, Component, PathBuf},
+    //ffi::OsString,
+    path::{/*Path,*/ Component, PathBuf},
     str::FromStr
 };
 
@@ -91,7 +91,7 @@ pub fn mk(
         match diskservice.mk(path, ignore_volume) {
             Ok(_) => println!("{}{} {}{}", cr, "Created:".bright_blue(), path.display(), cr),
             Err(JSPError::ValidationFailure{entry, node, depth}) => {
-                report_failure(path.as_os_str(), &entry, node, depth, &graph, verbose );
+                report::failure(path.as_os_str(), &entry, node, depth, &graph, verbose );
             },
             Err(e) => println!("{}{}{}{}{}",cr, "Failure".bright_red(),e.to_string(),cr, cr),
         }
@@ -154,7 +154,7 @@ pub fn mk<'a>(
             Ok(report::Success::Mk(validpath))
         },
         Err(JSPError::ValidationFailure{entry, node, depth}) => {
-            report_failure(validpath.path().as_os_str(), &entry, node, depth, &graph, verbose );
+            report::failure(validpath.path().as_os_str(), &entry, node, depth, &graph, verbose );
             Err(JSPError::ValidationFailure{entry,node,depth})
         },
         Err(e) => {
@@ -172,7 +172,7 @@ pub fn report_mk_results<'a>(results: Result<ValidPath<'a>, JSPError>, graph: &'
             Some(validpath)
         },
         Err(JSPError::ValidationFailure{entry, node, depth}) => {
-            report_failure(validpath.path().as_os_str(), &entry, node, depth, &graph, verbose );
+            report::failure(validpath.path().as_os_str(), &entry, node, depth, &graph, verbose );
             Err(JSPError::ValidationFailure{entry,node,depth});
             None
         },
@@ -243,7 +243,7 @@ pub fn go (
                     entry: entry.clone(), 
                      node ,
                     depth})*/
-                report_failure(input.as_os_str(), &entry, node, depth, &graph, verbose );
+                report::failure(input.as_os_str(), &entry, node, depth, &graph, verbose );
             }
             // todo, make more explicit
             Err(_) => panic!("JSPError type returned invalid")
@@ -260,7 +260,7 @@ pub fn go (
                     process_go_success(path, &nodepath, myshelldyn);
                 } else {
                     // GoFailure{path: String, myshell: bool, verbose:bool}
-                    print_go_failure(path_str, true, verbose);
+                    report::go_failure(path_str, true, verbose);
                 }
             },
             Err(e) => {
@@ -360,16 +360,16 @@ fn process_go_success(path: PathBuf, nodepath: &NodePath, myshell: Box<dyn Shell
     println!("echo Changed Directory To: {}\n", target_dir);
 }
 
-#[inline]
-fn print_go_failure(path_str: &str, myshell: bool, verbose: bool) {
-    let cr = if verbose { "\n" } else {""};
-    if !myshell {
-        println!("echo {}Error: Path does not exist: {}{}", cr, path_str.bright_blue(), cr);
-    } else {
-        eprintln!("{}Error: Path does not exist: '{}'{}", cr, path_str.bright_blue(), cr);
-    }
-}
-
+// #[inline]
+// fn print_go_failure(path_str: &str, myshell: bool, verbose: bool) {
+//     let cr = if verbose { "\n" } else {""};
+//     if !myshell {
+//         println!("echo {}Error: Path does not exist: {}{}", cr, path_str.bright_blue(), cr);
+//     } else {
+//         eprintln!("{}Error: Path does not exist: '{}'{}", cr, path_str.bright_blue(), cr);
+//     }
+// }
+/*
 #[inline]
 fn report_failure(input: &std::ffi::OsStr, entry: &OsString, node: NIndex, depth: u8, graph: &JGraph, verbose: bool ) {
     let path = Path::new(input)
@@ -386,3 +386,4 @@ fn report_failure(input: &std::ffi::OsStr, entry: &OsString, node: NIndex, depth
     if verbose { eprintln!(""); }
     std::process::exit(1);
 }
+*/

@@ -2,7 +2,7 @@ use chrono;
 use dotenv::dotenv;
 //use failure;
 use fern::{ colors::{Color, ColoredLevelConfig}, self} ;
-use jsp::{get_graph,  DiskType, cli, report_simple_failure, JSPError, report, MetadataTerm, find_rel, ValidPath};
+use jsp::{get_graph,  DiskType, cli, JSPError, report, MetadataTerm, find_rel, ValidPath};
 use log::{ LevelFilter, self };
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -29,6 +29,11 @@ struct Opt {
     #[structopt(name="TERMS")]
     terms: Vec<String>,
     
+    /// Automatically create any directories beneeth the supplied path that have
+    /// the `autocreate` property associated with them in the template
+    #[structopt(short = "a", long = "auto")]
+    autocreate: bool,
+
     /// Ignore the volume tag in the template and treat those nodes
     /// like regular directories. 
     #[structopt(short = "n", long = "novolume")]
@@ -46,7 +51,7 @@ struct Opt {
 
 fn doit(args: Opt, level: LevelFilter) -> Result<(), /*failure::Error*/ JSPError > {
     
-    let Opt{graph, terms, novolume, full_path, verbose,..} = args;
+    let Opt{graph, terms, autocreate, novolume, full_path, verbose,..} = args;
 
     setup_logger(level).unwrap();
 
@@ -54,31 +59,54 @@ fn doit(args: Opt, level: LevelFilter) -> Result<(), /*failure::Error*/ JSPError
     
     let validpath = cli::validpath_from_terms(terms, &graph, full_path)?;
 
-    let validpath = cli::mk(validpath, &graph, DiskType::Local, novolume,  verbose)?;             
+    let validpath = cli::mk(validpath, &graph, DiskType::Local, novolume, verbose)?;             
     if let report::Success::Mk(validpath) = validpath {
-        // find relative
-        if let Some(idx) = validpath.nodepath().index() {
-            match find_rel( idx, MetadataTerm::Autocreate, &graph) {
-                Err(e) => {eprintln!("unable to find autocreate nodes: {}", e.to_string());}
-                Ok(nodepaths) => {
-                    // now we create them
-                    for nodepath in nodepaths {
-                        // generate a Pathzbuf from the current nodepath
-                        let cur_pathbuf = nodepath.to_pathbuf()?;
-                        // the full pathbuf 
-                        let full_pathbuf = validpath.pathbuf().join(cur_pathbuf);
-                        // a copy of the cufrent nodepath
-                        let mut cur_nodepath_clone = nodepath.clone();
-                        // combine the full_pathbuf and the cur_nodepath_clone
-                        let mut full_nodepath = validpath.nodepath().clone();
-                        full_nodepath.append_unchecked(&mut cur_nodepath_clone.nodes);
-                        // build a new validpath from the full pathbuf and fullnodepath
-                        let new_validpath = ValidPath::new_unchecked(full_pathbuf, full_nodepath, true)?;
-                        cli::mk(new_validpath, &graph, DiskType::Local, novolume,  verbose)?;
+        if autocreate {
+            // find relative
+            if let Some(idx) = validpath.nodepath().index() {
+                match find_rel( idx, MetadataTerm::Autocreate, &graph) {
+                    Err(e) => {eprintln!("Error: unable to find autocreate nodes: {}", e.to_string());}
+                    Ok(nodepaths) => {
+                        // now we create them
+                        for nodepath in nodepaths {
+                            // generate a Pathbuf from the current nodepath
+                            let cur_pathbuf = match nodepath.to_pathbuf() {
+                                Ok(v) => v,
+                                Err(e) => {
+                                    //eprintln!("Error: unable to convert nodepath to pathbuf. skipping nodepath {}",
+                                    //    e.to_string());
+                                    report::jsperror("Unable to convert nodepath to pathbuf. skipping nodepath.", e, verbose);
+                                    continue
+                                } 
+                            };
+                            // the full pathbuf 
+                            let full_pathbuf = validpath.pathbuf().join(cur_pathbuf);
+                            // a copy of the cufrent nodepath
+                            let mut cur_nodepath_clone = nodepath.clone();
+                            // combine the full_pathbuf and the cur_nodepath_clone
+                            let mut full_nodepath = validpath.nodepath().clone();
+                            full_nodepath.append_unchecked(&mut cur_nodepath_clone.nodes);
+                            // build a new validpath from the full pathbuf and fullnodepath
+                            let new_validpath = match ValidPath::new_unchecked(full_pathbuf, full_nodepath, true) {
+                                Ok(v) => v,
+                                Err(e) => {
+                                    //eprintln!("Error: Unable to create ValidPath. Err: {}",e.to_string());
+                                    report::jsperror("Unable to create ValidPath", e, verbose);
+                                    continue
+                                }
+                            };
+                            let _ = match cli::mk(new_validpath, &graph, DiskType::Local, novolume,  verbose) {
+                                Ok(v) => v,
+                                Err(e) => {
+                                    //eprintln!("Error making new subdirectory: {}", e.to_string());
+                                    report::jsperror("Problem making automake subdirectory", e, verbose);
+                                    continue
+                                }
+                            };
+                        }
                     }
                 }
             }
-
         }
 
         report::mk_success(validpath.path(), verbose);
@@ -94,7 +122,7 @@ fn main() {
 
     match doit(args, level) {
         Ok(_) => {}
-        Err(e) => {report_simple_failure(e.to_string().as_str(), verbose)}
+        Err(e) => {report::simple_failure(e.to_string().as_str(), verbose)}
     }
 }
 
