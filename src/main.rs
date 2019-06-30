@@ -7,7 +7,6 @@ use fern::{
     }, 
     self
 };
-
 use jsp::{ 
     report_failure,
     report_simple_failure,
@@ -17,14 +16,11 @@ use jsp::{
     validate_path, 
     JSPError, 
     get_graph,
-    //get_disk_service,
-    //DiskType,
     gen_terms_from_strings,
     find,
 };
-
-use petgraph;
 use log::{ LevelFilter, self };
+use petgraph;
 use std::path::PathBuf ;
 use structopt::StructOpt;
 
@@ -40,7 +36,7 @@ struct Opt {
     #[structopt( short = "l", long = "level", default_value = "warn" )]
     level: String,
 
-    /// Generate a Graphviz dot file of the jstemplate and print it to stdout
+    /// Generate a Graphviz dot file of the jstemplate and save it to the provided file
     #[structopt( short="d", long = "dot", parse(from_os_str))]
     dot: Option<PathBuf>,
 
@@ -98,6 +94,7 @@ fn main() -> Result<(), failure::Error> {
                 log::warn!("INPUT not compatible with --dot argument. It will be ignored");
             }
             output = diskutils::convert_relative_pathbuf_to_absolute(output)?;
+            // TODO: check to see that output doesnt exist and that its parent partory does exist
             diskutils::write_template_as_dotfile(&output, &graph);
         } else {
             println!("{:#?}",  petgraph::dot::Dot::with_config(&graph, &[petgraph::dot::Config::EdgeNoLabel]));
@@ -118,7 +115,7 @@ fn main() -> Result<(), failure::Error> {
         let input = args.input;
         
         //let diskservice = get_disk_service(DiskType::Local, &graph);
-        if /*full_path == true ||*/  !input.is_empty() && input[0].contains('/')  {
+        if !input.is_empty() && input[0].contains('/')  {
             let mut input = PathBuf::from(&input[0]);
             input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
             match validate_path(&input, &graph) {
@@ -136,7 +133,6 @@ fn main() -> Result<(), failure::Error> {
 
             match find::find_path_from_terms(terms, &graph) {
                 Ok(( _path,  nodepath)) => { 
-                    //let path_str = path.to_str().expect("unable to convert path to str. Does it contain non-ascii chars?");
                     validate_success(nodepath);
                 },
                 Err(e) => {
