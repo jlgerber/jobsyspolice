@@ -3,8 +3,10 @@ use std::path::{PathBuf, Path};
 use std::ffi::{OsString, OsStr};
 use colored::*;
 
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Success<'a> {
-    Mk(ValidPath<'a>)
+    Mk(ValidPath<'a>),
+    General,
 }
 
 pub fn mk_success(path: &Path, verbose:bool ) {
