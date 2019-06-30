@@ -371,6 +371,7 @@ pub mod testdata {
             (show, tools),
             (show, logs),
             (show, etc),
+            (show, color),
             (show, refdir),
               (refdir, quicktimes),
                 (quicktimes, qtsubdir),
