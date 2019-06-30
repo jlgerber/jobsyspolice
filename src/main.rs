@@ -106,7 +106,10 @@ fn main() -> Result<(), failure::Error> {
     }  else if let Some(Subcommand::Go{terms, myshell, full_path, verbose}) = args.subcmd {
         match cli::go(terms, myshell, &graph, full_path, verbose) {
             Ok(()) => (),
-            Err(e) => report::simple_failure(e.to_string().as_str(), verbose)
+            Err(e) => {
+                report::simple_failure(e.to_string().as_str(), verbose);
+                std::process::exit(1);
+            }
         }
     //
     // Validate supplied argument to determine whether it is a valid path or not
