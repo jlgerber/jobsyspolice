@@ -1,6 +1,6 @@
 use chrono;
 use dotenv::dotenv;
-use failure;
+//use failure;
 use fern::{ colors::{Color, ColoredLevelConfig}, self} ;
 use jsp::{get_graph,  DiskType, cli, report_simple_failure, JSPError, report};
 use log::{ LevelFilter, self };
@@ -54,7 +54,7 @@ fn doit(args: Opt, level: LevelFilter) -> Result<(), /*failure::Error*/ JSPError
     
     let validpath = cli::validpath_from_terms(terms, &graph, full_path)?;
 
-    let validpath = cli::mk2(validpath, &graph, DiskType::Local, novolume,  verbose)?;             
+    let validpath = cli::mk(validpath, &graph, DiskType::Local, novolume,  verbose)?;             
     if let report::Success::Mk(validpath) = validpath {
         report::mk_success(validpath.path(), verbose);
     }
