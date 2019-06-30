@@ -29,8 +29,10 @@ use structopt::StructOpt;
 #[structopt( name = "jsp", about = "
 Job System Police
 
-Interact with the jstemplate.json file. \
-This command may be used to validate candidate paths, create the template, etc" )]
+Interact with the jsptemplate. \
+This command may be used to validate candidate paths, write out a dotgraph,\
+and invoke shell commands\
+The primary jobsystem commands however, are jspmk and jspgo." )]
 struct Opt {
     /// Set logging level to one of trace, debug, info, warn, error
     #[structopt( short = "l", long = "level", default_value = "warn" )]
