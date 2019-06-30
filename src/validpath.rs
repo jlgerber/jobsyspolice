@@ -89,15 +89,15 @@ impl<'a> ValidPath<'a> {
                 // 
                 let last_idx = last_idx.unwrap();
                 let sz = graph.neighbors_directed(last_idx, petgraph::Direction::Outgoing).count();
+                 let subdir = subdir.unwrap();
                 if sz > 0 {
                     // This should be some error about trying to create subdir 
-                    return Err(JSPError::Placeholder);
+                    return Err(JSPError::MkdirFailure(format!("Cannot create '{}' under '{}'", subdir, pathbuf.display())));
                 }
-                let subdir = subdir.unwrap();
                 pathbuf.push(subdir);
             } else {
                 // wtf? this should be Some
-                return Err(JSPError::Placeholder);
+                return Err(JSPError::JGraphError("index() method returned None. nodepath shoulndt be empty.".to_string()));
             }
         }
         Ok(ValidPath {

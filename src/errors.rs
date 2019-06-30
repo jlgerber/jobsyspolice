@@ -50,6 +50,9 @@ pub enum JSPError {
     #[fail(display = "Invalid User Name: {}", _0)]
     InvalidUserName(String),
 
+    #[fail(display = "JGraph Error: {}", _0)]
+    JGraphError(String),
+
     #[fail(display = "Missing Owner in regex")]
     MissingOwnerInRegex,
 
