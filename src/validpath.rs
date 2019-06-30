@@ -126,6 +126,10 @@ impl<'a> ValidPath<'a> {
         self.pathbuf.as_path()
     }
 
+    pub fn pathbuf(&self) -> PathBuf {
+        self.pathbuf.clone()
+    }
+    
     /// Return a Reference to a NodePath
     pub fn nodepath(&self) -> &NodePath<'a> {
         &self.nodepath
