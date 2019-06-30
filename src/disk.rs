@@ -5,8 +5,8 @@ use crate::{ JGraph, JSPError };
 /// For instance, Netapp has a specific call to make a volume that involves
 /// a RESTful call (with ontap 6.4). This is unique, obviously, to Netapp.
 pub trait Disk {
-    /// Make the directory or voluem.
-    fn mk(&self, path: &Path, ignore_volume: bool ) -> Result<(), JSPError>;
+    /// Make the directory or volume.
+    fn mk(&self, path: &Path, sitcky: bool, ignore_volume: bool ) -> Result<(), JSPError>;
 
     /// Retrieve the default owner if none is supplied
     fn default_owner(&self) -> &str;
