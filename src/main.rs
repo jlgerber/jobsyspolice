@@ -30,8 +30,8 @@ use structopt::StructOpt;
 Job System Police
 
 Interact with the jsptemplate. \
-This command may be used to validate candidate paths, write out a dotgraph,\
-and invoke shell commands\
+This command may be used to validate candidate paths, write out a dotgraph, \
+and invoke shell commands. \
 The primary jobsystem commands however, are jspmk and jspgo." )]
 struct Opt {
     /// Set logging level to one of trace, debug, info, warn, error
