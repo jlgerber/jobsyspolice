@@ -58,7 +58,7 @@ pub mod shell;
 pub use shell::{bash, tcsh, ShellEnvManager, SupportedShell};
 
 pub mod cli;
-pub use cli::{go, mk, mk2, gen_terms_from_strings};
+pub use cli::{gen_terms_from_strings};
 
 pub mod jspt;
 

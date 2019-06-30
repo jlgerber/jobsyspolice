@@ -12,8 +12,7 @@ use jsp::{
     report_failure,
     report_simple_failure,
     validate_success,
-    go, 
-    mk, 
+    cli,
     diskutils, 
     validate_path, 
     JSPError, 
@@ -61,27 +60,6 @@ struct Opt {
 
 #[derive(StructOpt, Debug)]
 enum Subcommand {
-    /// Jobsystem path to create (eg /dd/shows/FOOBAR)
-    // #[structopt(name = "mk")]
-    // Mk {
-    //     /// one or more search tearms of the form key:value , or a 
-    //     /// fullpath, depending upon other field
-    //     #[structopt(name="TERMS")]
-    //     terms: Vec<String>,
-        
-    //     /// Ignore the volume tag in the template and treat those nodes
-    //     /// like regular directories. 
-    //     #[structopt(short = "n", long = "novolume")]
-    //     novolume: bool,
-
-    //     /// accept a fullpath instead of key:value pairs
-    //     #[structopt(short = "f", long = "fullpath")]
-    //     full_path: bool,
-
-    //     /// Print Success / Failure information. And in color!
-    //     #[structopt(short = "v", long = "verbose")]
-    //     verbose: bool,
-    // },
     /// Navigation command
     #[structopt(name = "go")]
     Go {
@@ -125,20 +103,12 @@ fn main() -> Result<(), failure::Error> {
             println!("{:#?}",  petgraph::dot::Dot::with_config(&graph, &[petgraph::dot::Config::EdgeNoLabel]));
         }
 
-    //
-    // Handle Directory Creation via the mk subcommand
-    //
-    // } else if let Some(Subcommand::Mk{terms, novolume, full_path, verbose}) = args.subcmd {
-    //     match mk(terms, &graph, novolume, full_path, verbose){
-    //         Ok(()) => (),
-    //         Err(e) => report_simple_failure(e.to_string().as_str(), verbose)
-    //     }
 
     //   
     // Handle Navigation via the Go subcommand
     //
     }  else if let Some(Subcommand::Go{terms, myshell, full_path, verbose}) = args.subcmd {
-        match go(terms, myshell, &graph, full_path, verbose) {
+        match cli::go(terms, myshell, &graph, full_path, verbose) {
             Ok(()) => (),
             Err(e) => report_simple_failure(e.to_string().as_str(), verbose)
         }
