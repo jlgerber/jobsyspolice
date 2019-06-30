@@ -18,14 +18,23 @@ pub trait Disk {
 pub mod local;
 pub mod gx;
 
-/// The type of the DiskService. There should be one variant per implementation
+/// The type of disk system. This dictates the strategy for file/directory
+/// creation, as well as volume creation.
 #[derive(Debug, PartialEq, Eq)]
 pub enum DiskType {
+    /// Local DiskType does not differentiate between volumes and directories.
+    /// Furthermore, it assumes that rootsquash is not active, as it relies on
+    /// executng as a privilaged user in order to change ownership of directories. 
     Local,
+    /// GX assumes that rootsquash is active, but that the abilty to give away
+    /// ownership for files/directories that one owns has been enabled in the 
+    /// OnTap preferences. DiskType::Gx also relies upon the jspmk command being
+    /// setuid enabled, but its strategy involves setting the process owner to the 
+    /// owner of the parent directory for each file/directory it makes.
     Gx,
 }
 
-/// Retrieve the disk service given a DiskType
+/// Retrieve an instance of a DiksService given a DiskType
 pub fn get_disk_service<'a>(disk_type: DiskType, graph: &'a JGraph) ->  Box<dyn Disk + 'a> {
     match disk_type {
         DiskType::Local => Box::new(local::DiskService::new(

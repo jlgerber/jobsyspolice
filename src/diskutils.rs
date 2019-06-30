@@ -133,7 +133,7 @@ pub fn convert_relative_pathbuf_to_absolute(path: PathBuf) -> Result<PathBuf, JS
     Ok(path)
 }
 
-/// Write the template out to disk
+/// Write the template out to disk.
 pub fn write_template(output: &mut PathBuf, graph: &JGraph) {
 
     // if we are writing out the template, we use the internal definition
