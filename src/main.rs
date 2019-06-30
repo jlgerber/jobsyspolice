@@ -103,7 +103,6 @@ fn main() -> Result<(), failure::Error> {
             println!("{:#?}",  petgraph::dot::Dot::with_config(&graph, &[petgraph::dot::Config::EdgeNoLabel]));
         }
 
-
     //   
     // Handle Navigation via the Go subcommand
     //

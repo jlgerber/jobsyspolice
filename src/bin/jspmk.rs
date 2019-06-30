@@ -2,7 +2,7 @@ use chrono;
 use dotenv::dotenv;
 //use failure;
 use fern::{ colors::{Color, ColoredLevelConfig}, self} ;
-use jsp::{get_graph,  DiskType, cli, report_simple_failure, JSPError, report};
+use jsp::{get_graph,  DiskType, cli, report_simple_failure, JSPError, report, MetadataTerm, find_rel, ValidPath};
 use log::{ LevelFilter, self };
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -56,6 +56,31 @@ fn doit(args: Opt, level: LevelFilter) -> Result<(), /*failure::Error*/ JSPError
 
     let validpath = cli::mk(validpath, &graph, DiskType::Local, novolume,  verbose)?;             
     if let report::Success::Mk(validpath) = validpath {
+        // find relative
+        if let Some(idx) = validpath.nodepath().index() {
+            match find_rel( idx, MetadataTerm::Autocreate, &graph) {
+                Err(e) => {eprintln!("unable to find autocreate nodes: {}", e.to_string());}
+                Ok(nodepaths) => {
+                    // now we create them
+                    for nodepath in nodepaths {
+                        // generate a Pathzbuf from the current nodepath
+                        let cur_pathbuf = nodepath.to_pathbuf()?;
+                        // the full pathbuf 
+                        let full_pathbuf = validpath.pathbuf().join(cur_pathbuf);
+                        // a copy of the cufrent nodepath
+                        let mut cur_nodepath_clone = nodepath.clone();
+                        // combine the full_pathbuf and the cur_nodepath_clone
+                        let mut full_nodepath = validpath.nodepath().clone();
+                        full_nodepath.append_unchecked(&mut cur_nodepath_clone.nodes);
+                        // build a new validpath from the full pathbuf and fullnodepath
+                        let new_validpath = ValidPath::new_unchecked(full_pathbuf, full_nodepath, true)?;
+                        cli::mk(new_validpath, &graph, DiskType::Local, novolume,  verbose)?;
+                    }
+                }
+            }
+
+        }
+
         report::mk_success(validpath.path(), verbose);
     }
     Ok(())
