@@ -13,6 +13,7 @@ use crate::{
     validate_path,
     get_disk_service,
     DiskType,
+    ValidPath,
 };
 use colored::Colorize;
 use levelspecter::{LevelSpec, LevelName};
@@ -23,6 +24,30 @@ use std::{
     path::{Path, Component, PathBuf},
     str::FromStr
 };
+
+/// Generate a ValidPath from input. This input may either be an absolute or relative path, a levelspec and terms,
+/// or a straight vector of terms. In any case, `validpath_from_terms` will attempt to do the right thing.
+/// 
+/// # Parameters
+/// *`terms` - Vec<String> representing a relative or abslolute path (terms.len() should be 1), or a vec of SearchTerms
+/// * `graph` - a reference to the `JGraph` instance
+/// * `force_fullpath` - A bool indicating that we wish to force terms[0] to be interpreted as a fullpath. Under
+///                      normal circumstances, this should not be necessary, as `validpath_from_terms` will already 
+///                      attempt to ascertain the nature of the input. However, there are certain ambiguous scenarios
+///                      where this is necessary.
+/// 
+/// # Returns
+/// An Ok wrapped ValidPath instance when successful 
+/// An Error wrapped JSPError when unsuccessful
+pub fn validpath_from_terms<'a>(mut terms: Vec<String>, graph: &'a JGraph,  force_fullpath: bool) -> Result<ValidPath<'a>, JSPError> {
+    if force_fullpath || ( !terms.is_empty() && terms[0].contains('/') ) {
+        let pathbuf = PathBuf::from(terms.pop().expect("unable to unwrap"));
+        ValidPath::new(pathbuf, graph, force_fullpath)
+    } else {
+        let terms = gen_terms_from_strings(terms)?;
+        ValidPath::new_from_searchterms(terms, graph, force_fullpath)
+    }
+}
 
 /// Make a series of directories if they do not already exist. 
 /// 
