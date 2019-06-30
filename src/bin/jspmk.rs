@@ -122,7 +122,10 @@ fn main() {
 
     match doit(args, level) {
         Ok(_) => {}
-        Err(e) => {report::simple_failure(e.to_string().as_str(), verbose)}
+        Err(e) => {
+            report::simple_failure(e.to_string().as_str(), verbose);
+            std::process::exit(1);
+        }
     }
 }
 
