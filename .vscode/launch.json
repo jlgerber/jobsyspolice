@@ -8,7 +8,7 @@
             "type": "lldb",
             "request": "launch",
             "name": "Custom launch",
-            "program": "${workspaceRoot}/target/debug/jsp_debug",
+            "program": "${workspaceRoot}/target/debug/jsp",
             "args": [],
             "cwd": "${workspaceRoot}",
         }
