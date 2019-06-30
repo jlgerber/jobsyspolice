@@ -50,7 +50,7 @@ pub fn failure(input: &OsStr, entry: &OsString, node: NIndex, depth: u8, graph: 
     }
     if verbose { eprintln!(""); }
     log::error!("report_failure. Failed to match {} in {:?}", entry_str, &path);
-    std::process::exit(1);
+    //std::process::exit(1);
 }
 
 /// Report simple failure to the user given an error str and a verbose bool
@@ -63,8 +63,6 @@ pub fn simple_failure(error: &str, verbose: bool ) {
         eprintln!("{} {}", "Error".bright_red(), error);
     }
     log::error!("report_simple_failure. {}", error);
-    // what am i doing here? this should't be in log
-    std::process::exit(1);
 }
 
 /// Report a jsperror
