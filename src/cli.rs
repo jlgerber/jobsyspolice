@@ -16,6 +16,7 @@ use crate::{
     ValidPath,
     report,
 };
+use chrono::prelude::*;
 use colored::Colorize;
 use levelspecter::{LevelSpec, LevelName};
 use std::{
@@ -45,15 +46,36 @@ use std::{
 /// # Returns
 /// An Ok wrapped ValidPath instance when successful 
 /// An Error wrapped JSPError when unsuccessful
-pub fn validpath_from_terms<'a>(mut terms: Vec<String>, graph: &'a JGraph,  force_fullpath: bool) -> Result<ValidPath<'a>, JSPError> {
+pub fn validpath_from_terms<'a>(
+    mut terms: Vec<String>, 
+    graph: &'a JGraph, 
+    datetime_dir: bool, 
+    force_fullpath: bool
+) -> Result<ValidPath<'a>, JSPError> {
     if force_fullpath || ( !terms.is_empty() && terms[0].contains('/') ) {
-        let pathbuf = PathBuf::from(terms.pop().expect("unable to unwrap"));
+        let mut pathbuf = PathBuf::from(terms.pop().expect("unable to unwrap"));
+        if datetime_dir {
+            // construct datetime dir
+            pathbuf.push(gen_datetime_dir().as_str());
+        }
         ValidPath::new(pathbuf, graph, force_fullpath)
     } else {
         let terms = gen_terms_from_strings(terms)?;
-        ValidPath::new_from_searchterms(terms, graph, force_fullpath)
+        if datetime_dir {
+            let dt = gen_datetime_dir();
+            ValidPath::new_from_searchterms(terms, graph, Some(dt.as_str()), force_fullpath)
+        } else {
+            ValidPath::new_from_searchterms(terms, graph, None, force_fullpath)
+        }  
     }
 }
+
+// Generate a datetime directory
+fn gen_datetime_dir() -> String {
+    let dt: DateTime<Local> = Local::now();
+    format!("{}_{}_{}",dt.year(), dt.month(), dt.day())
+}
+
 /*
 /// Make a series of directories if they do not already exist. 
 /// 

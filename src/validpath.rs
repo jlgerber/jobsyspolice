@@ -70,15 +70,36 @@ impl<'a> ValidPath<'a> {
     /// 
     /// * `terms` - A vector of `SearchTearm`s, representing an ordered (though sparse) traversal of the JGraph
     /// * `graph` - Reference to the JGraph instance 
+    /// * `subdir` - An optional subdirectory to tack on after searchterms provided that the nodepath doesnt have
+    ///              any managed nodes underneath it. (ie that the graph doesnt enforce the shape)
     /// * `absolute` - Whether to convert the ValidPath into an absolute path or not. 
     /// 
     /// # Returns
     /// Ok wrapping ValidPath instance if Successful. 
     /// Otherwise, an Err wrapping JSPError
-    pub fn new_from_searchterms(terms: Vec<SearchTerm>, graph: &'a JGraph, absolute: bool) -> Result<ValidPath<'a>, JSPError> {
+    pub fn new_from_searchterms(terms: Vec<SearchTerm>, graph: &'a JGraph, subdir: Option<&str>, absolute: bool) 
+    -> Result<ValidPath<'a>, JSPError> {
         let (pathbuf, nodepath) = find_path_from_terms(terms, graph)?;
-        let pathbuf = if absolute{diskutils::convert_relative_pathbuf_to_absolute(pathbuf)?} else {pathbuf};
-
+        let mut pathbuf = if absolute{diskutils::convert_relative_pathbuf_to_absolute(pathbuf)?} else {pathbuf};
+        // if subdirectory has been defined
+        if subdir.is_some() {
+            // grab the last index from the nodepath (NIndex)
+            let last_idx = nodepath.index();
+            if last_idx.is_some() {
+                // 
+                let last_idx = last_idx.unwrap();
+                let sz = graph.neighbors_directed(last_idx, petgraph::Direction::Outgoing).count();
+                if sz > 0 {
+                    // This should be some error about trying to create subdir 
+                    return Err(JSPError::Placeholder);
+                }
+                let subdir = subdir.unwrap();
+                pathbuf.push(subdir);
+            } else {
+                // wtf? this should be Some
+                return Err(JSPError::Placeholder);
+            }
+        }
         Ok(ValidPath {
             pathbuf, 
             nodepath

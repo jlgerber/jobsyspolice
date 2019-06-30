@@ -34,10 +34,13 @@ struct Opt {
     #[structopt(short = "a", long = "auto")]
     autocreate: bool,
 
-
     /// Set stickybit on directory being created
     #[structopt(long = "sticky")]
     sticky: bool,
+
+    /// Create YYYY_MM_DD directory under provided path
+    #[structopt(short="t", long = "datetime")]
+    datetime_dir: bool,
 
     /// Ignore the volume tag in the template and treat those nodes
     /// like regular directories. 
@@ -56,13 +59,17 @@ struct Opt {
 
 fn doit(args: Opt, level: LevelFilter) -> Result<(), /*failure::Error*/ JSPError > {
     
-    let Opt{graph, terms, autocreate, sticky, novolume, full_path, verbose,..} = args;
-
+    let Opt{graph, terms, autocreate, sticky, datetime_dir, novolume, full_path, verbose,..} = args;
+    if terms.len() == 0 {
+        eprintln!("Must supply at least one term as input. See help");
+        Opt::clap().print_help().unwrap();
+        std::process::exit(1);
+    }
     setup_logger(level).unwrap();
 
     let (graph,  _keymap,  _regexmap) = get_graph(graph)?;
     
-    let validpath = cli::validpath_from_terms(terms, &graph, full_path)?;
+    let validpath = cli::validpath_from_terms(terms, &graph, datetime_dir, full_path)?;
 
     let validpath = cli::mk(validpath, &graph, DiskType::Local, sticky, novolume, verbose)?;             
     if let report::Success::Mk(validpath) = validpath {
