@@ -86,7 +86,7 @@ impl<'a> Loader<'a> {
     /// # Examples
     /// 
     /// ```
-    /// use jspcompile::Loader;
+    /// use jsp::jspt::Loader;
     /// 
     /// let (mut graph, mut keymap, mut regexmap) = Loader::setup();
     /// let loader = Loader::new(&mut graph, &mut keymap, &mut regexmap);

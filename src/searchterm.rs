@@ -5,14 +5,7 @@ use crate::JSPError;
 /// a Node of `NodeType::Regex` within the JGraph, and suggest
 /// a valid solution for the Node's regular expression. For example,
 /// we may define a search term that is meant to find a show within the 
-/// graph: 
-/// ```
-/// let show_searchterm = 
-/// SearchTerm {
-///     key: String::from("show"),
-///     value: String::from("DEV01"),
-/// };
-/// ```
+/// graph. See Search example below
 #[derive(Debug, PartialEq, Eq)]
 pub struct SearchTerm {
     key: String,
@@ -75,6 +68,8 @@ impl std::str::FromStr for SearchTerm {
 /// # Example
 /// 
 /// ```
+/// use jsp::{Search, SearchTerm};
+/// 
 /// let mut search = Search::new();
 /// search.push_front(SearchTerm::new("show", "DEV01"));
 /// search.push_front(SearchTerm::new("sequence", "RD"));
