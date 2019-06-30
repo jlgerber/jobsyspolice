@@ -244,6 +244,11 @@ pub fn go (
                      node ,
                     depth})*/
                 report::failure(input.as_os_str(), &entry, node, depth, &graph, verbose );
+                return Err(JSPError::ValidationFailureAt{
+                    path:  input.into_os_string(), 
+                    entry: entry.clone(), 
+                     node ,
+                    depth});
             }
             // todo, make more explicit
             Err(_) => panic!("JSPError type returned invalid")
