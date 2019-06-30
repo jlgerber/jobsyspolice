@@ -11,7 +11,7 @@ use fern::{
 use jsp::{ 
     report_failure,
     report_simple_failure,
-    report_success,
+    validate_success,
     go, 
     mk, 
     diskutils, 
@@ -62,26 +62,26 @@ struct Opt {
 #[derive(StructOpt, Debug)]
 enum Subcommand {
     /// Jobsystem path to create (eg /dd/shows/FOOBAR)
-    #[structopt(name = "mk")]
-    Mk {
-        /// one or more search tearms of the form key:value , or a 
-        /// fullpath, depending upon other field
-        #[structopt(name="TERMS")]
-        terms: Vec<String>,
+    // #[structopt(name = "mk")]
+    // Mk {
+    //     /// one or more search tearms of the form key:value , or a 
+    //     /// fullpath, depending upon other field
+    //     #[structopt(name="TERMS")]
+    //     terms: Vec<String>,
         
-        /// Ignore the volume tag in the template and treat those nodes
-        /// like regular directories. 
-        #[structopt(short = "n", long = "novolume")]
-        novolume: bool,
+    //     /// Ignore the volume tag in the template and treat those nodes
+    //     /// like regular directories. 
+    //     #[structopt(short = "n", long = "novolume")]
+    //     novolume: bool,
 
-        /// accept a fullpath instead of key:value pairs
-        #[structopt(short = "f", long = "fullpath")]
-        full_path: bool,
+    //     /// accept a fullpath instead of key:value pairs
+    //     #[structopt(short = "f", long = "fullpath")]
+    //     full_path: bool,
 
-        /// Print Success / Failure information. And in color!
-        #[structopt(short = "v", long = "verbose")]
-        verbose: bool,
-    },
+    //     /// Print Success / Failure information. And in color!
+    //     #[structopt(short = "v", long = "verbose")]
+    //     verbose: bool,
+    // },
     /// Navigation command
     #[structopt(name = "go")]
     Go {
@@ -124,14 +124,16 @@ fn main() -> Result<(), failure::Error> {
         } else {
             println!("{:#?}",  petgraph::dot::Dot::with_config(&graph, &[petgraph::dot::Config::EdgeNoLabel]));
         }
+
     //
     // Handle Directory Creation via the mk subcommand
     //
-    } else if let Some(Subcommand::Mk{terms, novolume, full_path, verbose}) = args.subcmd {
-        match mk(terms, &graph, novolume, full_path, verbose){
-            Ok(()) => (),
-            Err(e) => report_simple_failure(e.to_string().as_str(), verbose)
-        }
+    // } else if let Some(Subcommand::Mk{terms, novolume, full_path, verbose}) = args.subcmd {
+    //     match mk(terms, &graph, novolume, full_path, verbose){
+    //         Ok(()) => (),
+    //         Err(e) => report_simple_failure(e.to_string().as_str(), verbose)
+    //     }
+
     //   
     // Handle Navigation via the Go subcommand
     //
@@ -152,7 +154,7 @@ fn main() -> Result<(), failure::Error> {
             input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
             match validate_path(&input, &graph) {
                 Ok(nodepath) => {
-                    report_success(nodepath);
+                    validate_success(nodepath);
                 },
                 Err(JSPError::ValidationFailure{entry, node, depth}) => {
                     report_failure(input.as_os_str(), &entry, node, depth, &graph, true );
@@ -166,7 +168,7 @@ fn main() -> Result<(), failure::Error> {
             match find::find_path_from_terms(terms, &graph) {
                 Ok(( _path,  nodepath)) => { 
                     //let path_str = path.to_str().expect("unable to convert path to str. Does it contain non-ascii chars?");
-                    report_success(nodepath);
+                    validate_success(nodepath);
                 },
                 Err(e) => {
                     return Err(e)?;

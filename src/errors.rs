@@ -1,4 +1,4 @@
-use crate::{NIndex, NodeType};
+use crate::{NIndex, NodeType, jspt};
 use failure::Fail;
 use nix;
 use std::{ffi::OsString, io, num, path::PathBuf };
@@ -6,7 +6,7 @@ use ext_regex;
 use levelspecter;
 
 /// Error enum implementing Fail trait
-#[derive(Debug, Fail)]
+#[derive(Debug, Fail, PartialEq, Clone)]
 pub enum JSPError {
     #[fail(display = "missing NIndex: {:?}", _0)]
     MissingIndex (NIndex),
@@ -50,11 +50,16 @@ pub enum JSPError {
     #[fail(display = "Missing Owner in regex")]
     MissingOwnerInRegex,
 
-     #[fail(display = "Boxed Error '{}'", _0)]
+    #[fail(display = "Boxed Error '{}'", _0)]
     BoxedError(String),
 
     #[fail(display = "{}", _0)]
-    IoError(#[cause] io::Error),
+    JSPTemplateError(#[cause] jspt::JSPTemplateError),
+
+    //#[fail(display = "{}", _0)]
+    //IoError(#[cause] io::Error),
+    #[fail(display = "io::Error {}", _0)]
+    IoError(String),
 
     #[fail(display = "{}", _0)]
     ParseIntError(#[cause] num::ParseIntError),
@@ -76,10 +81,14 @@ pub enum JSPError {
 
 }
 
-
+impl From<jspt::JSPTemplateError> for JSPError {
+    fn from(error: jspt::JSPTemplateError) -> Self {
+        JSPError::JSPTemplateError(error)
+    }
+}
 impl From<io::Error> for JSPError {
     fn from(error: io::Error) -> Self {
-        JSPError::IoError(error)
+        JSPError::IoError(error.to_string())
     }
 }
 

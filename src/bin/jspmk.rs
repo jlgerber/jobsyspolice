@@ -1,7 +1,8 @@
 use chrono;
 use dotenv::dotenv;
+use failure;
 use fern::{ colors::{Color, ColoredLevelConfig}, self} ;
-use jsp::{get_graph, mk, report_simple_failure};
+use jsp::{get_graph,  DiskType, cli, report_simple_failure, JSPError, report};
 use log::{ LevelFilter, self };
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -43,22 +44,35 @@ struct Opt {
 }
 
 
-fn main() -> Result<(), failure::Error> {
-    dotenv().ok();
-
-    let (args, level) = setup_cli();
+fn doit(args: Opt, level: LevelFilter) -> Result<(), /*failure::Error*/ JSPError > {
+    
+    let Opt{graph, terms, novolume, full_path, verbose,..} = args;
 
     setup_logger(level).unwrap();
 
-    let (graph,  _keymap,  _regexmap) = get_graph( args.graph)?;
+    let (graph,  _keymap,  _regexmap) = get_graph(graph)?;
+    
+    let validpath = cli::validpath_from_terms(terms, &graph, full_path)?;
 
-    match mk(args.terms, &graph, args.novolume, args.full_path, args.verbose) {
-            Ok(()) => (),
-            Err(e) => report_simple_failure(e.to_string().as_str(), args.verbose)
-        }
-
+    let validpath = cli::mk2(validpath, &graph, DiskType::Local, novolume,  verbose)?;             
+    if let report::Success::Mk(validpath) = validpath {
+        report::mk_success(validpath.path(), verbose);
+    }
     Ok(())
 }
+
+fn main() {
+    dotenv().ok();
+
+    let (args, level) = setup_cli();
+    let verbose = args.verbose;
+
+    match doit(args, level) {
+        Ok(_) => {}
+        Err(e) => {report_simple_failure(e.to_string().as_str(), verbose)}
+    }
+}
+
 
 #[inline]
 fn setup_logger(level: log::LevelFilter) -> Result<(), fern::InitError> {

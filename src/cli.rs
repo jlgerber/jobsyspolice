@@ -14,6 +14,7 @@ use crate::{
     get_disk_service,
     DiskType,
     ValidPath,
+    report,
 };
 use colored::Colorize;
 use levelspecter::{LevelSpec, LevelName};
@@ -25,15 +26,20 @@ use std::{
     str::FromStr
 };
 
-/// Generate a ValidPath from input. This input may either be an absolute or relative path, a levelspec and terms,
-/// or a straight vector of terms. In any case, `validpath_from_terms` will attempt to do the right thing.
+/// Generate a ValidPath from input. This input may either be an absolute or 
+/// relative path, a levelspec and terms,
+/// or a straight vector of terms. In any case, `validpath_from_terms` will 
+/// attempt to do the right thing.
 /// 
 /// # Parameters
-/// *`terms` - Vec<String> representing a relative or abslolute path (terms.len() should be 1), or a vec of SearchTerms
+/// *`terms` - Vec<String> representing a relative or abslolute path 
+///            (terms.len() should be 1), or a vec of SearchTerms
 /// * `graph` - a reference to the `JGraph` instance
-/// * `force_fullpath` - A bool indicating that we wish to force terms[0] to be interpreted as a fullpath. Under
-///                      normal circumstances, this should not be necessary, as `validpath_from_terms` will already 
-///                      attempt to ascertain the nature of the input. However, there are certain ambiguous scenarios
+/// * `force_fullpath` - A bool indicating that we wish to force terms[0] to be 
+///                      interpreted as a fullpath. Under normal circumstances, 
+///                      this should not be necessary, as `validpath_from_terms` 
+///                      will already attempt to ascertain the nature of the 
+///                      input. However, there are certain ambiguous scenarios
 ///                      where this is necessary.
 /// 
 /// # Returns
@@ -53,16 +59,19 @@ pub fn validpath_from_terms<'a>(mut terms: Vec<String>, graph: &'a JGraph,  forc
 /// 
 /// # Parameters
 /// 
-/// * `terms`     - Vector of strings representing request, either as levelspec and additional key:value pairs,
+/// * `terms`     - Vector of strings representing request, either as levelspec 
+///                 and additional key:value pairs,
 ///                 or as a single absolute path. 
 /// * `graph`     - Reference to the JGraph which describes the jobsytem template
-/// * `full_path` - Indicates that the first term provided is a regular path, as opposed to a levelspec
-///                 Normally, Mk detects this using the path separator as an indicator. However this may
-///                 be explicitly set.
+/// * `full_path` - Indicates that the first term provided is a regular path, 
+///                 as opposed to a levelspec
+///                 Normally, Mk detects this using the path separator as an 
+///                 indicator. However this may be explicitly set.
 /// * `verbose`   - Output is more extensive, colored, etc.
 /// 
 /// # Returns
-/// A Result wrapping a unit if successful, or a JSPError if unable to make the provided directory.
+/// A Result wrapping a unit if successful, or a JSPError if unable to make
+/// the provided directory.
 pub fn mk(
     mut terms: Vec<String>, 
     graph: &JGraph, 
@@ -113,27 +122,92 @@ pub fn mk(
 }
 
 
-
-/// Return shell commands that, wnen evaluated, result in a change of location in the job system 
-/// and initialization of environment variables defined in the template in relation to the path, 
-/// providing either a levelspec and optional key:value terms additionally,vor an absolute path 
-/// to a location. 
+/// Make a series of directories if they do not already exist. 
 /// 
 /// # Parameters
 /// 
-/// * `terms`     - vector of terms representing the navigation request. The first item in the vector
-///                 may either be an absolute path or a levelspec. Subsequent values should adhehere
-///                 to `key:value` form. 
-/// * `myshell`   - Optionally, the name of the shell that one wishes the commands returned to target. 
-///                 bash is the default shell. 
+/// * `validpath`     - ValidPath instance representing the path we wish to create,
+///                     or as a single absolute path. 
+/// * `graph`         - Reference to the JGraph which describes the jobsytem template
+/// * `full_path`     - Indicates that the first term provided is a regular 
+///                     path, as opposed to a levelspec
+///                     Normally, Mk detects this using the path separator as an 
+///                     indicator. However this may be explicitly set.
+/// * `ingore_volume` - If true, treat all Volume nodes as Directory nodes when
+///                     creating them
+/// * `verbose`   - Output is more extensive, colored, etc.
+/// 
+/// # Returns
+/// A Result wrapping a unit if successful, or a JSPError if unable to make the 
+/// provided directory.
+pub fn mk2<'a>(
+    validpath: ValidPath<'a>, 
+    graph: &'a JGraph, 
+    disktype: DiskType,
+    ignore_volume: bool,
+    verbose: bool
+//) -> Result<ValidPath<'a>, JSPError> {
+) -> Result<report::Success<'a>, JSPError> {
+
+    let cr = if verbose {"\n"} else {""};
+    let diskservice = get_disk_service(disktype, graph);
+    match diskservice.mk(validpath.path(), ignore_volume) {
+        Ok(_) => { //println!("{}{} {}{}", cr, "Created:".bright_blue(), validpath.path().display(), cr);
+            Ok(report::Success::Mk(validpath))
+        },
+        Err(JSPError::ValidationFailure{entry, node, depth}) => {
+            report_failure(validpath.path().as_os_str(), &entry, node, depth, &graph, verbose );
+            Err(JSPError::ValidationFailure{entry,node,depth})
+        },
+        Err(e) => {
+            Err(e)
+        },
+    }
+}
+
+/*
+pub fn report_mk_results<'a>(results: Result<ValidPath<'a>, JSPError>, graph: &'a JGraph, verbose: bool) -> Option<ValidPath<'a>> {
+    let cr = if verbose {"\n"} else {""};
+
+    match results {
+        Ok(validpath) => {println!("{}{} {}{}", cr, "Created:".bright_blue(), validpath.path().display(), cr);
+            Some(validpath)
+        },
+        Err(JSPError::ValidationFailure{entry, node, depth}) => {
+            report_failure(validpath.path().as_os_str(), &entry, node, depth, &graph, verbose );
+            Err(JSPError::ValidationFailure{entry,node,depth});
+            None
+        },
+        Err(e) => {println!("{}{}{}{}{}",cr, "Failure".bright_red(),e.to_string(),cr, cr); 
+            None
+        },
+    }
+}
+*/
+
+/// Return shell commands that, wnen evaluated, result in a change of location 
+/// in the job system and initialization of environment variables defined in 
+/// the template in relation to the path, providing either a levelspec and 
+/// optional key:value terms additionally,vor an absolute path to a location. 
+/// 
+/// # Parameters
+/// 
+/// * `terms`     - vector of terms representing the navigation request. The 
+///                 first item in the vector may either be an absolute path 
+///                 or a levelspec. Subsequent values should adhehere to 
+///                 `key:value` form. 
+/// * `myshell`   - Optionally, the name of the shell that one wishes the 
+///                 commands returned to target. bash is the default shell. 
 /// * `graph`     - an reference to the JGraph describing the jobsystem template 
-/// * `full_path` - explicitly declare that the input is a full path. Under usual circumstances, 
-///                 the command will automatically determine this based on the presence of a 
-///                 path separator in the input.
+/// * `full_path` - explicitly declare that the input is a full path. Under 
+///                 usual circumstances,  the command will automatically 
+///                 determine this based on the presence of a  path separator 
+///                 in the input.
 /// * `verbose`   - Output is more extensive, colored, etc.
 /// 
 /// # Rwturns
-/// A Result wrapping a unit if successful, or a JSPError if unable to navigate to the supplied directory.
+/// A Result wrapping a unit if successful, or a JSPError if unable to navigate 
+/// to the supplied directory.
 pub fn go (
     mut terms: Vec<String>, 
     myshell: Option<String>, 
@@ -188,7 +262,6 @@ pub fn go (
     }
     Ok(())
 }
-
 
 pub fn gen_terms_from_strings(mut terms: Vec<String>) -> Result<Vec<SearchTerm>, JSPError> {
 

@@ -58,12 +58,12 @@ pub mod shell;
 pub use shell::{bash, tcsh, ShellEnvManager, SupportedShell};
 
 pub mod cli;
-pub use cli::{go, mk, gen_terms_from_strings};
+pub use cli::{go, mk, mk2, gen_terms_from_strings};
 
 pub mod jspt;
 
 pub mod report;
-pub use report::*;
+pub use report::{report_failure, report_simple_failure, validate_success};
 
 pub mod validpath;
 pub use validpath::ValidPath;

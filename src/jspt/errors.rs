@@ -6,7 +6,7 @@ use ext_regex;
 
 /// The Fail implementation for this crate. All functions that return 
 /// results should return a JSPTemplateError for the error branch.
-#[derive(Debug, Fail)]
+#[derive(Debug, Fail, PartialEq, Clone)]
 pub enum JSPTemplateError {
     #[fail(display = "Environment Variable Lookup Error  :{}", _0)]
     EnvVarLookupError(String),
@@ -40,8 +40,10 @@ pub enum JSPTemplateError {
     #[fail(display = "ErrorAtLine: {}, Line: {}, State: {}, Error: {:?}", _0, _1, _2, _3)]
     ErrorAtLine(usize, String, State, Box<JSPTemplateError>),
     /// Error originating in the io crate
-    #[fail(display = "{}", _0)]
-    IoError(#[cause] io::Error),
+    //#[fail(display = "{}", _0)]
+    //IoError(#[cause] io::Error),
+    #[fail(display = "IO::Error {}", _0)]
+    IoError(String),
     /// Error originating in the Regex crate
     #[fail(display = "{}", _0)]
     RegexError(#[cause] ext_regex::Error),
@@ -66,7 +68,7 @@ impl<'a> From<nom::Err<(&'a str, nom::error::ErrorKind)>> for JSPTemplateError {
 // Implement From IO Error
 impl From<io::Error> for JSPTemplateError {
     fn from(error: io::Error) -> Self {
-        JSPTemplateError::IoError(error)
+        JSPTemplateError::IoError(error.to_string())
     }
 }
 
@@ -89,7 +91,7 @@ impl From<ext_regex::Error> for JSPTemplateError {
 //     JSPTEMPLATELINEERROR      //
 //-------------------------------//
 /// Wrap JSPTemplateError to provide a line number associated with each error
-#[derive(Debug, Fail)]
+#[derive(Debug, Fail, PartialEq, Clone)]
 pub enum JSPTemplateLineError {
     #[fail(display = "Error at line: {} line: {} State: {} Error: {:?}", _0, _1, _2, _3)]
     ErrorAtLine(usize, String, State, JSPTemplateError)

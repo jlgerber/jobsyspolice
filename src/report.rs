@@ -1,7 +1,16 @@
-use crate::{JGraph, NIndex, NodePath};
+use crate::{JGraph, NIndex, NodePath, ValidPath};
 use std::path::{PathBuf, Path};
 use std::ffi::{OsString, OsStr};
 use colored::*;
+
+pub enum Success<'a> {
+    Mk(ValidPath<'a>)
+}
+
+pub fn mk_success(path: &Path, verbose:bool ) {
+    let cr = if verbose {"\n"} else {""};
+    println!("{}{} {}{}", cr, "Created:".bright_blue(), path.display(), cr);
+}
 
 /// Report successful execution of task to user. 
 /// 
@@ -11,7 +20,7 @@ use colored::*;
 /// 
 /// # Returns
 /// None
-pub fn report_success(nodepath: NodePath) {
+pub fn validate_success(nodepath: NodePath) {
     eprintln!("\nSuccess\n");
 
     for n in nodepath.iter() {
