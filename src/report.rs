@@ -43,7 +43,7 @@ pub fn failure(input: &OsStr, entry: &OsString, node: NIndex, depth: u8, graph: 
 
     let neighbors = graph.neighbors(node);
     let entry_str = entry.to_str().unwrap_or("");
-    log::error!("report_failure. Failed to match {} in {:?}", entry_str, &path);
+    log::error!("Failed to match {} in {:?}", entry_str, &path);
     if verbose { eprintln!("\n{}\n", "Failure".bright_red()); }
     eprintln!("Failed to match {} in {:?} against:", entry_str.bright_red(), &path);
     for n in neighbors {
@@ -55,7 +55,7 @@ pub fn failure(input: &OsStr, entry: &OsString, node: NIndex, depth: u8, graph: 
 
 /// Report simple failure to the user given an error str and a verbose bool
 pub fn simple_failure(error: &str, verbose: bool ) {
-    log::error!("report_simple_failure. {}", error);
+    log::error!("{}", error);
     if verbose { 
         eprintln!("\n{}\n", "Error".bright_red()); 
         eprintln!("\t{}", error);
@@ -88,7 +88,7 @@ pub fn jsperror(info: &str, error: JSPError, verbose: bool) {
 
 pub(crate) fn go_failure(path_str: &str, myshell: bool, verbose: bool) {
     let cr = if verbose { "\n" } else {""};
-    log::error!("go_failure: Path does not exist: '{}'", path_str);
+    log::error!("Path does not exist: '{}'", path_str);
     if !myshell {
         eprintln!("echo {}Error: Path does not exist: {}{}", cr, path_str.bright_blue(), cr);
     } else {

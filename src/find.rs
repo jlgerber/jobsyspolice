@@ -85,7 +85,7 @@ pub fn find_path<'a>(search: &Search, graph: &'a JGraph)
                             let cnt = pattern.capture_names().count(); 
                             if cnt < 2 {
                                 //log::error!("find_path(...) no capture groups");
-                                return Err(JSPError::FindFailure(format!("not capture groups for {}", pattern.as_str()) ));
+                                return Err(JSPError::FindFailure(format!("no capture groups for {}", pattern.as_str()) ));
                             } else {
                                 //log::error!("find_path(...) too many capture groups. we should have only 1 capture group");
                                 return Err(JSPError::FindFailure(format!("to many capture groups for {}", pattern.as_str())));
@@ -206,7 +206,7 @@ pub fn find<'a>(criteria: VecDeque<String>, graph: &'a JGraph) -> Result<NodePat
             nodepath.append_unchecked(&mut npath);
             Ok(nodepath)
         },
-        FindValue::Failure(_) => Err(JSPError::FindFailure(format!("{:?}", criteria_rc.borrow()))),
+        FindValue::Failure(_) => Err(JSPError::FindFailure(format!("Unable to match one or more criteria: {:?}", criteria_rc.borrow()))),
     }
 }
 

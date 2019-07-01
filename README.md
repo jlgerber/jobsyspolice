@@ -18,6 +18,8 @@ The Makefile provides this facility provided you have appropriate sudo permissio
 # Design Iteration
 
 ## Adding Template via code
+I have added a macro that makes it easier to create nodes in code. Usage looks like this:
+
 ```rust
 let refdir = graph.add_node(jspnode!("REF").set_volume());
 let quicktimes = graph.add_node(jspnode!("quicktimes", "perms"=>"751"));
@@ -43,6 +45,9 @@ let chars_sd = graph.add_node(
 ```
 
 ## Jsp Template Format
+Even simpler than using the jspnode macro, the jspt format describes the graph
+in a way that is much simpler than a generic template.
+
 Here is an example of the `jspt` format, which the jsp commands now read:
 
 ```
@@ -82,17 +87,23 @@ shot -> shared
 
 ## Demo
 ```
+# clear out the stuff that is there
 sudo rm -rf  /dd/shows/*
 
+# create some dev01 shows
 jspmk dev01.rd.0001 work:jgerber
 jspmk dev01.aa.0001 work:jgerber
 jspmk dev01.rd.9999 work:jgerber
+
+# go to the last creation
 jspgo !:*
 
+# create dev02
 jspmk dev02.rd.0001 work:jgerber
 jspmk dev02.aa.0001 work:jgerber
 jspmk dev02.rd.9999 work:jgerber
 
+# demonstrate relative path 
 jspgo .aa.
 jspgo .rd.
 jspgo ..9999
@@ -110,4 +121,14 @@ jspgo . work:jgerber
 
 jspgo dev01
 jspgo /dd/shows/DEV01/RD
+
+# create a date directory 
+jspmk dev01 work:jgerber -t
+jspgo dev01 work:jgerber 
+
+# set stickybit on creation
+jspmk dev01.rd.2000 --sticky 
+jspgo dev01.rd
+ls -lrt
+
  

@@ -71,7 +71,7 @@ depts      = "(PREVIZ|INTEG|MODEL|RIG|ANIM|CFX|LIGHT|ENVIRO|FX|COMP|IMG)"
 category   = "(char|prop|veh|scene|enviro|kit)" [ varname: DD_CATEGORY ]
 department = "(integ|model|previz|postviz|enviro|rig|anim|fx|cfx|light|comp|lookdev|shotmodel)"
 subcontext = "[a-z]+([_]{0,1}[a-z0-9])*"        [ varname: DD_SUBCONTEXT ]
-
+snapshot_type = "[a-z]+([_]{0,1}[a-z0-9])*"
 //------------------------//
 //    SHOW LEVEL NODES    //
 //------------------------//

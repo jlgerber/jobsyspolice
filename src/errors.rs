@@ -17,7 +17,7 @@ pub enum JSPError {
     #[fail(display = "Unable to Chown '{}'", _0)]
     ChownFailure (String),
 
-    #[fail(display = "FindFailure. Encountered issue: '{}'", _0)]
+    #[fail(display = "FindFailure. Encountered issue searching Jobsystem Template: '{}'", _0)]
     FindFailure (String),
 
     #[fail(display = "Failed to convert NodeType: {:?} to PathBuf ", _0)]
