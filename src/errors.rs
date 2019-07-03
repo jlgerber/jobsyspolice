@@ -85,6 +85,17 @@ pub enum JSPError {
     #[fail(display = "Uid Retrieval Error: {}", _0)]
     UidRetrievalError(String),
 
+    #[fail(display = "Issue with template: '{}'", _0)]
+    TemplateError(String),
+
+    #[fail(display = "{}", _0)]
+    VarError(#[cause] std::env::VarError),
+}
+
+impl From<std::env::VarError> for JSPError {
+    fn from(error: std::env::VarError) -> Self {
+        JSPError::VarError(error)
+    }
 }
 
 impl From<jspt::JSPTemplateError> for JSPError {
@@ -92,6 +103,7 @@ impl From<jspt::JSPTemplateError> for JSPError {
         JSPError::JSPTemplateError(error)
     }
 }
+
 impl From<io::Error> for JSPError {
     fn from(error: io::Error) -> Self {
         JSPError::IoError(error.to_string())
