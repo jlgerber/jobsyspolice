@@ -26,7 +26,7 @@ pub mod nodepath;
 pub use nodepath::NodePath;
 
 pub mod graph;
-pub use graph::{validate_path, JGraph, get_graph};
+pub use graph::{validate_path, JGraph, get_graph, get_graph_from_fn};
 
 pub mod returnvalue;
 pub use returnvalue::{ ReturnValue, NIndex };
@@ -66,3 +66,6 @@ pub mod report;
 
 pub mod validpath;
 pub use validpath::ValidPath;
+
+pub mod minimatch;
+pub use minimatch::parse_show_from_arg;

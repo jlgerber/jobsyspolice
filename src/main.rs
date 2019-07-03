@@ -13,7 +13,8 @@ use jsp::{
     diskutils, 
     validate_path, 
     JSPError, 
-    get_graph,
+    get_graph_from_fn,
+    parse_show_from_arg,
     gen_terms_from_strings,
     find,
 };
@@ -86,8 +87,13 @@ fn main() -> Result<(), failure::Error> {
     let (args, level) = setup_cli();
     setup_logger(level).unwrap();
     
-    let  ( graph,  _keymap,  _regexmap)  = get_graph(args.graph)?;
- 
+
+    let (graph,  _keymap,  _regexmap) =  get_graph_from_fn(args.graph.clone(), &args.input, |_|{ 
+        let show = parse_show_from_arg(args.input[0].as_str())?;
+        let path = format!("/dd/shows/{}/etc/template.jspt", show);
+        Ok( PathBuf::from(path))
+     })?; 
+
     if args.dot.is_some() {
         if let Some(mut output) = args.dot {
             if !args.input.is_empty(){

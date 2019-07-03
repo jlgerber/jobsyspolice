@@ -23,18 +23,25 @@ use std::{ cell::RefCell, env, fs::File, rc::Rc, io::{BufReader}, path::{Path, P
 /// JGraph is a Jobsystem Graph
 pub type JGraph = petgraph::Graph<Node, ()>;
 
-/// Given amn optional graph template path, a reference to a vector of arguments, and a function
+/// Given amn optional path to the graph template, a reference to a vector of arguments, and a function
 /// that takes a reference to a vector of args and returns a PathBuf, fetch the 
-/// JGraph KeyMap, and RegexMap from the graph if it is some. Otherwise invoke the 
+/// JGraph KeyMap, and RegexMap from the graph if the path is Some. Otherwise invoke the 
 /// function, passing it a reference to the args, to retrieve the path to the graph
 /// template. And use this path to open the template and fetch the JGraph, KeyMap and 
 /// RegexMap instances.
+/// 
+/// The point of this function is to allow us to write arbitrarily complex code to 
+/// fetch the template. The expectation is that one passes the arugment list 
+/// from the command line into the function to allow it to search for the PathBuf.
+/// 
+/// One use might be to preparse the arguments passed in to find the template in a 
+/// location that is relative to the input data.
 pub fn get_graph_from_fn<T>(graph: Option<PathBuf>, args: &Vec<String>, fnc: T) 
-->  Result<(JGraph, JGraphKeyMap, RegexMap), JSPTemplateError> 
+->  Result<(JGraph, JGraphKeyMap, RegexMap), JSPError> 
 where 
-    T: Fn(&Vec<String>) -> PathBuf
+    T: Fn(&Vec<String>) -> Result<PathBuf,JSPError>
 {
-    let file_path = if let Some(graph) = graph {graph} else { fnc(args) };
+    let file_path = if let Some(graph) = graph {graph} else { fnc(args)?};
     let file = File::open(file_path)?;
     let bufreader =  BufReader::new(file);
 
@@ -49,37 +56,9 @@ where
 }
 
 /// Reetrieve a graph from a path
-pub fn get_graph(graph: Option<PathBuf>) ->  Result<(JGraph, JGraphKeyMap, RegexMap), JSPTemplateError>  {
+pub fn get_graph(graph: Option<PathBuf>) ->  Result<(JGraph, JGraphKeyMap, RegexMap), JSPError>  {
     let args = Vec::new();
     get_graph_from_fn(graph, &args, |_|{ get_template_from_env_or_exit() })
-
-    // if graph.is_none() {
-    //     let template = get_template_from_env();
-    //     let file = open_template(&template);
-
-    //     let bufreader =  BufReader::new(file);
-
-    //     let (mut jgraph, mut keymap, mut regexmap) = Loader::setup();
-    //     // and now call Loader::new with them.
-    //     let mut loader = Loader::new(&mut jgraph, &mut keymap, &mut regexmap);
-
-    //     loader.load(bufreader)?;
-        
-    //     Ok((jgraph, keymap, regexmap))
-    // } else {
-    //     let file_path = graph.unwrap();
-    //     let file = File::open(file_path).expect("file not found");
-    //     let bufreader =  BufReader::new(file);
-
-    //     // lets create structs that Loader::new requires
-    //     let (mut jgraph, mut keymap, mut regexmap) = Loader::setup();
-    //     // and now call Loader::new with them.
-    //     let mut loader = Loader::new(&mut jgraph, &mut keymap, &mut regexmap);
-
-    //     loader.load(bufreader)?;
-        
-    //     Ok((jgraph, keymap, regexmap))
-    // }
 }
 
 /// Determine if the provided path is valid or not.NodeType
@@ -121,21 +100,9 @@ pub fn validate_path<'a, I: AsRef<Path>>(path: I, graph: &'a JGraph) -> Result<N
     }
 }
 
-// #[inline]
-// fn get_template_from_env() -> Result<PathBuf, JSPError> {
-//     match _get_template_from_env() {
-//         Ok(v) => v,
-//         Err(e) => {
-//             //eprintln!("\nunable to get template from environment: {}. Is {} set?\n", e, constants::JSP_PATH);
-//             //std::process::exit(1);
-
-//         }
-//     }
-// }
-
-fn get_template_from_env_or_exit() -> PathBuf {
+fn get_template_from_env_or_exit() -> Result<PathBuf,JSPError> {
     match get_template_from_env() {
-        Ok(p) => p,
+        Ok(p) => Ok(p),
         Err(e) => {
             eprintln!("Unable to get template from environment: {}", e.to_string());
             std::process::exit(1);
