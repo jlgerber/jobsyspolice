@@ -78,8 +78,6 @@ fn doit(args: Opt, level: LevelFilter) -> Result<(), /*failure::Error*/ JSPError
     // i see no reason in this case not to do so. 
     let validpath = cli::validpath_from_terms(terms, &graph, datetime_dir, /*full_path*/ true)?;
     
-    log::warn!("validpath: {:?}", validpath.path());
-
     let validpath = cli::mk(validpath, &graph, DiskType::Local, sticky, novolume, verbose)?;             
     if let report::Success::Mk(validpath) = validpath {
         if autocreate {
