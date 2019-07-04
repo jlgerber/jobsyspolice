@@ -127,6 +127,7 @@ mod validpath_from_terms_test {
         let graph = graph::testdata::build_graph();
         let vp = validpath_from_terms(vec!["FOOBAR.RD".to_string()], &graph, false, false).unwrap();
         assert_eq!(vp.path(), Path::new("/dd/shows/FOOBAR/RD"));
+
     }
 
     #[test]
@@ -135,10 +136,6 @@ mod validpath_from_terms_test {
         let vp = validpath_from_terms(vec!["FOOBAR.RD.9999".to_string()], &graph, false, false).unwrap();
         assert_eq!(vp.path(), Path::new("/dd/shows/FOOBAR/RD/9999"));
     }
-
-
-    // need to fix a couple things first. at a minimum, i need to be able to set
-    // ROOT... 
 
     #[test]
     fn levelspec_relpath_seq() {
@@ -173,9 +170,9 @@ mod validpath_from_terms_test {
         let graph = graph::testdata::build_graph();
         std::env::set_var("DD_SEQUENCE", "RD");
         std::env::set_var("DD_SHOT", "9999");
-        std::env::set_var("DD_SHOW", "BLA");
-        let vp = validpath_from_terms(vec!["FOOBAR..".to_string()], &graph, false, false).unwrap();
-        assert_eq!(vp.path(), Path::new("/dd/shows/FOOBAR/RD/9999"));
+        std::env::set_var("DD_SHOW", "FOOBAR");
+        let vp = validpath_from_terms(vec!["BLA..".to_string()], &graph, false, false).unwrap();
+        assert_eq!(vp.path(), Path::new("/dd/shows/BLA/RD/9999"));
     }
 
     #[test]
