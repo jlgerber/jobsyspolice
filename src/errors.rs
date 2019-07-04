@@ -20,6 +20,9 @@ pub enum JSPError {
     #[fail(display = "FindFailure. Encountered issue searching Jobsystem Template: '{}'", _0)]
     FindFailure (String),
 
+    #[fail(display = "Path does not exist: '{:?}'", _0)]
+    NonExtantPathError (PathBuf),
+
     #[fail(display = "Failed to convert NodeType: {:?} to PathBuf ", _0)]
     NodePathConversionFailure (NodeType),
 

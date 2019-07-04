@@ -39,6 +39,10 @@ struct Opt {
     #[structopt( short = "l", long = "level", default_value = "warn" )]
     level: String,
 
+    /// Print Success / Failure information. And in color!
+    #[structopt(short = "v", long = "verbose")]
+    verbose: bool,
+
     /// Generate a Graphviz dot file of the jstemplate and save it to the provided file
     #[structopt( short="d", long = "dot", parse(from_os_str))]
     dot: Option<PathBuf>,
@@ -55,6 +59,7 @@ struct Opt {
 
     #[structopt(subcommand)]
     subcmd: Option<Subcommand>,
+
 }
 
 #[derive(StructOpt, Debug)]
@@ -83,22 +88,6 @@ enum Subcommand {
 }
 
 fn main() {
-    match doit() {
-        Ok(_) => (),
-        Err(JSPError::EmptyArgumentListError) => {
-            eprintln!("Error: No arguments supplied to command");
-        },
-        Err(JSPError::IoError(e)) => {
-            report::shellerror("The supplied input does not resolve to a valid directory or file",
-            Some(JSPError::IoError(e)), 
-            true);
-        },
-        Err(e) => {
-            report::shellerror("Error Encountered", Some(e), true);
-        }
-    }
-}
-fn doit() -> Result<(), JSPError> {
 
     // Slurp in env vars from .env files in the path.
     dotenv().ok();
@@ -106,8 +95,27 @@ fn doit() -> Result<(), JSPError> {
     let (args, level) = setup_cli();
     setup_logger(level).unwrap();
     
-    let Opt{dot, graph, input, subcmd, ..} = args;
-    
+    let Opt{verbose, dot, graph, input, subcmd, ..} = args;
+    match doit(dot, graph, input, subcmd) {
+        Ok(_) => (),
+        Err(JSPError::EmptyArgumentListError) => {
+            report::shellerror("Error: No arguments supplied to command", None, verbose);
+        },
+        Err(JSPError::IoError(e)) => {
+            report::shellerror("The supplied input does not resolve to a valid directory or file",
+            Some(JSPError::IoError(e)), 
+            verbose);
+        },
+        Err(e) => {
+            report::shellerror("Error Encountered", Some(e), verbose);
+        }
+    }
+}
+
+fn doit(dot: Option<PathBuf>, graph: Option<PathBuf>, input: Vec<String>, subcmd: Option<Subcommand>) 
+-> Result<(), JSPError> {
+
+
     if let Some(Subcommand::Go{terms, myshell, full_path, verbose}) = subcmd {
         if terms.is_empty() { return Err(JSPError::EmptyArgumentListError);}
 
@@ -119,8 +127,6 @@ fn doit() -> Result<(), JSPError> {
         match cli::go(terms, myshell, &graph, full_path, verbose) {
             Ok(()) => (),
             Err(e) => {
-                //report::simple_failure(e.to_string().as_str(), verbose);
-                //std::process::exit(1);
                 return Err(e);
             }
         }

@@ -253,9 +253,9 @@ pub fn go (
         match validate_path(&input, graph) {
             Ok(ref nodepath) => {
                 if !input.exists() {
-                    eprintln!("{}{} does not exist{}", cr, input.to_str().unwrap().bright_blue(), cr);
+                    //eprintln!("{}{} does not exist{}", cr, input.to_str().unwrap().bright_blue(), cr);
+                    return Err(JSPError::NonExtantPathError(input));
                 } else {
-                    // Success::Go(PathBuf, NodePath<'a>, SupportedShell)
                     process_go_success(input, nodepath, myshelldyn);
                 }
             },
@@ -266,7 +266,7 @@ pub fn go (
                     entry: entry.clone(), 
                      node ,
                     depth})*/
-                report::failure(input.as_os_str(), &entry, node, depth, &graph, verbose );
+                //report::failure(input.as_os_str(), &entry, node, depth, &graph, verbose );
                 return Err(JSPError::ValidationFailureAt{
                     path:  input.into_os_string(), 
                     entry: entry.clone(), 

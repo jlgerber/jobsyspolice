@@ -86,6 +86,7 @@ pub fn jsperror(info: &str, error: JSPError, verbose: bool) {
     }
 }
 
+/// Use to print out message that works with our bash script wrapper
 pub fn shellerror(info: &str, error: Option<JSPError>, verbose: bool) {
     let error_str = match error {
         Some(e) => format!(" '{}'",e.to_string()),
@@ -103,10 +104,9 @@ pub fn shellerror(info: &str, error: Option<JSPError>, verbose: bool) {
 
 pub(crate) fn go_failure(path_str: &str, myshell: bool, verbose: bool) {
     let cr = if verbose { "\n" } else {""};
-    //log::error!("Path does not exist: '{}'", path_str);
     if !myshell {
         eprintln!("echo {}Error: Path does not exist: {}{}", cr, path_str.bright_blue(), cr);
     } else {
-        shellerror(format!("Path does not exist: '{}'", path_str.bright_blue()).as_str(), None, true);
+        shellerror(format!("Path does not exist: '{}'", path_str.bright_blue()).as_str(), None, verbose);
     }
 }
