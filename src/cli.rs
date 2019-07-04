@@ -72,6 +72,144 @@ pub fn validpath_from_terms<'a>(
     }
 }
 
+#[cfg(test)]
+mod validpath_from_terms_test {
+    use super::*;
+    use crate::graph;
+    use std::path::Path;
+    use crate::{ Node, jspnode, Regexp, NodeType, EntryType };
+
+    fn setup_curdir_graph(dirs: Vec<&str> ) -> JGraph {
+        let cwd = std::env::current_dir().unwrap();
+        let mut graph = JGraph::new();
+
+        let _root = graph.add_node(Node::new_root());
+        for dir in cwd.iter() {
+            graph.add_node(jspnode!(dir.to_str().unwrap()));
+        }
+        for dir in dirs {
+            graph.add_node(jspnode!(dir));
+        }
+        graph
+    }
+
+    fn setup_curdir_up_graph(dirs: Vec<&str> ) -> JGraph {
+        let mut cwd = std::env::current_dir().unwrap();
+        cwd.pop();
+        let mut graph = JGraph::new();
+
+        let _root = graph.add_node(Node::new_root());
+        for dir in cwd.iter() {
+            graph.add_node(jspnode!(dir.to_str().unwrap()));
+        }
+        for dir in dirs {
+            graph.add_node(jspnode!(dir));
+        }
+        graph
+    }
+
+    #[test]
+    fn fullpath() {
+        let graph = graph::testdata::build_graph();
+        let vp = validpath_from_terms(vec!["/dd/shows/FOOBAR".to_string()], &graph, false, false).unwrap();
+        assert_eq!(vp.path(), Path::new("/dd/shows/FOOBAR"));
+    }
+
+    #[test]
+    fn levelspec_show() {
+        let graph = graph::testdata::build_graph();
+        let vp = validpath_from_terms(vec!["FOOBAR".to_string()], &graph, false, false).unwrap();
+        assert_eq!(vp.path(), Path::new("/dd/shows/FOOBAR"));
+    }
+
+    #[test]
+    fn levelspec_seq() {
+        let graph = graph::testdata::build_graph();
+        let vp = validpath_from_terms(vec!["FOOBAR.RD".to_string()], &graph, false, false).unwrap();
+        assert_eq!(vp.path(), Path::new("/dd/shows/FOOBAR/RD"));
+    }
+
+    #[test]
+    fn levelspec_shot() {
+        let graph = graph::testdata::build_graph();
+        let vp = validpath_from_terms(vec!["FOOBAR.RD.9999".to_string()], &graph, false, false).unwrap();
+        assert_eq!(vp.path(), Path::new("/dd/shows/FOOBAR/RD/9999"));
+    }
+
+
+    // need to fix a couple things first. at a minimum, i need to be able to set
+    // ROOT... 
+
+    #[test]
+    fn levelspec_relpath_seq() {
+        std::env::set_var("DD_SEQUENCE", "RD");
+        std::env::set_var("DD_SHOT", "9999");
+        std::env::set_var("DD_SHOW", "FOOBAR");
+        let graph = setup_curdir_graph(vec!["AA", "9999"]);
+        let mut expected = std::env::current_dir().unwrap();
+        expected.push("AA");
+        expected.push("9999");
+        let vp = validpath_from_terms(vec!["./AA/9999".to_string()], &graph, false, false).unwrap();
+        assert_eq!(vp.path(), expected.as_path());
+    }
+    
+    // we go up one directory 
+    #[test]
+    fn levelspec_relpath_shot() {
+        std::env::set_var("DD_SEQUENCE", "RD");
+        std::env::set_var("DD_SHOT", "9999");
+        std::env::set_var("DD_SHOW", "FOOBAR");
+        let graph = setup_curdir_up_graph(vec!["AA", "9999"]);
+        let mut expected = std::env::current_dir().unwrap();
+        expected.pop();
+        expected.push("AA");
+        expected.push("9999");
+        let vp = validpath_from_terms(vec!["../AA/9999".to_string()], &graph, false, false).unwrap();
+        assert_eq!(vp.path(), expected.as_path());
+    }
+    
+    #[test]
+    fn levelspec_rel_show() {
+        let graph = graph::testdata::build_graph();
+        std::env::set_var("DD_SEQUENCE", "RD");
+        std::env::set_var("DD_SHOT", "9999");
+        std::env::set_var("DD_SHOW", "BLA");
+        let vp = validpath_from_terms(vec!["FOOBAR..".to_string()], &graph, false, false).unwrap();
+        assert_eq!(vp.path(), Path::new("/dd/shows/FOOBAR/RD/9999"));
+    }
+
+    #[test]
+    fn levelspec_rel_seq() {
+        let graph = graph::testdata::build_graph();
+        std::env::set_var("DD_SEQUENCE", "RD");
+        std::env::set_var("DD_SHOT", "9999");
+        std::env::set_var("DD_SHOW", "FOOBAR");
+        let vp = validpath_from_terms(vec![".AA.".to_string()], &graph, false, false).unwrap();
+        assert_eq!(vp.path(), Path::new("/dd/shows/FOOBAR/AA/9999"));
+    }
+
+    #[test]
+    fn levelspec_rel_shot() {
+        let graph = graph::testdata::build_graph();
+        std::env::set_var("DD_SEQUENCE", "RD");
+        std::env::set_var("DD_SHOT", "9999");
+        std::env::set_var("DD_SHOW", "FOOBAR");
+        let vp = validpath_from_terms(vec!["..1000".to_string()], &graph, false, false).unwrap();
+        assert_eq!(vp.path(), Path::new("/dd/shows/FOOBAR/RD/1000"));
+    }
+
+    #[test]
+    fn levelspec_rel_show_shot() {
+        let graph = graph::testdata::build_graph();
+        std::env::set_var("DD_SEQUENCE", "RD");
+        std::env::set_var("DD_SHOT", "9999");
+        std::env::set_var("DD_SHOW", "FOOBAR");
+        let vp = validpath_from_terms(vec![".AA.".to_string()], &graph, false, false).unwrap();
+        assert_eq!(vp.path(), Path::new("/dd/shows/FOOBAR/AA/9999"));
+    }
+}
+
+
 // Generate a datetime directory
 fn gen_datetime_dir() -> String {
     let dt: DateTime<Local> = Local::now();
