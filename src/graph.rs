@@ -71,7 +71,11 @@ pub fn get_graph(graph: Option<PathBuf>) ->  Result<(JGraph, JGraphKeyMap, Regex
 ///
 /// `bool` indicating whether or not `path` is valid based on
 /// the schema described by the input `graph`.
-pub fn validate_path<'a, I: AsRef<Path>>(path: I, graph: &'a JGraph) -> Result<NodePath<'a>, JSPError> {
+pub fn validate_path<'a, I>(path: I, graph: &'a JGraph) 
+-> Result<NodePath<'a>, JSPError> 
+where
+    I: AsRef<Path> + std::fmt::Debug 
+{
     let mut it = path.as_ref().iter();
     // we have to drop the first item, which is the first "/"
     it.next();
@@ -94,7 +98,7 @@ pub fn validate_path<'a, I: AsRef<Path>>(path: I, graph: &'a JGraph) -> Result<N
             Ok(NodePath::new(&graph).replace_nodes_unchecked(vals))
         },
         ReturnValue::Failure{entry, node, depth} => {
-            Err(JSPError::ValidationFailure{entry, node, depth})
+            Err(JSPError::ValidationFailureFor{path: path.as_ref().to_path_buf(), entry, node, depth})
         }
     }
 }
