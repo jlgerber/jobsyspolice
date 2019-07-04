@@ -46,7 +46,7 @@ struct Opt {
     #[structopt( short = "i", long = "input", parse(from_os_str) )]
     graph: Option<PathBuf>,
 
-    /// one or more search tearms of the form key:value , or a 
+    /// one or more search terms of the form key:value , or a 
     /// fullpath, depending upon other field
     #[structopt(name="TERMS")]
     input: Vec<String>,
@@ -87,16 +87,19 @@ fn main() -> Result<(), failure::Error> {
     let (args, level) = setup_cli();
     setup_logger(level).unwrap();
     
+    let Opt{level, dot, graph, input, subcmd, ..} = args;
 
-    let (graph,  _keymap,  _regexmap) =  get_graph_from_fn(args.graph.clone(), &args.input, |_|{ 
-        let show = parse_show_from_arg(args.input[0].as_str())?;
-        let path = format!("/dd/shows/{}/etc/template.jspt", show);
-        Ok( PathBuf::from(path))
-     })?; 
+    if dot.is_some() {
 
-    if args.dot.is_some() {
-        if let Some(mut output) = args.dot {
-            if !args.input.is_empty(){
+        let input_cpy = vec![input[0].clone()];
+        let (graph,  _keymap,  _regexmap) =  get_graph_from_fn(graph.clone(), &input_cpy, |_|{ 
+            let show = parse_show_from_arg(input_cpy[0].as_str())?;
+            let path = format!("/dd/shows/{}/etc/template.jspt", show);
+            Ok( PathBuf::from(path))
+        })?; 
+
+        if let Some(mut output) = dot {
+            if !input.is_empty(){
                 log::warn!("INPUT not compatible with --dot argument. It will be ignored");
             }
             output = diskutils::convert_relative_pathbuf_to_absolute(output)?;
@@ -109,7 +112,17 @@ fn main() -> Result<(), failure::Error> {
     //   
     // Handle Navigation via the Go subcommand
     //
-    }  else if let Some(Subcommand::Go{terms, myshell, full_path, verbose}) = args.subcmd {
+    }  else if let Some(Subcommand::Go{terms, myshell, full_path, verbose}) = subcmd {
+    
+    println!("terms {:?}", terms);
+    let input_cpy = vec![terms[0].clone()];
+
+        let (graph,  _keymap,  _regexmap) =  get_graph_from_fn(graph, &input_cpy, |_|{ 
+            let show = parse_show_from_arg(terms[0].as_str())?;
+            let path = format!("/dd/shows/{}/etc/template.jspt", show);
+            Ok( PathBuf::from(path))
+        })?; 
+
         match cli::go(terms, myshell, &graph, full_path, verbose) {
             Ok(()) => (),
             Err(e) => {
@@ -120,8 +133,16 @@ fn main() -> Result<(), failure::Error> {
     //
     // Validate supplied argument to determine whether it is a valid path or not
     //
-    } else if !args.input.is_empty() {
-        let input = args.input;
+    } else if !input.is_empty() {
+
+        let input_cpy = vec![input[0].clone()];
+        let (graph,  _keymap,  _regexmap) =  get_graph_from_fn(graph.clone(), &input_cpy, |_|{ 
+            let show = parse_show_from_arg(input[0].as_str())?;
+            let path = format!("/dd/shows/{}/etc/template.jspt", show);
+            Ok( PathBuf::from(path))
+        })?; 
+
+        //let input = ainput;
         
         //let diskservice = get_disk_service(DiskType::Local, &graph);
         if !input.is_empty() && input[0].contains('/')  {
