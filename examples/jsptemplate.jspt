@@ -1,4 +1,17 @@
+################################################################################
+#                             jspt file format                                 #         
+# parser is line oriented, meaning each statement must fit on a single line    # 
+# parser will accept either '#' or '//' as a comment                           #
+# Parser requires 3 sections in order                                          #
+# - [regex]  - defines named regular expressions which may be referenced later #
+# - [nodes]  - defines nodes in the graph. These may reference named           #
+#              expressions using variable notation ('$' followed by name)      #
+# - [edges]  - build up the edges between nodes using parent -> child notation #
+################################################################################
+
+
 [regex]
+
 # the regex section comes first and defines named regular expressions
 
 num_n_under              = "[0-9_]+"
@@ -72,6 +85,8 @@ category   = "(char|prop|veh|scene|enviro|kit)" [ varname: DD_CATEGORY ]
 department = "(integ|model|previz|postviz|enviro|rig|anim|fx|cfx|light|comp|lookdev|shotmodel)"
 subcontext = "[a-z]+([_]{0,1}[a-z0-9])*"        [ varname: DD_SUBCONTEXT ]
 snapshot_type = "[a-z]+([_]{0,1}[a-z0-9])*"
+
+
 //------------------------//
 //    SHOW LEVEL NODES    //
 //------------------------//
@@ -134,7 +149,9 @@ shot =  "[0-9]+[A-Z0-9]*" [varname:DD_SHOT]
 //   GRAPH EDGES     //
 //-------------------//
 
+
 [edges] 
+
 // edges must start with root
 root -> dd -> shows -> show -> sequence -> shot
 
