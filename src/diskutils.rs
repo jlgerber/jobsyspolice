@@ -8,10 +8,9 @@ use std::{
     os::unix::{
         fs::{MetadataExt},
     },
-    path::Path,
-    path::PathBuf,
     fs::File,
     io::{/*BufWriter,*/ Write},
+    path::{Component, Path, PathBuf},
 };
 
 use users::{ get_user_by_name };
@@ -108,7 +107,7 @@ pub fn get_owner_for_path(path: &Path) -> Result<User, JSPError> {
     let metadata = std::fs::metadata(path)?;
     Ok(User::Uid(metadata.uid()))
 }
-
+/*
 /// Given a relative pathbuf, convert it to an absolute pathbuf.
 pub fn convert_relative_pathbuf_to_absolute(path: PathBuf) -> Result<PathBuf, JSPError> {
     let mut curdir = std::env::current_dir()?;
@@ -132,7 +131,37 @@ pub fn convert_relative_pathbuf_to_absolute(path: PathBuf) -> Result<PathBuf, JS
     }
     Ok(path)
 }
+*/
 
+/// Converts from relative path to absolute, removing relative path nonsense
+pub fn convert_relative_pathbuf_to_absolute<I>(path: I) -> Result<PathBuf, JSPError> 
+where
+    I: AsRef<Path> + std::fmt::Debug 
+{
+    let path = path.as_ref();
+    let mut return_pathbuf = PathBuf::new();
+    for (cnt,x) in path.components().enumerate() {
+        
+        if x == Component::CurDir {
+            if cnt == 0 {
+                return_pathbuf.push(std::env::current_dir()?);
+            }
+            //pass
+        } else if x == Component::ParentDir {
+            if cnt == 0 {
+               let mut cdir = std::env::current_dir()?;
+               cdir.pop();
+               return_pathbuf = cdir;
+            } else {
+                return_pathbuf.pop();
+            }
+
+        } else {
+            return_pathbuf.push(x)
+        }
+    }
+    Ok(return_pathbuf)
+}
 /* Nothing should be relying on this code. Given jspt, we no longer serialize the 
 graph to json. 
 
