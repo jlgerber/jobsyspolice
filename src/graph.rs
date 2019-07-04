@@ -132,16 +132,17 @@ fn get_template_from_env() -> Result<PathBuf, JSPError> {
     Ok(jsp_path)
 }
 
-#[inline]
-fn open_template(template: &Path) -> File {
-    match File::open(&template) {
-        Ok(f) => f,
-        Err(e) => {
-            eprintln!("\nunable to open {:?}. error: {}\n", template, e);
-            std::process::exit(1);
-        }
-    }
-}
+// Never Used
+// #[inline]
+// fn open_template(template: &Path) -> File {
+//     match File::open(&template) {
+//         Ok(f) => f,
+//         Err(e) => {
+//             eprintln!("\nunable to open {:?}. error: {}\n", template, e);
+//             std::process::exit(1);
+//         }
+//     }
+// }
 
 // helper recursive function
 fn validate_path_recurse(
