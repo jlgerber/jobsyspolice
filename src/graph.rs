@@ -6,7 +6,6 @@ use crate::{
     NodePath, 
     JSPError, 
     jspt::{
-        JSPTemplateError, 
         JGraphKeyMap, 
         RegexMap, 
         Loader,
@@ -36,10 +35,10 @@ pub type JGraph = petgraph::Graph<Node, ()>;
 /// 
 /// One use might be to preparse the arguments passed in to find the template in a 
 /// location that is relative to the input data.
-pub fn get_graph_from_fn<T>(graph: Option<PathBuf>, args: &Vec<String>, fnc: T) 
+pub fn get_graph_from_fn<T>(graph: Option<PathBuf>, args: &Vec<&str>, fnc: T) 
 ->  Result<(JGraph, JGraphKeyMap, RegexMap), JSPError> 
 where 
-    T: Fn(&Vec<String>) -> Result<PathBuf,JSPError>
+    T: Fn(&Vec<&str>) -> Result<PathBuf,JSPError>
 {
     let file_path = if let Some(graph) = graph {graph} else { fnc(args)?};
     let file = File::open(file_path)?;
