@@ -58,7 +58,9 @@ pub fn validpath_from_terms<'a>(
             // construct datetime dir
             pathbuf.push(gen_datetime_dir().as_str());
         }
-        ValidPath::new(pathbuf, graph, force_fullpath)
+        //ValidPath::new(pathbuf, graph, force_fullpath)
+        // made this true since we are in the fullpath branch
+        ValidPath::new(pathbuf, graph, true)
     } else {
         let terms = gen_terms_from_strings(terms)?;
         if datetime_dir {
