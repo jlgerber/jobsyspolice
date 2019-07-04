@@ -47,9 +47,9 @@ struct Opt {
     #[structopt(short = "n", long = "novolume")]
     novolume: bool,
 
-    /// accept a fullpath instead of key:value pairs
-    #[structopt(short = "f", long = "fullpath")]
-    full_path: bool,
+    // /// accept a fullpath instead of key:value pairs
+    // #[structopt(short = "f", long = "fullpath")]
+    // full_path: bool,
 
     /// Print Success / Failure information. And in color!
     #[structopt(short = "v", long = "verbose")]
@@ -59,7 +59,7 @@ struct Opt {
 
 fn doit(args: Opt, level: LevelFilter) -> Result<(), /*failure::Error*/ JSPError > {
     
-    let Opt{graph, terms, autocreate, sticky, datetime_dir, novolume, full_path, verbose,..} = args;
+    let Opt{graph, terms, autocreate, sticky, datetime_dir, novolume, verbose,..} = args;
     if terms.len() == 0 {
         eprintln!("Must supply at least one term as input. See help");
         Opt::clap().print_help().unwrap();
@@ -74,7 +74,11 @@ fn doit(args: Opt, level: LevelFilter) -> Result<(), /*failure::Error*/ JSPError
 
      })?;
     
-    let validpath = cli::validpath_from_terms(terms, &graph, datetime_dir, full_path)?;
+    // the full_path here is used by the call to determine whether to convert to a full path
+    // i see no reason in this case not to do so. 
+    let validpath = cli::validpath_from_terms(terms, &graph, datetime_dir, /*full_path*/ true)?;
+    
+    log::warn!("validpath: {:?}", validpath.path());
 
     let validpath = cli::mk(validpath, &graph, DiskType::Local, sticky, novolume, verbose)?;             
     if let report::Success::Mk(validpath) = validpath {
