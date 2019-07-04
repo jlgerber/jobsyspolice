@@ -86,12 +86,27 @@ pub fn jsperror(info: &str, error: JSPError, verbose: bool) {
     }
 }
 
+pub fn shellerror(info: &str, error: Option<JSPError>, verbose: bool) {
+    let error_str = match error {
+        Some(e) => format!(" '{}'",e.to_string()),
+        None => "".to_string()
+    };
+
+    if verbose { 
+        eprintln!("\n{}\n", "Error".bright_red()); 
+        eprintln!("\t{}{}", info, error_str);
+        eprintln!("");
+    } else {
+        eprintln!("{} {}{}", "Error".bright_red(), info, error_str);
+    }
+}
+
 pub(crate) fn go_failure(path_str: &str, myshell: bool, verbose: bool) {
     let cr = if verbose { "\n" } else {""};
-    log::error!("Path does not exist: '{}'", path_str);
+    //log::error!("Path does not exist: '{}'", path_str);
     if !myshell {
         eprintln!("echo {}Error: Path does not exist: {}{}", cr, path_str.bright_blue(), cr);
     } else {
-        eprintln!("{}Error: Path does not exist: '{}'{}", cr, path_str.bright_blue(), cr);
+        shellerror(format!("Path does not exist: '{}'", path_str.bright_blue()).as_str(), None, true);
     }
 }
