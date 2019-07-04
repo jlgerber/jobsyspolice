@@ -89,8 +89,11 @@ shot -> shared
 ```
 # clear out the stuff that is there
 sudo rm -rf  /dd/shows/*
+# create dev01 show (assuming template is in ~/etc)
+jspmk --input ~/etc/template.jspt dev01
+sudo cp ~/etc/template.jspt /dd/shows/DEV01/etc/.
 
-# create some dev01 shows
+# create some dev01 levels
 jspmk dev01.rd.0001 work:jgerber
 jspmk dev01.aa.0001 work:jgerber
 jspmk dev01.rd.9999 work:jgerber
@@ -99,6 +102,9 @@ jspmk dev01.rd.9999 work:jgerber
 jspgo !:*
 
 # create dev02
+jspmk --input ~/etc/template.jspt dev01
+sudo cp ~/etc/template.jspt /dd/shows/DEV01/etc/.
+
 jspmk dev02.rd.0001 work:jgerber
 jspmk dev02.aa.0001 work:jgerber
 jspmk dev02.rd.9999 work:jgerber
