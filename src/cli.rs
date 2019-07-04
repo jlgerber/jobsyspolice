@@ -74,7 +74,7 @@ mod validpath_from_terms_test {
     use super::*;
     use crate::graph;
     use std::path::Path;
-    use crate::{ Node, jspnode, Regexp, NodeType, EntryType };
+    use crate::{ Node, jspnode, NodeType, EntryType };
 
     fn setup_curdir_graph(dirs: Vec<&str> ) -> JGraph {
         let cwd = std::env::current_dir().unwrap();
