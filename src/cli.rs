@@ -76,74 +76,6 @@ fn gen_datetime_dir() -> String {
     format!("{}_{}_{}",dt.year(), dt.month(), dt.day())
 }
 
-/*
-/// Make a series of directories if they do not already exist. 
-/// 
-/// # Parameters
-/// 
-/// * `terms`     - Vector of strings representing request, either as levelspec 
-///                 and additional key:value pairs,
-///                 or as a single absolute path. 
-/// * `graph`     - Reference to the JGraph which describes the jobsytem template
-/// * `full_path` - Indicates that the first term provided is a regular path, 
-///                 as opposed to a levelspec
-///                 Normally, Mk detects this using the path separator as an 
-///                 indicator. However this may be explicitly set.
-/// * `verbose`   - Output is more extensive, colored, etc.
-/// 
-/// # Returns
-/// A Result wrapping a unit if successful, or a JSPError if unable to make
-/// the provided directory.
-pub fn mk(
-    mut terms: Vec<String>, 
-    graph: &JGraph, 
-    ignore_volume: bool,
-    full_path: bool, 
-    verbose: bool
-) -> Result<(), JSPError> {
-    
-    if terms.is_empty() {
-        return Err(JSPError::EmptyArgumentListError);
-    }
-    
-    let cr = if verbose {"\n"} else {""};
-    let diskservice = get_disk_service(DiskType::Local, graph);
-    // define closure to reuse in two branches below, as well as capture cr, graph, verbose
-    let make_dir = |path: &Path, ignore_volume: bool| {
-        match diskservice.mk(path, ignore_volume) {
-            Ok(_) => println!("{}{} {}{}", cr, "Created:".bright_blue(), path.display(), cr),
-            Err(JSPError::ValidationFailure{entry, node, depth}) => {
-                report::failure(path.as_os_str(), &entry, node, depth, &graph, verbose );
-            },
-            Err(e) => println!("{}{}{}{}{}",cr, "Failure".bright_red(),e.to_string(),cr, cr),
-        }
-    };
-
-    if full_path || ( !terms.is_empty() && terms[0].contains('/') ) {
-        let mut input = PathBuf::from(terms.pop().expect("uanble to unwrap"));
-        input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
-        
-        // use closure from above
-        make_dir(input.as_path(), ignore_volume);
-    } else {
-        let terms = gen_terms_from_strings(terms)?;
-        // returns (PathBuf, NodePath)
-        match find::find_path_from_terms(terms, &graph) {
-            Ok(( path,  _nodepath)) => { 
-                // reuse closure from above. nice feature eh?
-                make_dir(path.as_path(), ignore_volume);
-            },
-            Err(e) => {
-                eprintln!("{}{}{}", cr, e.to_string().as_str().bright_red(), cr)
-            },
-        }
-    }
-    // now we any autodirs
-    //let autodirs = find_rel();
-    Ok(()) 
-}
-*/
-
 /// Make a series of directories if they do not already exist. 
 /// 
 /// # Parameters
@@ -170,41 +102,21 @@ pub fn mk<'a>(
     ignore_volume: bool,
     verbose: bool
 ) -> Result<report::Success<'a>, JSPError> {
-
     let diskservice = get_disk_service(disktype, graph);
     match diskservice.mk(validpath.path(), set_stickybit, ignore_volume) {
         Ok(_) => { 
             Ok(report::Success::Mk(validpath))
         },
         Err(JSPError::ValidationFailure{entry, node, depth}) => {
+            // TODO: think i can remove report here as i should be reporting this higher up the call chain
             report::failure(validpath.path().as_os_str(), &entry, node, depth, &graph, verbose );
-            Err(JSPError::ValidationFailure{entry,node,depth})
+            Err(JSPError::ValidationFailureFor{path: validpath.path().to_path_buf(), entry,node,depth})
         },
         Err(e) => {
             Err(e)
         },
     }
 }
-
-/*
-pub fn report_mk_results<'a>(results: Result<ValidPath<'a>, JSPError>, graph: &'a JGraph, verbose: bool) -> Option<ValidPath<'a>> {
-    let cr = if verbose {"\n"} else {""};
-
-    match results {
-        Ok(validpath) => {println!("{}{} {}{}", cr, "Created:".bright_blue(), validpath.path().display(), cr);
-            Some(validpath)
-        },
-        Err(JSPError::ValidationFailure{entry, node, depth}) => {
-            report::failure(validpath.path().as_os_str(), &entry, node, depth, &graph, verbose );
-            Err(JSPError::ValidationFailure{entry,node,depth});
-            None
-        },
-        Err(e) => {println!("{}{}{}{}{}",cr, "Failure".bright_red(),e.to_string(),cr, cr); 
-            None
-        },
-    }
-}
-*/
 
 /// Return shell commands that, wnen evaluated, result in a change of location 
 /// in the job system and initialization of environment variables defined in 
@@ -253,20 +165,13 @@ pub fn go (
         match validate_path(&input, graph) {
             Ok(ref nodepath) => {
                 if !input.exists() {
-                    //eprintln!("{}{} does not exist{}", cr, input.to_str().unwrap().bright_blue(), cr);
                     return Err(JSPError::NonExtantPathError(input));
                 } else {
                     process_go_success(input, nodepath, myshelldyn);
                 }
             },
             Err(JSPError::ValidationFailure{entry, node, depth}) => {
-                /* getting ready to shift reporting to external
-                return Err(JSPError::ValidationFailureAt{
-                    path:  input.into_os_string(), 
-                    entry: entry.clone(), 
-                     node ,
-                    depth})*/
-                //report::failure(input.as_os_str(), &entry, node, depth, &graph, verbose );
+                
                 return Err(JSPError::ValidationFailureAt{
                     path:  input.into_os_string(), 
                     entry: entry.clone(), 
@@ -287,7 +192,6 @@ pub fn go (
                 if path.is_dir() {
                     process_go_success(path, &nodepath, myshelldyn);
                 } else {
-                    // GoFailure{path: String, myshell: bool, verbose:bool}
                     report::go_failure(path_str, true, verbose);
                 }
             },
