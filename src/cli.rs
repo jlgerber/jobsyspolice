@@ -5,7 +5,6 @@ use crate::{
     find,
     JGraph,
     JSPError,
-    //NIndex,
     NodePath,
     SearchTerm,
     SupportedShell,
@@ -22,8 +21,7 @@ use levelspecter::{LevelSpec, LevelName};
 use std::{
     collections::VecDeque,
     env,
-    //ffi::OsString,
-    path::{/*Path,*/ Component, PathBuf},
+    path::{Component, PathBuf},
     str::FromStr
 };
 
@@ -58,7 +56,6 @@ pub fn validpath_from_terms<'a>(
             // construct datetime dir
             pathbuf.push(gen_datetime_dir().as_str());
         }
-        //ValidPath::new(pathbuf, graph, force_fullpath)
         // made this true since we are in the fullpath branch
         ValidPath::new(pathbuf, graph, true)
     } else {
@@ -205,7 +202,6 @@ mod validpath_from_terms_test {
         assert_eq!(vp.path(), Path::new("/dd/shows/FOOBAR/AA/9999"));
     }
 }
-
 
 // Generate a datetime directory
 fn gen_datetime_dir() -> String {
@@ -428,31 +424,3 @@ fn process_go_success(path: PathBuf, nodepath: &NodePath, myshell: Box<dyn Shell
     println!("cd {};", target_dir);
     println!("echo Changed Directory To: {}\n", target_dir);
 }
-
-// #[inline]
-// fn print_go_failure(path_str: &str, myshell: bool, verbose: bool) {
-//     let cr = if verbose { "\n" } else {""};
-//     if !myshell {
-//         println!("echo {}Error: Path does not exist: {}{}", cr, path_str.bright_blue(), cr);
-//     } else {
-//         eprintln!("{}Error: Path does not exist: '{}'{}", cr, path_str.bright_blue(), cr);
-//     }
-// }
-/*
-#[inline]
-fn report_failure(input: &std::ffi::OsStr, entry: &OsString, node: NIndex, depth: u8, graph: &JGraph, verbose: bool ) {
-    let path = Path::new(input)
-                .iter()
-                .take((depth+1) as usize)
-                .fold(PathBuf::new(), |mut p, v| {p.push(v); p});
-
-    let neighbors = graph.neighbors(node);
-    if verbose { eprintln!("\n{}\n", "Failure".bright_red()); }
-    eprintln!("Failed to match {} in {:?} against:", entry.to_str().unwrap_or("").bright_red(), path);
-    for n in neighbors {
-        eprintln!("{}", graph[n].display_name().bright_red());
-    }
-    if verbose { eprintln!(""); }
-    std::process::exit(1);
-}
-*/
