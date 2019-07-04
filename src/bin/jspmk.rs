@@ -4,7 +4,7 @@ use dotenv::dotenv;
 use fern::{ colors::{Color, ColoredLevelConfig}, self} ;
 use jsp::{get_graph_from_fn,parse_show_from_arg,  DiskType, cli, JSPError, report, MetadataTerm, find_rel, ValidPath};
 use log::{ LevelFilter, self };
-use std::path::PathBuf;
+use std::{path::PathBuf, convert::AsRef};
 use structopt::StructOpt;
 
 
@@ -67,7 +67,7 @@ fn doit(args: Opt, level: LevelFilter) -> Result<(), /*failure::Error*/ JSPError
     }
     setup_logger(level).unwrap();
 
-    let (graph,  _keymap,  _regexmap) =  get_graph_from_fn(graph, &terms, |_|{ 
+    let (graph,  _keymap,  _regexmap) =  get_graph_from_fn(graph, &terms.iter().map(AsRef::as_ref).collect::<Vec<&str>>(), |_|{ 
         let show = parse_show_from_arg(terms[0].as_str())?;
         let path = format!("/dd/shows/{}/etc/template.jspt", show);
         Ok( PathBuf::from(path))
