@@ -17,6 +17,8 @@ use jsp::{
     parse_show_from_arg,
     gen_terms_from_strings,
     find,
+    JGraph, 
+    jspt::{JGraphKeyMap, RegexMap},
 };
 use log::{ LevelFilter, self };
 use petgraph;
@@ -80,103 +82,121 @@ enum Subcommand {
     }
 }
 
-fn main() -> Result<(), failure::Error> {
+fn main() {
+    match doit() {
+        Ok(_) => (),
+        Err(JSPError::EmptyArgumentListError) => {
+            eprintln!("Error: No arguments supplied to command");
+        },
+        Err(JSPError::IoError(e)) => {
+            report::shellerror("The supplied input does not resolve to a valid directory or file",
+            Some(JSPError::IoError(e)), 
+            true);
+        },
+        Err(e) => {
+            report::shellerror("Error Encountered", Some(e), true);
+        }
+    }
+}
+fn doit() -> Result<(), JSPError> {
 
     // Slurp in env vars from .env files in the path.
     dotenv().ok();
+
     let (args, level) = setup_cli();
     setup_logger(level).unwrap();
     
-    let Opt{level, dot, graph, input, subcmd, ..} = args;
-
-    if dot.is_some() {
-
-        let input_cpy = vec![input[0].clone()];
-        let (graph,  _keymap,  _regexmap) =  get_graph_from_fn(graph.clone(), &input_cpy, |_|{ 
-            let show = parse_show_from_arg(input_cpy[0].as_str())?;
-            let path = format!("/dd/shows/{}/etc/template.jspt", show);
-            Ok( PathBuf::from(path))
-        })?; 
-
-        if let Some(mut output) = dot {
-            if !input.is_empty(){
-                log::warn!("INPUT not compatible with --dot argument. It will be ignored");
-            }
-            output = diskutils::convert_relative_pathbuf_to_absolute(output)?;
-            // TODO: check to see that output doesnt exist and that its parent partory does exist
-            diskutils::write_template_as_dotfile(&output, &graph);
-        } else {
-            println!("{:#?}",  petgraph::dot::Dot::with_config(&graph, &[petgraph::dot::Config::EdgeNoLabel]));
-        }
-
-    //   
-    // Handle Navigation via the Go subcommand
-    //
-    }  else if let Some(Subcommand::Go{terms, myshell, full_path, verbose}) = subcmd {
+    let Opt{dot, graph, input, subcmd, ..} = args;
     
-    println!("terms {:?}", terms);
-    let input_cpy = vec![terms[0].clone()];
+    if let Some(Subcommand::Go{terms, myshell, full_path, verbose}) = subcmd {
+        if terms.is_empty() { return Err(JSPError::EmptyArgumentListError);}
 
-        let (graph,  _keymap,  _regexmap) =  get_graph_from_fn(graph, &input_cpy, |_|{ 
-            let show = parse_show_from_arg(terms[0].as_str())?;
-            let path = format!("/dd/shows/{}/etc/template.jspt", show);
-            Ok( PathBuf::from(path))
-        })?; 
-
+        let (graph,  _keymap,  _regexmap) =  get_graph_main(
+            terms.iter().map(AsRef::as_ref).collect::<Vec<&str>>(),
+            graph
+        )?;
+        
         match cli::go(terms, myshell, &graph, full_path, verbose) {
             Ok(()) => (),
             Err(e) => {
-                report::simple_failure(e.to_string().as_str(), verbose);
-                std::process::exit(1);
+                //report::simple_failure(e.to_string().as_str(), verbose);
+                //std::process::exit(1);
+                return Err(e);
             }
         }
     //
     // Validate supplied argument to determine whether it is a valid path or not
     //
-    } else if !input.is_empty() {
-
-        let input_cpy = vec![input[0].clone()];
-        let (graph,  _keymap,  _regexmap) =  get_graph_from_fn(graph.clone(), &input_cpy, |_|{ 
-            let show = parse_show_from_arg(input[0].as_str())?;
-            let path = format!("/dd/shows/{}/etc/template.jspt", show);
-            Ok( PathBuf::from(path))
-        })?; 
-
-        //let input = ainput;
-        
-        //let diskservice = get_disk_service(DiskType::Local, &graph);
-        if !input.is_empty() && input[0].contains('/')  {
-            let mut input = PathBuf::from(&input[0]);
-            input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
-            match validate_path(&input, &graph) {
-                Ok(nodepath) => {
-                    report::validate_success(nodepath);
-                },
-                Err(JSPError::ValidationFailure{entry, node, depth}) => {
-                    report::failure(input.as_os_str(), &entry, node, depth, &graph, true );
-                }
-                Err(_) => panic!("JSPError type returned invalid")
-            }
-         } else {
-
-            let terms = gen_terms_from_strings(input)?;
-
-            match find::find_path_from_terms(terms, &graph) {
-                Ok(( _path,  nodepath)) => { 
-                    report::validate_success(nodepath);
-                },
-                Err(e) => {
-                    return Err(e)?;
-                },
-            };
-         }
-    //
-    // Don't know what you are thinking. I will print help and get out of your way
-    //
     } else {
-        Opt::clap().print_help().unwrap();
+
+        if dot.is_some() {
+            let (graph,  _keymap,  _regexmap) =  get_graph_main(
+                input.iter().map(AsRef::as_ref).collect::<Vec<&str>>(),
+                graph
+            )?;
+            
+            if let Some(mut output) = dot {
+                if !input.is_empty(){
+                    log::warn!("INPUT not compatible with --dot argument. It will be ignored");
+                }
+                output = diskutils::convert_relative_pathbuf_to_absolute(output)?;
+                // TODO: check to see that output doesnt exist and that its parent partory does exist
+                diskutils::write_template_as_dotfile(&output, &graph);
+            } else {
+                println!("{:#?}",  petgraph::dot::Dot::with_config(&graph, &[petgraph::dot::Config::EdgeNoLabel]));
+            }
+        } else if !input.is_empty() {
+
+            let (graph,  _keymap,  _regexmap) =  get_graph_main(
+                input.iter().map(AsRef::as_ref).collect::<Vec<&str>>(),
+                graph
+            )?;
+
+            if !input.is_empty() && input[0].contains('/')  {
+                let mut input = PathBuf::from(&input[0]);
+                input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
+                match validate_path(&input, &graph) {
+                    Ok(nodepath) => {
+                        report::validate_success(nodepath);
+                    },
+                    Err(JSPError::ValidationFailure{entry, node, depth}) => {
+                        report::failure(input.as_os_str(), &entry, node, depth, &graph, true );
+                    }
+                    Err(_) => panic!("JSPError type returned invalid")
+                }
+            } else {
+
+                let terms = gen_terms_from_strings(input)?;
+
+                match find::find_path_from_terms(terms, &graph) {
+                    Ok(( _path,  nodepath)) => { 
+                        report::validate_success(nodepath);
+                    },
+                    Err(e) => {
+                        return Err(e)?;
+                    },
+                };
+            }
+        //
+        // Don't know what you are thinking. I will print help and get out of your way
+        //
+        } else {
+            Opt::clap().print_help().unwrap();
+        }
     }
     Ok(())
+}
+
+// retrieve the graph, keymap, and regexp
+fn get_graph_main(input: Vec<&str>, graph: Option<PathBuf>) 
+-> Result<(JGraph, JGraphKeyMap, RegexMap), JSPError> {
+
+    let input_cpy = vec![input[0]];
+    get_graph_from_fn(graph.clone(), &input_cpy, |_|{ 
+        let show = parse_show_from_arg(input_cpy[0])?;
+        let path = format!("/dd/shows/{}/etc/template.jspt", show);
+        Ok( PathBuf::from(path))
+    })
 }
 
 #[inline]
