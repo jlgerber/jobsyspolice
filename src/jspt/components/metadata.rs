@@ -496,7 +496,7 @@ mod tests {
     }
 
     #[test]
-    fn can_take_navalias() {
+    fn can_take_navalias_with_none() {
         let mut md = JsptMetadata::new()
                     .set_volume(true)
                     .set_owner(Some("jgerber"))
@@ -504,5 +504,16 @@ mod tests {
                     .set_permissions(Some("777"))
                     .set_navalias(Some(("cs", None)));
         assert_eq!(md.take_navalias(), Some(("cs".to_string(), None)));
+    }
+
+    #[test]
+    fn can_take_navalias_with_some() {
+        let mut md = JsptMetadata::new()
+                    .set_volume(true)
+                    .set_owner(Some("jgerber"))
+                    .set_varname(Some("jg_foo"))
+                    .set_permissions(Some("777"))
+                    .set_navalias(Some(("cs", Some("work.$USER"))));
+        assert_eq!(md.take_navalias(), Some(("cs".to_string(), Some("work.$USER".to_string()))));
     }
 }
