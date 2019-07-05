@@ -4,7 +4,7 @@
 //! but we need to evaluate the call that leverages the templete in 
 //! order to do so. 
 //! EG
-//! We store teh template relative to the show. But how do we know
+//! We store the template relative to the show. But how do we know
 //! where the show is in the request? Normally, that is the job of
 //! ... the template. So, we could have two templates... a mini 
 //! template that just parses enough and a full template. However, that 
@@ -13,7 +13,7 @@
 //! maybe there is another way? Write a mini request parser that just
 //! identifies the location of the template by pattern matching against
 //! 
-//! - levelspec (foo.anything) 
+//! - levelspec (foo.anything) x
 //! - a full path /dd/shows/<show>/anything
 //! 
 //! Lets write a simple parser to handle this
@@ -24,7 +24,7 @@ use nom::{
     bytes::complete::{tag},
     combinator::{ map, rest},
 };
-use crate::{jspt::helpers::*, JSPError};
+use crate::{constants, jspt::helpers::*, JSPError};
 
 
 // The results from parsing the show out of the front of 
@@ -43,7 +43,7 @@ pub fn parse_show_from_arg(input: &str) -> Result<String, JSPError> {
             match result {
                 MinimatchResult::Show(s) => Ok(s),
                 MinimatchResult::EnvVar => {
-                    let result = std::env::var("DD_SHOW")?;
+                    let result = std::env::var(constants::JSP_SHOW_ENVVAR)?;
                     Ok(result)
                 }
             }
