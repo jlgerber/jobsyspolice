@@ -108,11 +108,15 @@ impl JsptMetadata {
         self.volume
     }
 
+    /// Set teh autocreate bool. Autocreate indicates whether the 
+    /// node should be automatically created when explicitly specifying
+    /// a parent to be created. 
     pub fn set_autocreate(mut self, autocreate: bool) -> Self {
         self.autocreate = autocreate;  
         self  
     }
 
+    /// Test to see if the metadata struct has autocreate set to true.
     pub fn is_autocreate(&self) -> bool {
         self.autocreate
     }
