@@ -1,3 +1,9 @@
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum NavAlias {
+    Simple(String),
+    Complex{name:String, value:String},
+}
+
 /// Potential JsptMetadata associated with a `Node` in the `JGraph`.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum MetadataComponent {
@@ -6,14 +12,14 @@ pub enum MetadataComponent {
     Permissions(String),
     EnvVarName(String),
     Owner(String),
+    /// Navalias takes the key, and optionally, a value
+    NavAlias(String, Option<String>), 
     // Nom requires that all branches of certain 
     // matches have the same type, so I added 
     // Separator, even though it isn't really a 
     // type that survives parsing. I may create a separate enum
     // to get around this in the future, as I don't like this leaking.
     Separator, 
-    //NavAlias(String), 
-    //AutoCreate
 }
 
 /// Tracks the supported metadata values in the template, delimited
@@ -26,7 +32,10 @@ pub struct JsptMetadata {
     volume: bool,
     permissions: Option<String>,
     varname: Option<String>,
-    owner: Option<String>
+    owner: Option<String>,
+    /// tuple of Keyname, and optionally, a value. Only necessary 
+    /// if we need to define runtime variables (eg work.$user)
+    navalias: Option<(String, Option<String>)>
 }
 
 impl std::default::Default for JsptMetadata {
@@ -37,6 +46,7 @@ impl std::default::Default for JsptMetadata {
             permissions: None,
             varname: None,
             owner: None,
+            navalias: None,
         }
     }
 }
@@ -50,7 +60,12 @@ impl JsptMetadata {
     /// Determine whether the JsptMetadata instance is empty, defined as the volume field being false, 
     /// and all of the optional terms being None. 
     pub fn is_empty(&self) -> bool {
-        !self.autocreate && !self.volume  && self.permissions.is_none() && self.varname.is_none() && self.owner.is_none()
+        !self.autocreate && 
+        !self.volume  && 
+        self.permissions.is_none() && 
+        self.varname.is_none() && 
+        self.owner.is_none() &&
+        self.navalias.is_none()
     }
 
     /// Set volume and get back moved self. This is designed to be used in 
@@ -271,6 +286,42 @@ impl JsptMetadata {
         self.owner.take()
     }
 
+
+    /// Set `navalias` given an Option wrapped type which implements `Into<String>`.
+    /// 
+    /// # Parameters
+    /// 
+    /// * `navalias` - Am Option wrapped Into<String> representing a navigation alias
+    pub fn set_navalias<T>(mut self, navalias: Option<
+        (T, Option<T>)>) -> Self 
+    where
+        T: Into<String>
+    {
+        self.navalias = navalias.map(|(x,y)| {
+            match y {
+                Some(val) => (x.into(), Some(val.into())),
+                None => (x.into(), None)
+            }
+        });
+        self
+    }
+
+    /// Retrieve a reference to `navalias` as an Option wrapped `&str`.
+    pub fn navalias(&self) -> Option<(&str, Option<&str>)> {
+        self.navalias.as_ref().map(|(x,y)| {
+            match y {
+                Some(ref val) => (&**x, Some(&**val)),
+                None => (&**x, None)
+            }
+        })
+    }
+
+    /// Retrieve the `navalias` as an Option wrapped String, leaving 
+    /// None in its place. 
+    pub fn take_navalias(&mut self) -> Option<(String, Option<String>)> {
+        self.navalias.take()
+    }
+
 }
 
 #[cfg(test)]
@@ -286,6 +337,7 @@ mod tests {
             permissions: None,
             varname: None,
             owner: None,
+            navalias: None,
         };
         assert_eq!(md, expect);
     }
@@ -299,6 +351,7 @@ mod tests {
             permissions: None,
             varname: None,
             owner: None,
+            navalias: None,
         };
         assert_eq!(md, expect);
     }
@@ -312,6 +365,8 @@ mod tests {
             permissions: None,
             varname: None,
             owner: Some("jgerber".to_string()),
+            navalias: None,
+
         };
         assert_eq!(md, expect);
     }
@@ -325,6 +380,8 @@ mod tests {
             permissions: None,
             varname: Some("jg_show".to_string()),
             owner: Some("jgerber".to_string()),
+            navalias: None,
+
         };
         assert_eq!(md, expect);
     }
@@ -343,6 +400,8 @@ mod tests {
             permissions: Some("777".to_string()),
             varname: Some("jg_show".to_string()),
             owner: Some("jgerber".to_string()),
+            navalias: None,
+
         };
         assert_eq!(md, expect);
     }
@@ -363,6 +422,8 @@ mod tests {
             permissions: Some("777".to_string()),
             varname: Some("jg_show".to_string()),
             owner: Some("jgerber".to_string()),
+            navalias: None,
+
         };
         assert_eq!(md, expect);
     }
@@ -421,5 +482,27 @@ mod tests {
                     .set_varname(Some("jg_foo"))
                     .set_permissions(Some("777"));
         assert_eq!(md.take_permissions(), Some("777".to_string()));
+    }
+
+    #[test]
+    fn can_get_navalias() {
+        let md = JsptMetadata::new()
+                    .set_volume(true)
+                    .set_owner(Some("jgerber"))
+                    .set_varname(Some("jg_foo"))
+                    .set_permissions(Some("777"))
+                    .set_navalias(Some(("cs", None)));
+        assert_eq!(md.navalias(), Some(("cs", None)));
+    }
+
+    #[test]
+    fn can_take_navalias() {
+        let mut md = JsptMetadata::new()
+                    .set_volume(true)
+                    .set_owner(Some("jgerber"))
+                    .set_varname(Some("jg_foo"))
+                    .set_permissions(Some("777"))
+                    .set_navalias(Some(("cs", None)));
+        assert_eq!(md.take_navalias(), Some(("cs".to_string(), None)));
     }
 }

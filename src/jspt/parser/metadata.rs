@@ -25,6 +25,8 @@ pub fn parse_metadata(input: &str) -> IResult<&str, JsptMetadata> {
                     MetadataComponent::Owner(name) => metadata = metadata.set_owner(Some(name)),
                     MetadataComponent::Volume => metadata = metadata.set_volume(true),
                     MetadataComponent::Autocreate => metadata = metadata.set_autocreate(true),
+                    MetadataComponent::NavAlias(name, None) => metadata = metadata.set_navalias( Some((name, None)) ),
+                    MetadataComponent::NavAlias(name, Some(value)) => metadata = metadata.set_navalias(Some((name,Some(value)))),
                     MetadataComponent::Separator => {
                         log::warn!("parse_metadata encountered Separateor");
                     }
