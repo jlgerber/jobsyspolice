@@ -1,8 +1,3 @@
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub enum NavAlias {
-    Simple(String),
-    Complex{name:String, value:String},
-}
 
 /// Potential JsptMetadata associated with a `Node` in the `JGraph`.
 #[derive(Debug, PartialEq, Eq, Clone)]
