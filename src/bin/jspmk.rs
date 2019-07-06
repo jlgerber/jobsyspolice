@@ -2,7 +2,21 @@ use chrono;
 use dotenv::dotenv;
 //use failure;
 use fern::{ colors::{Color, ColoredLevelConfig}, self} ;
-use jsp::{get_graph_from_fn,parse_show_from_arg, Navalias, NIndex, JGraph, DiskType, cli, JSPError, report, MetadataTerm, find_rel, ValidPath};
+use jsp::{ 
+    cli, 
+    DiskType, 
+    find_rel, 
+    FindRelStrategy, 
+    get_graph_from_fn,
+    JGraph, 
+    JSPError,
+    MetadataTerm, 
+    //Navalias, 
+    NIndex, 
+    parse_show_from_arg, 
+    report, 
+    ValidPath
+};
 use log::{ LevelFilter, self };
 use std::{path::PathBuf, convert::AsRef};
 use structopt::StructOpt;
@@ -87,7 +101,10 @@ fn doit(args: Opt, level: LevelFilter) -> Result<(), /*failure::Error*/ JSPError
                 
             }
             // now we process any navaliases
-            process_navalias(idx, &validpath, &graph, verbose);
+            // this shouldn't be in jspmk
+            //process_navalias(idx, &validpath, &graph, verbose);
+        } else {
+            panic!("unable to get index NIndex from nodepath");
         }
          
         report::mk_success(validpath.path(), verbose);
@@ -97,7 +114,7 @@ fn doit(args: Opt, level: LevelFilter) -> Result<(), /*failure::Error*/ JSPError
 
 #[inline]
 fn process_autocreate(idx: NIndex, validpath: &ValidPath,  graph: &JGraph, novolume:bool, verbose: bool) {
-    match find_rel( idx, MetadataTerm::Autocreate, &graph) {
+    match find_rel( idx, MetadataTerm::Autocreate, &graph, FindRelStrategy::Deepest) {
         Err(e) => {eprintln!("Error: unable to find autocreate nodes: {}", e.to_string());}
         Ok(nodepaths) => {
             // now we create them
@@ -142,60 +159,63 @@ fn process_autocreate(idx: NIndex, validpath: &ValidPath,  graph: &JGraph, novol
     }
 }
 
-#[inline]
-fn process_navalias(idx: NIndex, validpath: &ValidPath, graph: &JGraph, verbose: bool) {
-    match find_rel( idx, MetadataTerm::Navalias, &graph) {
-        Err(e) => { report::shellerror(
-            format!("Error: unable to find navalias nodes: {}", e.to_string()).as_str(),
-            None, 
-            verbose); 
-        }
-        Ok(nodepaths) => {
-            // now we create them
-            for nodepath in nodepaths {
-                // generate a Pathbuf from the current nodepath
-                let cur_pathbuf = match nodepath.to_pathbuf() {
-                    Ok(v) => v,
-                    Err(e) => {
-                        //eprintln!("Error: unable to convert nodepath to pathbuf. skipping nodepath {}",
-                        //    e.to_string());
-                        report::shellerror("Unable to convert nodepath to pathbuf. skipping nodepath.", Some(e), verbose);
-                        continue
-                    } 
-                };
-                // the full pathbuf 
-                let full_pathbuf = validpath.pathbuf().join(cur_pathbuf);
-                // a copy of the cufrent nodepath
-                let mut cur_nodepath_clone = nodepath.clone();
-                // combine the full_pathbuf and the cur_nodepath_clone
-                let mut full_nodepath = validpath.nodepath().clone();
-                full_nodepath.append_unchecked(&mut cur_nodepath_clone.nodes);
-                // build a new validpath from the full pathbuf and fullnodepath
-                let new_validpath = match ValidPath::new_unchecked(full_pathbuf, full_nodepath, true) {
-                    Ok(v) => v,
-                    Err(e) => {
-                        //eprintln!("Error: Unable to create ValidPath. Err: {}",e.to_string());
-                        report::shellerror("Unable to create ValidPath", Some(e), verbose);
-                        continue
-                    }
-                };
-                if let Some(node) = nodepath.leaf() {
-                    if let Some(navalias) = node.metadata().navalias() {
-                        match navalias {
-                            Navalias::Simple(name) => report::shellinfo(format!("I Founds a navalias {}", name), verbose),
-                            Navalias::Complex{name,value} => report::shellinfo(format!("I found {} {}", name, value), verbose),
-                        }
-                    } else {
-                        report::shellerror("In process_navalias, unable to retrieve navalias from Node", None, verbose);
-                        continue;    
-                    }
-                } else {
-                    report::shellerror("In process_navalias, unable to retrieve leaf node from nodepath", None, verbose)
-                }
-            }
-        }
-    } 
-}
+// #[inline]
+// fn process_navalias(idx: NIndex, validpath: &ValidPath, graph: &JGraph, verbose: bool) {
+//     match find_rel( idx, MetadataTerm::Navalias, &graph, FindRelStrategy::First) {
+//         Err(e) => { report::shellerror(
+//             format!("Error: unable to find navalias nodes: {}", e.to_string()).as_str(),
+//             None, 
+//             verbose); 
+//         }
+//         Ok(nodepaths) => {
+//             println!("searching through {:?}", nodepaths);
+
+//             // now we create them
+//             for nodepath in nodepaths {
+//                 println!("testing nodepath for navalias");
+//                 // generate a Pathbuf from the current nodepath
+//                 let cur_pathbuf = match nodepath.to_pathbuf() {
+//                     Ok(v) => v,
+//                     Err(e) => {
+//                         //eprintln!("Error: unable to convert nodepath to pathbuf. skipping nodepath {}",
+//                         //    e.to_string());
+//                         report::shellerror("Unable to convert nodepath to pathbuf. skipping nodepath.", Some(e), verbose);
+//                         continue
+//                     } 
+//                 };
+//                 // the full pathbuf 
+//                 let full_pathbuf = validpath.pathbuf().join(cur_pathbuf);
+//                 // a copy of the cufrent nodepath
+//                 let mut cur_nodepath_clone = nodepath.clone();
+//                 // combine the full_pathbuf and the cur_nodepath_clone
+//                 let mut full_nodepath = validpath.nodepath().clone();
+//                 full_nodepath.append_unchecked(&mut cur_nodepath_clone.nodes);
+//                 // build a new validpath from the full pathbuf and fullnodepath
+//                 let new_validpath = match ValidPath::new_unchecked(full_pathbuf, full_nodepath, true) {
+//                     Ok(v) => v,
+//                     Err(e) => {
+//                         //eprintln!("Error: Unable to create ValidPath. Err: {}",e.to_string());
+//                         report::shellerror("Unable to create ValidPath", Some(e), verbose);
+//                         continue
+//                     }
+//                 };
+//                 if let Some(node) = nodepath.leaf() {
+//                     if let Some(navalias) = node.metadata().navalias() {
+//                         match navalias {
+//                             Navalias::Simple(name) => report::shellinfo(format!("I Founds a navalias {}", name), verbose),
+//                             Navalias::Complex{name,value} => report::shellinfo(format!("I found {} {}", name, value), verbose),
+//                         }
+//                     } else {
+//                         report::shellerror("In process_navalias, unable to retrieve navalias from Node", None, verbose);
+//                         continue;    
+//                     }
+//                 } else {
+//                     report::shellerror("In process_navalias, unable to retrieve leaf node from nodepath", None, verbose)
+//                 }
+//             }
+//         }
+//     } 
+// }
 
 fn main() {
     dotenv().ok();
