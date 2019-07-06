@@ -212,8 +212,8 @@ impl PartialEq<std::ffi::OsStr> for Node {
             NodeType::Untracked => true,
             NodeType::Simple(strval) => strval.as_str() == other,
             NodeType::RegEx { pattern, exclude: None, .. } => pattern.is_match(other.to_str().unwrap()),
-            NodeType::RegEx {  pattern, exclude: Some(exc), .. } => !exc.is_match(other.to_str().unwrap()) && pattern.is_match(other.to_str().unwrap()),
-
+            NodeType::RegEx {  pattern, exclude: Some(exc), .. } => 
+                !exc.is_match(other.to_str().unwrap()) && pattern.is_match(other.to_str().unwrap()),
         }
     }
 }
@@ -224,161 +224,12 @@ impl std::default::Default for Node {
     }
 }
 
-/*
-#[macro_export]
-macro_rules!  jspnode {
-    // jspnode("foo")
-    ($name:expr) => (
-        Node::new(
-            NodeType::Simple(String::from($name)),
-            EntryType::Directory,
-            None,
-            None,
-            None,
-            false,
-            None,
-        )
-    );
-    // jspnode!("foo", "owner" => "bob")
-    ($name:expr, $($key:expr => $val:expr),+) => ({
-        let mut n = Node::new(
-            NodeType::Simple(String::from($name)),
-            EntryType::Directory,
-            None,
-            None,
-            None,
-            false,
-            None,
-        );
-        $(
-            match $key {
-                "owner" => {n.metadata_mut().set_owner(Some(crate::User::from($val)));}
-                "perms" | "permissions" => {
-                    let conv = $val.parse::<u32>();
-                    if conv.is_ok(){
-                        n.metadata_mut().set_perms(Some($val.to_owned()));
-                    }
-                }
-                "varname" => {n.metadata_mut().set_varname(Some(String::from($val)));}
-                "autocreate" => {n.metadata_mut().set_autocreate($val.parse().unwrap_or_else(|_v| false));}
-                _ => ()
-            }
-        )+
-        n
-    });
-    ($name:expr, $regex:expr) => (
-        Node::new(
-        NodeType::RegEx {
-            name: $name.into(),
-            pattern: Regexp::new($regex).unwrap(),
-            exclude: None,
-        },
-        EntryType::Directory,
-        None,
-        None, 
-        None,
-        false,
-        None,
-        ));
-    ($name:expr, $regex:expr, $($key:expr => $val:expr),+) => ({
-        let mut n = Node::new(
-        NodeType::RegEx {
-            name: $name.into(),
-            pattern: Regexp::new($regex).unwrap(),
-            exclude: None,
-        },
-        EntryType::Directory,
-        None,
-        None,
-        None,
-        false,
-        None,
-        );
-        $(
-            match $key {
-                "owner" => {n.metadata_mut().set_owner(Some(crate::User::from($val)));}
-                "perms" | "permissions" => {
-                    let conv = $val.parse::<u32>();
-                    if conv.is_ok(){
-                        n.metadata_mut().set_perms(Some($val.to_owned()));
-                    }
-                }
-                "varname" => {n.metadata_mut().set_varname(Some(String::from($val)));}
-                "autocreate" => {n.metadata_mut().set_autocreate($val.parse().unwrap_or_else(|_v| false));}
-                "navalias" => {
-                    if $val.contains("=") {
-                        if let Some(idx) = $val.find("=") {
-                            let (key, value) = $val.split_at(idx);
-                            let value = value.trim_start_matches('=');
-                            n.metadata_mut().set_navalias(Navalias::Complex{name:key.to_owned(), value: value.to_owned()} );
-
-                        }
-
-                    } else {
-                        
-                        n.metadata_mut().set_navalias(Navalias::Simple($val.to_owned()));
-                    }
-                }
-                _ => ()
-            }
-        )+
-        n
-    });
-    ($name:expr, $regex:expr, $exclude:expr) => (
-        Node::new(
-            NodeType::RegEx {
-                name: $name.into(),
-                pattern: Regexp::new($regex).unwrap(),
-                exclude: Some(Regexp::new($exclude).unwrap()),
-            },
-            EntryType::Directory,
-            None,
-            None,
-            None,
-            false,
-            None,
-        )
-    );
-    ($name:expr, $regex:expr, $exclude:expr, $($key:expr => $val:expr),+) => ({
-        let mut n = Node::new(
-            NodeType::RegEx {
-                name: $name.into(),
-                pattern: Regexp::new($regex).unwrap(),
-                exclude: Some(Regexp::new($exclude).unwrap()),
-            },
-            EntryType::Directory,
-            None,
-            None,
-            None, 
-            false,
-            None,
-        );
-        $(
-            match $key {
-                "owner" => {n.metadata_mut().set_owner(Some(crate::User::from($val)));}
-                "perms" | "permissions" => {
-                    let conv = $val.parse::<u32>();
-                    if conv.is_ok(){
-                        n.metadata_mut().set_perms(Some($val.to_owned()));
-                    }
-                }
-                "varname" => {n.metadata_mut().set_varname(Some(String::from($val)));}
-                "autocreate" => {n.metadata_mut().set_autocreate($val.parse().unwrap_or_else(|_v| false));}
-                _ => ()
-            }
-        )+
-        n
-    });
-}
-*/
-
-
 
 #[cfg(test)]
-mod tests {
+mod node_tests {
     use super::*;
     use std::ffi::OsStr;
-    use crate::{Regexp, jspnode};
+    use crate::Regexp;
 
     #[test]
     fn new_root_creates_root_node() {
@@ -550,46 +401,50 @@ mod tests {
         );
         assert_eq!(re.display_name(), s!("DEV01"));
     }
+}
 
+#[cfg(test)]
+mod jspnode_tests {
+    use super::*;
+    use crate::jspnode;
 
     #[test]
-    fn macro_simple_name_for_vol_simple() {
+    fn can_define_show_with_perms_metadata() {
         let re = jspnode!("DEV01", "perms" => "777");
         assert_eq!(re.display_name(), s!("DEV01 [perms:777]"));
     }
 
 
     #[test]
-    fn macro_simple_name_for_vol_owner() {
+    fn can_define_show_with_owner_metadata() {
         let re = jspnode!("DEV01", "owner" => "jgerber");
         assert_eq!(re.display_name(), s!("DEV01 [owner:jgerber]"));
     }
 
     #[test]
-    fn macro_simple_name_for_vol_auto() {
+    fn can_create_show_with_autocreate() {
         let re = jspnode!("DEV01", "autocreate" => "true");
         //assert!(re.metadata().autocreate());
         assert_eq!(re.display_name(), s!("DEV01 [autocreate]"));
     }
 
     #[test]
-    fn macro_simple_name_for_vol_multi() {
+    fn can_create_show_with_owner_ande_autocreate_metadata() {
         let re = jspnode!("DEV01", "autocreate" => "true", "owner" => "jgerber");
         //assert!(re.metadata().autocreate());
         assert_eq!(re.display_name(), s!("DEV01 [owner:jgerber, autocreate]"));
     }
 
     #[test]
-    fn macro_simple_name_for_navalias_simple() {
+    fn can_create_show_with_owner_autocreate_and_simple_navalias() {
         let re = jspnode!("DEV01", "autocreate" => "true", "owner" => "jgerber", "navalias" => "cs");
         //assert!(re.metadata().autocreate());
         assert_eq!(re.display_name(), s!("DEV01 [owner:jgerber, autocreate, navalias:cs]"));
     }
 
     #[test]
-    fn macro_simple_name_for_navalias_complex() {
+    fn can_create_show_with_owner_autocreate_and_complex_navalias() {
         let re = jspnode!("DEV01", "autocreate" => "true", "owner" => "jgerber", "navalias" => "cs=work.$USER");
-        //assert!(re.metadata().autocreate());
         assert_eq!(re.display_name(), s!("DEV01 [owner:jgerber, autocreate, navalias:cs=work.$USER]"));
     }
 
