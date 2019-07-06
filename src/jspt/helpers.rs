@@ -111,6 +111,42 @@ mod perms_test {
     }
 }
 
+#[inline]
+pub fn is_navalias_char(c: char) -> bool {
+        // uppercase letters
+        (c > '\x40' && c < '\x5B') || 
+        // numbers
+        (c > '\x2F'&& c < '\x3A')|| 
+        // lowercase letters
+        (c > '\x60'&& c < '\x7B') || 
+        ['_','.','$'].contains(&c)
+}
+
+#[cfg(test)]
+mod navalias_char_tests {
+    use super::*;
+    #[test]
+    fn is_a_navalias_char() {
+        for x in vec![
+            'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','z',
+            'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','Z',
+            '1','2','3','4','5','6','7','8','9','0', 
+            '_', '.', '$'] {
+            assert!(
+                is_navalias_char(x)
+            );
+        }
+    }
+
+    #[test]
+    fn is_not_navalias_char() {
+        for x in vec![ '[',']','<','>','?', '^', '#', '@', '%', '&', ',', '"', '/', '`', '+',')','(' ,'=', ':'] {
+            assert!(
+                !is_navalias_char(x)
+            );
+        }
+    }
+}
 /// Parser which parses contiguous indent chars using the `is_ident_char` function.
 /// ident chars are defined as being uppercase letters, lowercase letters, numbers, or underscores
 pub fn variable(input: &str) -> IResult<&str, &str> {
@@ -141,6 +177,22 @@ mod variable {
         assert!(!foo.is_ok());
     }
 
+}
+
+/// Parser which parses navalias strings
+pub fn navalias_str(input: &str) -> IResult<&str, &str> {
+  input.split_at_position1_complete(|item| !is_navalias_char(item), ErrorKind::Alpha)
+}
+
+#[cfg(test)]
+mod navalias_str_test {
+    use super::*;
+
+    #[test]
+    fn is_a_navalias_str_test() {
+        let foo = navalias_str("work.$JGERBER");
+        assert!(foo.is_ok());
+    }
 }
 
 // Parser which parses contigous regular expression characters, as defined by the is_regex_char. 
