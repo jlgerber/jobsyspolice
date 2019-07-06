@@ -110,6 +110,15 @@ macro_rules!  jspnode {
                 }
                 "varname" => {n.metadata_mut().set_varname(Some(String::from($val)));}
                 "autocreate" => {n.metadata_mut().set_autocreate($val.parse().unwrap_or_else(|_v| false));}
+                "navalias" => {
+                    if let Some(idx) = $val.find("=") {
+                        let (key, value) = $val.split_at(idx);
+                        let value = value.trim_start_matches('=');
+                        n.metadata_mut().set_navalias(Some(crate::navalias::Navalias::Complex{name:key.to_owned(), value: value.to_owned()} ));
+                    } else {
+                        n.metadata_mut().set_navalias(Some(crate::navalias::Navalias::Simple($val.to_owned())));
+                    }
+                }
                 _ => ()
             }
         )+
@@ -155,16 +164,11 @@ macro_rules!  jspnode {
                 "varname" => {n.metadata_mut().set_varname(Some(String::from($val)));}
                 "autocreate" => {n.metadata_mut().set_autocreate($val.parse().unwrap_or_else(|_v| false));}
                 "navalias" => {
-                    if $val.contains("=") {
-                        if let Some(idx) = $val.find("=") {
-                            let (key, value) = $val.split_at(idx);
-                            let value = value.trim_start_matches('=');
-                            n.metadata_mut().set_navalias(Some(crate::navalias::Navalias::Complex{name:key.to_owned(), value: value.to_owned()} ));
-
-                        }
-
+                    if let Some(idx) = $val.find("=") {
+                        let (key, value) = $val.split_at(idx);
+                        let value = value.trim_start_matches('=');
+                        n.metadata_mut().set_navalias(Some(crate::navalias::Navalias::Complex{name:key.to_owned(), value: value.to_owned()} ));
                     } else {
-                        
                         n.metadata_mut().set_navalias(Some(crate::navalias::Navalias::Simple($val.to_owned())));
                     }
                 }
@@ -213,6 +217,15 @@ macro_rules!  jspnode {
                 }
                 "varname" => {n.metadata_mut().set_varname(Some(String::from($val)));}
                 "autocreate" => {n.metadata_mut().set_autocreate($val.parse().unwrap_or_else(|_v| false));}
+                "navalias" => {
+                    if let Some(idx) = $val.find("=") {
+                        let (key, value) = $val.split_at(idx);
+                        let value = value.trim_start_matches('=');
+                        n.metadata_mut().set_navalias(Some(crate::navalias::Navalias::Complex{name:key.to_owned(), value: value.to_owned()} ));
+                    } else {
+                        n.metadata_mut().set_navalias(Some(crate::navalias::Navalias::Simple($val.to_owned())));
+                    }
+                }
                 _ => ()
             }
         )+
