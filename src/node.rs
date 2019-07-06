@@ -131,6 +131,14 @@ impl Node {
             //name.push_str(format!(" [{}]", n).as_str());
         }
 
+
+        if let Some(ref n) = self.metadata().navalias() {
+            match n {
+                Navalias::Simple(name) => meta.push(format!("navalias:{}", name)),
+                Navalias::Complex{name, value} => meta.push(format!("navalias:{}={}", name, value)),
+            }
+        }
+
         if meta.len() > 0 {
             name.push_str(format!(" [{}]", meta.join(", ")).as_str());
         }
@@ -569,6 +577,20 @@ mod tests {
         let re = jspnode!("DEV01", "autocreate" => "true", "owner" => "jgerber");
         //assert!(re.metadata().autocreate());
         assert_eq!(re.display_name(), s!("DEV01 [owner:jgerber, autocreate]"));
+    }
+
+    #[test]
+    fn macro_simple_name_for_navalias_simple() {
+        let re = jspnode!("DEV01", "autocreate" => "true", "owner" => "jgerber", "navalias" => "cs");
+        //assert!(re.metadata().autocreate());
+        assert_eq!(re.display_name(), s!("DEV01 [owner:jgerber, autocreate, navalias:cs]"));
+    }
+
+    #[test]
+    fn macro_simple_name_for_navalias_complex() {
+        let re = jspnode!("DEV01", "autocreate" => "true", "owner" => "jgerber", "navalias" => "cs=work.$USER");
+        //assert!(re.metadata().autocreate());
+        assert_eq!(re.display_name(), s!("DEV01 [owner:jgerber, autocreate, navalias:cs=work.$USER]"));
     }
 
 }
