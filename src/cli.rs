@@ -2,18 +2,23 @@ use crate::{
     CachedEnvVars,
     constants,
     diskutils,
+    DiskType,
     find,
+    find_rel,
+    FindRelStrategy,
+    get_disk_service,
     JGraph,
     JSPError,
+    MetadataTerm,
+    Navalias,
+    NIndex,
     NodePath,
+    report,
     SearchTerm,
     SupportedShell,
     ShellEnvManager,
-    validate_path,
-    get_disk_service,
-    DiskType,
     ValidPath,
-    report,
+    validate_path,
 };
 use chrono::prelude::*;
 use colored::Colorize;
@@ -271,9 +276,10 @@ pub fn mk<'a>(
 ///                 in the input.
 /// * `verbose`   - Output is more extensive, colored, etc.
 /// 
-/// # Rwturns
-/// A Result wrapping a unit if successful, or a JSPError if unable to navigate 
+/// # Returns
+/// A Result wrapping a ValidPath if successful, or a JSPError if unable to navigate 
 /// to the supplied directory.
+/*
 pub fn go (
     mut terms: Vec<String>, 
     myshell: Option<String>, 
@@ -335,6 +341,93 @@ pub fn go (
     }
     Ok(())
 }
+*/
+pub fn go<'a> (
+    terms: Vec<String>, 
+    myshell: Option<String>, 
+    graph: &'a JGraph,
+    full_path: bool, 
+    verbose: bool
+) -> Result<ValidPath<'a>, JSPError> {
+
+    let myshell = myshell.unwrap_or_else(|| "bash".to_string());
+
+    let myshelldyn = SupportedShell::from_str(myshell.as_str())?.get();
+
+    match validpath_from_terms(terms, &graph, false, full_path) {
+        Ok(validpath) => {
+            if let Some(idx) = validpath.nodepath().index() {
+                // now we process any navaliases
+                process_navalias(idx, &validpath, &graph, verbose);
+            } else {
+                panic!("unable to get index NIndex from nodepath");
+            }
+            //process_go_success(validpath.pathbuf(), validpath.nodepath(), myshelldyn);
+            process_go_success(&validpath, myshelldyn);
+            Ok(validpath)
+        },
+        
+        Err(e) => {
+            report::shellerror("Problem converting terms to path", Some(e.clone()), verbose);
+            Err(e)
+        },
+    }
+}
+
+#[inline]
+fn process_navalias(idx: NIndex, validpath: &ValidPath, graph: &JGraph, verbose: bool) {
+    match find_rel( idx, MetadataTerm::Navalias, &graph, FindRelStrategy::First) {
+        Err(e) => { report::shellerror(
+            format!("Error: unable to find navalias nodes: {}", e.to_string()).as_str(),
+            None, 
+            verbose); 
+        }
+        Ok(nodepaths) => {
+            // now we create them
+            for nodepath in nodepaths {
+                // generate a Pathbuf from the current nodepath
+                let cur_pathbuf = match nodepath.to_pathbuf() {
+                    Ok(v) => v,
+                    Err(e) => {
+                        //eprintln!("Error: unable to convert nodepath to pathbuf. skipping nodepath {}",
+                        //    e.to_string());
+                        report::shellerror("Unable to convert nodepath to pathbuf. skipping nodepath.", Some(e), verbose);
+                        continue
+                    } 
+                };
+                // the full pathbuf 
+                let full_pathbuf = validpath.pathbuf().join(cur_pathbuf);
+                // a copy of the cufrent nodepath
+                let mut cur_nodepath_clone = nodepath.clone();
+                // combine the full_pathbuf and the cur_nodepath_clone
+                let mut full_nodepath = validpath.nodepath().clone();
+                full_nodepath.append_unchecked(&mut cur_nodepath_clone.nodes);
+                // build a new validpath from the full pathbuf and fullnodepath
+                let new_validpath = match ValidPath::new_unchecked(full_pathbuf, full_nodepath, true) {
+                    Ok(v) => v,
+                    Err(e) => {
+                        //eprintln!("Error: Unable to create ValidPath. Err: {}",e.to_string());
+                        report::shellerror("Unable to create ValidPath", Some(e), verbose);
+                        continue
+                    }
+                };
+                if let Some(node) = nodepath.leaf() {
+                    if let Some(navalias) = node.metadata().navalias() {
+                        match navalias {
+                            Navalias::Simple(name) => report::shellinfo(format!("I Founds a navalias {}", name), verbose),
+                            Navalias::Complex{name,value} => report::shellinfo(format!("I found {} {}", name, value), verbose),
+                        }
+                    } else {
+                        report::shellerror("In process_navalias, unable to retrieve navalias from Node", None, verbose);
+                        continue;    
+                    }
+                } else {
+                    report::shellerror("In process_navalias, unable to retrieve leaf node from nodepath", None, verbose)
+                }
+            }
+        }
+    } 
+}
 
 pub fn gen_terms_from_strings(mut terms: Vec<String>) -> Result<Vec<SearchTerm>, JSPError> {
 
@@ -380,7 +473,7 @@ pub fn gen_terms_from_strings(mut terms: Vec<String>) -> Result<Vec<SearchTerm>,
     
     Ok(terms)
 } 
-
+/*
 #[inline]
 fn process_go_success(path: PathBuf, nodepath: &NodePath, myshell: Box<dyn ShellEnvManager>) {
 
@@ -420,6 +513,53 @@ fn process_go_success(path: PathBuf, nodepath: &NodePath, myshell: Box<dyn Shell
         print!("{}", &myshell.unset_env_var(constants::JSP_TRACKING_VAR));
     }
     // Now the final output of where we are actually gong.
+    let target_dir = path.as_os_str().to_str().unwrap();
+    println!("cd {};", target_dir);
+    println!("echo Changed Directory To: {}\n", target_dir);
+}
+*/
+//path: PathBuf, nodepath: &NodePath
+
+#[inline]
+fn process_go_success(validpath: &ValidPath, myshell: Box<dyn ShellEnvManager>) {
+
+    log::info!("process_go_success(...)");
+    
+    let components = validpath.pathbuf().components().map(|x| {
+        match x {
+            Component::RootDir => String::from("/"),
+            Component::Normal(level) => level.to_str().unwrap().to_string(),
+            Component::CurDir => String::from("."),
+            Component::ParentDir => String::from(".."),
+            Component::Prefix(_) => panic!("prefix in path not supported"),
+        }
+    }).collect::<VecDeque<String>>();
+       
+    let mut varnames: Vec<&str> = Vec::new();
+
+    // generate string to clear previously cached variables
+    let cached = CachedEnvVars::new();
+    print!("{}", cached.clear(&myshell));
+    // generate code to export a variable
+    // TODO: make this part of the trait so that we can abstract over shell
+    for (idx, n) in validpath.nodepath().iter().enumerate() {
+        if n.metadata().has_varname() {
+            let varname = n.metadata().varname_ref().unwrap();
+            print!("{}", &myshell.set_env_var(varname, &components[idx]));
+            varnames.push(varname);
+        }
+    }
+    // if we have variable names that we have set, we also need to preserve their names, so that
+    // we can clear them out on subsequent runs. This solves the scenario where you navigate
+    // deep into the tree, and then later navigate to a shallower level; you don't want the 
+    // variables tracking levels deeper than the current depth to be set. 
+    if !varnames.is_empty() {
+        print!("{}", &myshell.set_env_var(constants::JSP_TRACKING_VAR, varnames.join(":").as_str())) ;
+    } else {
+        print!("{}", &myshell.unset_env_var(constants::JSP_TRACKING_VAR));
+    }
+    // Now the final output of where we are actually gong.
+    let path = validpath.pathbuf();
     let target_dir = path.as_os_str().to_str().unwrap();
     println!("cd {};", target_dir);
     println!("echo Changed Directory To: {}\n", target_dir);
