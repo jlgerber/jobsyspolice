@@ -8,7 +8,7 @@ use nom::{
     multi::separated_nonempty_list,
 };
 
-use crate::jspt::{JsptMetadata, MetadataComponent, helpers::{variable, perm_chars} };
+use crate::jspt::{JsptMetadata, MetadataComponent, helpers::{variable, regex_str, perm_chars} };
 
 /// Parses metadata from a a str, identifed from a list of identifiers surounded by
 /// square brackets. 
@@ -48,6 +48,7 @@ pub fn parse_components(input: &str) -> IResult<&str, Vec<MetadataComponent>> {
                 parse_permissions,
                 parse_owner,
                 parse_varname,
+                parse_navalias,
             ))
         ), 
         terminated(tag("]"), space0)
@@ -232,7 +233,7 @@ fn parse_owner(input: &str) -> IResult<&str, MetadataComponent> {
 }
 
 #[cfg(test)]
-mod tests {
+mod owner_tests {
     use super::*;
 
     #[test]
@@ -343,4 +344,85 @@ mod varname_tests {
        let varname = parse_varname("  varname : fred  ");
        assert_eq!(varname, Ok(("", MetadataComponent::EnvVarName("fred".to_string())))) ;
     }
+}
+
+#[allow(dead_code)]
+fn parse_navalias(input: &str) -> IResult<&str, MetadataComponent> {
+    alt((
+      parse_navalias_some, 
+      parse_navalias_none 
+    ))(input)
+}
+
+#[cfg(test)]
+mod navalias_tests {
+    use super::*;
+
+    #[test]
+    fn can_parse_navalias_no_spaces() {
+       let varname = parse_navalias("navalias:fred");
+       assert_eq!(varname, Ok(("", MetadataComponent::NavAlias("fred".to_string(), None)))) ;
+    }
+
+    #[test]
+    fn can_parse_navalias_spaces() {
+       let varname = parse_navalias("navalias : fred");
+       assert_eq!(varname, Ok(("", MetadataComponent::NavAlias("fred".to_string(),None)))) ;
+    }
+
+    #[test]
+    fn can_parse_navalias_more_spaces() {
+       let varname = parse_navalias("  navalias : fred  ");
+       assert_eq!(varname, Ok(("", MetadataComponent::NavAlias("fred".to_string(), None)))) ;
+    }
+
+
+    #[test]
+    fn can_parse_navalias_with_second_param() {
+       let varname = parse_navalias("navalias: cs work.$USER");
+       assert_eq!(varname, Ok(("", MetadataComponent::NavAlias("cs".to_string(), Some("work.$USER".to_string()))))) ;
+    }
+
+}
+
+// navalias: cs work.$JGERBER,
+#[allow(dead_code)]
+fn parse_navalias_some(input: &str) -> IResult<&str, MetadataComponent> {
+    map(
+        delimited(
+            space0,
+            tuple((
+                tag("navalias"),
+                preceded(space0,tag(":")), 
+                preceded(space0, variable),
+                preceded(space0, regex_str),
+            )), 
+            space0,
+        ),
+        |item| {
+            let (_, _, var_name, var_value) = item;
+            MetadataComponent::NavAlias(var_name.to_string(), Some(var_value.to_string()))
+        }
+    )(input)
+}
+
+// navalias: cs
+#[allow(dead_code)]
+fn parse_navalias_none(input: &str) -> IResult<&str, MetadataComponent> {
+    map(
+        delimited(
+            space0,
+
+            tuple((
+                tag("navalias"),
+                preceded(space0,tag(":")), 
+                preceded(space0, variable),
+            )), 
+            space0,
+        ),
+        |item| {
+            let (_, _, var_name) = item;
+            MetadataComponent::NavAlias(var_name.to_string(), None)
+        }
+    )(input)
 }
