@@ -145,7 +145,7 @@ mod variable {
 
 // Parser which parses contigous regular expression characters, as defined by the is_regex_char. 
 // Note that we do not accept spaces, single or double quotes
-fn regex_str(input: &str) -> IResult<&str, &str> {
+pub fn regex_str(input: &str) -> IResult<&str, &str> {
   //input.split_at_position1_complete(|item| !is_regex_char(char::from(item)), ErrorKind::Alpha)
   input.split_at_position1_complete(|item| !is_regex_char(item), ErrorKind::Alpha)
 }
