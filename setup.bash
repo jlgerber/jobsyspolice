@@ -2,7 +2,7 @@ cmd="jsp go --shell=bash"
 
 function jspgo { 
     FOO=$($cmd "$@") > /dev/null; 
-    if [[ $FOO =~ \s*Error.* ]] ;
+    if [[ $FOO =~ \s*(Error|Info).* ]] ;
     then
         echo $FOO 
     else
