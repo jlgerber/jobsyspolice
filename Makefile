@@ -45,14 +45,14 @@ endif
 install-env-file:
 	cp ${envfile} $(location)/.
 
-all: build install install-env-file
+all: build install install-env-file ownership
 
-all-debug: build-debug install-debug install-env-file
+all-debug: build-debug install-debug install-env-file ownership
 
 ownership:
-	sudo chown root $(location)/${target}
+	#sudo chown root $(location)/${target}
 	sudo chown root $(location)/${target2}
-	sudo chmod u+s $(location)/${target}
+	#sudo chmod u+s $(location)/${target}
 	sudo chmod u+s $(location)/${target2}
 
 
