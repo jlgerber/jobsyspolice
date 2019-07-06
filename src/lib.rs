@@ -7,6 +7,9 @@ pub mod macros {
     }
 }
 
+pub mod navalias;
+pub use navalias::Navalias;
+
 pub mod errors;
 pub use errors::JSPError;
 
@@ -69,3 +72,151 @@ pub use validpath::ValidPath;
 
 pub mod minimatch;
 pub use minimatch::parse_show_from_arg;
+
+
+#[macro_export]
+macro_rules!  jspnode {
+    // jspnode("foo")
+    ($name:expr) => (
+        Node::new(
+            NodeType::Simple(String::from($name)),
+            EntryType::Directory,
+            None,
+            None,
+            None,
+            false,
+            None,
+        )
+    );
+    // jspnode!("foo", "owner" => "bob")
+    ($name:expr, $($key:expr => $val:expr),+) => ({
+        let mut n = Node::new(
+            NodeType::Simple(String::from($name)),
+            EntryType::Directory,
+            None,
+            None,
+            None,
+            false,
+            None,
+        );
+        $(
+            match $key {
+                "owner" => {n.metadata_mut().set_owner(Some(crate::User::from($val)));}
+                "perms" | "permissions" => {
+                    let conv = $val.parse::<u32>();
+                    if conv.is_ok(){
+                        n.metadata_mut().set_perms(Some($val.to_owned()));
+                    }
+                }
+                "varname" => {n.metadata_mut().set_varname(Some(String::from($val)));}
+                "autocreate" => {n.metadata_mut().set_autocreate($val.parse().unwrap_or_else(|_v| false));}
+                _ => ()
+            }
+        )+
+        n
+    });
+    ($name:expr, $regex:expr) => (
+        Node::new(
+        NodeType::RegEx {
+            name: $name.into(),
+            pattern: Regexp::new($regex).unwrap(),
+            exclude: None,
+        },
+        EntryType::Directory,
+        None,
+        None, 
+        None,
+        false,
+        None,
+        ));
+    ($name:expr, $regex:expr, $($key:expr => $val:expr),+) => ({
+        let mut n = Node::new(
+        NodeType::RegEx {
+            name: $name.into(),
+            pattern: Regexp::new($regex).unwrap(),
+            exclude: None,
+        },
+        EntryType::Directory,
+        None,
+        None,
+        None,
+        false,
+        None,
+        );
+        $(
+            match $key {
+                "owner" => {n.metadata_mut().set_owner(Some(crate::User::from($val)));}
+                "perms" | "permissions" => {
+                    let conv = $val.parse::<u32>();
+                    if conv.is_ok(){
+                        n.metadata_mut().set_perms(Some($val.to_owned()));
+                    }
+                }
+                "varname" => {n.metadata_mut().set_varname(Some(String::from($val)));}
+                "autocreate" => {n.metadata_mut().set_autocreate($val.parse().unwrap_or_else(|_v| false));}
+                "navalias" => {
+                    if $val.contains("=") {
+                        if let Some(idx) = $val.find("=") {
+                            let (key, value) = $val.split_at(idx);
+                            let value = value.trim_start_matches('=');
+                            n.metadata_mut().set_navalias(Some(crate::navalias::Navalias::Complex{name:key.to_owned(), value: value.to_owned()} ));
+
+                        }
+
+                    } else {
+                        
+                        n.metadata_mut().set_navalias(Some(crate::navalias::Navalias::Simple($val.to_owned())));
+                    }
+                }
+                _ => ()
+            }
+        )+
+        n
+    });
+    ($name:expr, $regex:expr, $exclude:expr) => (
+        Node::new(
+            NodeType::RegEx {
+                name: $name.into(),
+                pattern: Regexp::new($regex).unwrap(),
+                exclude: Some(Regexp::new($exclude).unwrap()),
+            },
+            EntryType::Directory,
+            None,
+            None,
+            None,
+            false,
+            None,
+        )
+    );
+    ($name:expr, $regex:expr, $exclude:expr, $($key:expr => $val:expr),+) => ({
+        let mut n = Node::new(
+            NodeType::RegEx {
+                name: $name.into(),
+                pattern: Regexp::new($regex).unwrap(),
+                exclude: Some(Regexp::new($exclude).unwrap()),
+            },
+            EntryType::Directory,
+            None,
+            None,
+            None, 
+            false,
+            None,
+        );
+        $(
+            match $key {
+                "owner" => {n.metadata_mut().set_owner(Some(crate::User::from($val)));}
+                "perms" | "permissions" => {
+                    let conv = $val.parse::<u32>();
+                    if conv.is_ok(){
+                        n.metadata_mut().set_perms(Some($val.to_owned()));
+                    }
+                }
+                "varname" => {n.metadata_mut().set_varname(Some(String::from($val)));}
+                "autocreate" => {n.metadata_mut().set_autocreate($val.parse().unwrap_or_else(|_v| false));}
+                _ => ()
+            }
+        )+
+        n
+    });
+}
+
