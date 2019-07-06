@@ -135,7 +135,7 @@ impl Node {
         if let Some(ref n) = self.metadata().navalias() {
             match n {
                 Navalias::Simple(name) => meta.push(format!("navalias:{}", name)),
-                Navalias::Complex{name, value} => meta.push(format!("navalias:{}={}", name, value)),
+                Navalias::Complex{name, value} => meta.push(format!("navalias:{} {}", name, value)),
             }
         }
 
@@ -445,7 +445,7 @@ mod jspnode_tests {
     #[test]
     fn can_create_show_with_owner_autocreate_and_complex_navalias() {
         let re = jspnode!("DEV01", "autocreate" => "true", "owner" => "jgerber", "navalias" => "cs=work.$USER");
-        assert_eq!(re.display_name(), s!("DEV01 [owner:jgerber, autocreate, navalias:cs=work.$USER]"));
+        assert_eq!(re.display_name(), s!("DEV01 [owner:jgerber, autocreate, navalias:cs work.$USER]"));
     }
 
 }
