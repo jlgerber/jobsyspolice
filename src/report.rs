@@ -106,17 +106,17 @@ pub fn shellerror(info: &str, error: Option<JSPError>, verbose: bool) {
 pub fn shellinfo<T>(info: T,verbose: bool) where T: AsRef<str> + std::fmt::Display {
     if verbose { 
         eprintln!("\n{}\n", "Info".bright_green()); 
-        eprintln!("\t{}", info.as_ref());
+        eprintln!("\t'{}'", info.as_ref());
         eprintln!("");
     } else {
-        eprintln!("{} {}", "Info".bright_green(), info.as_ref());
+        eprintln!("{} '{}'", "Info".bright_green(), info.as_ref());
     }
 }
 
 pub(crate) fn go_failure(path_str: &str, myshell: bool, verbose: bool) {
     let cr = if verbose { "\n" } else {""};
     if !myshell {
-        eprintln!("echo {}Error: Path does not exist: {}{}", cr, path_str.bright_blue(), cr);
+        eprintln!("echo {}Error: Path does not exist: '{}{}'", cr, path_str.bright_blue(), cr);
     } else {
         shellerror(format!("Path does not exist: '{}'", path_str.bright_blue()).as_str(), None, verbose);
     }
