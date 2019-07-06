@@ -8,7 +8,7 @@ use nom::{
     multi::separated_nonempty_list,
 };
 
-use crate::jspt::{JsptMetadata, MetadataComponent, helpers::{variable, regex_str, perm_chars} };
+use crate::jspt::{JsptMetadata, MetadataComponent, helpers::{variable, navalias_str, perm_chars} };
 
 /// Parses metadata from a a str, identifed from a list of identifiers surounded by
 /// square brackets. 
@@ -43,12 +43,12 @@ pub fn parse_components(input: &str) -> IResult<&str, Vec<MetadataComponent>> {
         separated_nonempty_list(
             parse_comma,
             alt((
+                parse_navalias,
                 parse_autocreate,
                 parse_volume,
                 parse_permissions,
                 parse_owner,
                 parse_varname,
-                parse_navalias,
             ))
         ), 
         terminated(tag("]"), space0)
@@ -64,6 +64,18 @@ mod parse_components_tests {
     fn can_parse_volume() {
        let owner = parse_components("[ volume ]");
        assert_eq!(owner, Ok(("", vec![MetadataComponent::Volume]))) ;
+    }
+
+    #[test]
+    fn can_parse_navalias() {
+       let owner = parse_components("[ navalias: cs ]");
+       assert_eq!(owner, Ok(("", vec![MetadataComponent::NavAlias("cs".to_string(), None)]))) ;
+    }
+
+    #[test]
+    fn can_parse_navalias_complex() {
+       let owner = parse_components("[ navalias: cs work.$USER ]");
+       assert_eq!(owner, Ok(("", vec![MetadataComponent::NavAlias("cs".to_string(), Some("work.$USER".to_string()) )]))) ;
     }
 
     #[test]
@@ -135,7 +147,45 @@ mod parse_components_tests {
                     MetadataComponent::Owner("jgerber".to_string()),
                     MetadataComponent::Permissions("751".to_string()),
                     MetadataComponent::EnvVarName("JG_SHOW".to_string())
+                ]
+            ))
+        );
+    }
 
+
+    #[test]
+    fn can_parse_volume_and_owner_and_perms_and_varname_and_autocreate_navalias() {
+        let cmp = parse_components("[ autocreate, volume , owner : jgerber, perms: 751, varname: JG_SHOW, navalias: cs]");
+        assert_eq!(
+           cmp,
+            Ok((
+                "",
+                vec![
+                    MetadataComponent::Autocreate, 
+                    MetadataComponent::Volume, 
+                    MetadataComponent::Owner("jgerber".to_string()),
+                    MetadataComponent::Permissions("751".to_string()),
+                    MetadataComponent::EnvVarName("JG_SHOW".to_string()),
+                    MetadataComponent::NavAlias("cs".to_string(), None)
+                ]
+            ))
+        );
+    }
+
+    #[test]
+    fn can_parse_volume_and_owner_and_perms_and_varname_and_autocreate_navalias_complex() {
+        let cmp = parse_components("[ autocreate, volume , owner : jgerber, perms: 751, varname: JG_SHOW, navalias: cs work.$USER]");
+        assert_eq!(
+           cmp,
+            Ok((
+                "",
+                vec![
+                    MetadataComponent::Autocreate, 
+                    MetadataComponent::Volume, 
+                    MetadataComponent::Owner("jgerber".to_string()),
+                    MetadataComponent::Permissions("751".to_string()),
+                    MetadataComponent::EnvVarName("JG_SHOW".to_string()),
+                    MetadataComponent::NavAlias("cs".to_string(), Some("work.$USER".to_string()))
                 ]
             ))
         );
@@ -395,7 +445,7 @@ fn parse_navalias_some(input: &str) -> IResult<&str, MetadataComponent> {
                 tag("navalias"),
                 preceded(space0,tag(":")), 
                 preceded(space0, variable),
-                preceded(space0, regex_str),
+                preceded(space0, navalias_str),
             )), 
             space0,
         ),
