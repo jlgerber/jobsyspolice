@@ -88,7 +88,6 @@ fn doit(args: Opt, level: LevelFilter) -> Result<(), /*failure::Error*/ JSPError
             }
             // now we process any navaliases
             process_navalias(idx, &validpath, &graph, verbose);
-
         }
          
         report::mk_success(validpath.path(), verbose);
@@ -146,7 +145,11 @@ fn process_autocreate(idx: NIndex, validpath: &ValidPath,  graph: &JGraph, novol
 #[inline]
 fn process_navalias(idx: NIndex, validpath: &ValidPath, graph: &JGraph, verbose: bool) {
     match find_rel( idx, MetadataTerm::Navalias, &graph) {
-        Err(e) => {eprintln!("Error: unable to find autocreate nodes: {}", e.to_string());}
+        Err(e) => { report::shellerror(
+            format!("Error: unable to find navalias nodes: {}", e.to_string()).as_str(),
+            None, 
+            verbose); 
+        }
         Ok(nodepaths) => {
             // now we create them
             for nodepath in nodepaths {
@@ -156,7 +159,7 @@ fn process_navalias(idx: NIndex, validpath: &ValidPath, graph: &JGraph, verbose:
                     Err(e) => {
                         //eprintln!("Error: unable to convert nodepath to pathbuf. skipping nodepath {}",
                         //    e.to_string());
-                        report::jsperror("Unable to convert nodepath to pathbuf. skipping nodepath.", e, verbose);
+                        report::shellerror("Unable to convert nodepath to pathbuf. skipping nodepath.", Some(e), verbose);
                         continue
                     } 
                 };
@@ -172,19 +175,23 @@ fn process_navalias(idx: NIndex, validpath: &ValidPath, graph: &JGraph, verbose:
                     Ok(v) => v,
                     Err(e) => {
                         //eprintln!("Error: Unable to create ValidPath. Err: {}",e.to_string());
-                        report::jsperror("Unable to create ValidPath", e, verbose);
+                        report::shellerror("Unable to create ValidPath", Some(e), verbose);
                         continue
                     }
                 };
-                // // it doesnt matter whether otp.sticky is true. for the sudbirs we set sticky to false
-                // let _ = match cli::mk(new_validpath, &graph, DiskType::Local, false, novolume,  verbose) {
-                //     Ok(v) => v,
-                //     Err(e) => {
-                //         //eprintln!("Error making new subdirectory: {}", e.to_string());
-                //         report::jsperror("Problem making automake subdirectory", e, verbose);
-                //         continue
-                //     }
-                // };
+                if let Some(node) = nodepath.leaf() {
+                    if let Some(navalias) = node.metadata().navalias() {
+                        match navalias {
+                            Navalias::Simple(name) => report::shellinfo(format!("I Founds a navalias {}", name), verbose),
+                            Navalias::Complex{name,value} => report::shellinfo(format!("I found {} {}", name, value), verbose),
+                        }
+                    } else {
+                        report::shellerror("In process_navalias, unable to retrieve navalias from Node", None, verbose);
+                        continue;    
+                    }
+                } else {
+                    report::shellerror("In process_navalias, unable to retrieve leaf node from nodepath", None, verbose)
+                }
             }
         }
     } 
