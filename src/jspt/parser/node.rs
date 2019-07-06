@@ -336,11 +336,26 @@ fn parse_node_revar_meta(input: &str) -> IResult<&str,  ParseResult> {
 mod parse_node_revar {
     use super::*;
     //use nom::error::ErrorKind;
+    use crate::jspt::metadata::JsptMetadata;
 
     #[test]
     fn can_parse_node_revar() {
         let result = parse_node_revar(r#"rd = $rdexpr "#);
         assert_eq!(result, Ok( ("", ParseResult::Node(Node::new_revar("rd", "rdexpr", None)) ) )) ;
+    }
+
+    #[test]
+    fn can_parse_node_revar_meta() {
+        let result = parse_node_revar(r#"rd = $rdexpr [perms:777]"#);
+        let md = JsptMetadata::new().set_permissions(Some("777"));
+        assert_eq!(result, Ok( ("", ParseResult::Node(Node::new_revar("rd", "rdexpr", Some(md) )) ) )) ;
+    }
+
+    #[test]
+    fn can_parse_node_revar_meta_navalias() {
+        let result = parse_node_revar(r#"rd = $rdexpr [navalias:cs]"#);
+        let md = JsptMetadata::new().set_navalias(Some(("cs", None)));
+        assert_eq!(result, Ok( ("", ParseResult::Node(Node::new_revar("rd", "rdexpr", Some(md) )) ) )) ;
     }
 
     #[test]
