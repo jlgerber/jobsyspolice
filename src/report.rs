@@ -102,6 +102,17 @@ pub fn shellerror(info: &str, error: Option<JSPError>, verbose: bool) {
     }
 }
 
+/// Use to print out message that works with our bash script wrapper
+pub fn shellinfo<T>(info: T,verbose: bool) where T: AsRef<str> + std::fmt::Display {
+    if verbose { 
+        eprintln!("\n{}\n", "Info".bright_green()); 
+        eprintln!("\t{}", info.as_ref());
+        eprintln!("");
+    } else {
+        eprintln!("{} {}", "Info".bright_green(), info.as_ref());
+    }
+}
+
 pub(crate) fn go_failure(path_str: &str, myshell: bool, verbose: bool) {
     let cr = if verbose { "\n" } else {""};
     if !myshell {
