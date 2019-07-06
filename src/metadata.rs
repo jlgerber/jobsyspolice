@@ -1,4 +1,4 @@
-use crate::{User};
+use crate::{User, Navalias};
 use serde::{Serialize, Deserialize};
 use std::cmp::PartialEq;
 
@@ -11,6 +11,7 @@ pub enum MetadataTerm {
     Perms,
     Varname,
     Autocreate,
+    Navalias,
 }
 
 impl PartialEq<MetadataTerm> for MetadataTerm {
@@ -29,6 +30,8 @@ impl PartialEq<Metadata> for MetadataTerm {
             &MetadataTerm::Perms => other.has_perms(),
             &MetadataTerm::Varname => other.has_varname(),
             &MetadataTerm::Autocreate => other.autocreate(),
+            &MetadataTerm::Navalias => other.has_navalias(),
+
         }
     }
 }
@@ -45,7 +48,9 @@ pub struct Metadata {
     perms: Option<PermsType>, //todo: change rep
     #[serde(skip_serializing_if = "Option::is_none")]
     varname: Option<String>,
-    autocreate: bool
+    autocreate: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    navalias: Option<Navalias>,
 }
 
 impl std::default::Default for Metadata {
@@ -54,7 +59,8 @@ impl std::default::Default for Metadata {
             owner: None,
             perms: None,
             varname: None,
-            autocreate: false
+            autocreate: false,
+            navalias: None,
         }
     }
 }
@@ -66,13 +72,20 @@ impl Metadata {
     }
 
     /// Alternate constructor
-    pub fn from_components(owner: Option<User>, perms: Option<PermsType>, varname: Option<String>, autocreate: bool) -> Self 
+    pub fn from_components(
+        owner: Option<User>, 
+        perms: Option<PermsType>, 
+        varname: Option<String>, 
+        autocreate: bool, 
+        navalias: Option<Navalias>
+    ) -> Self 
     {
         Self {
             owner, 
             perms,
             varname,
-            autocreate
+            autocreate,
+            navalias
         }
     }
 
@@ -173,6 +186,38 @@ impl Metadata {
         self.autocreate = autocreate;
         self
     }
+
+    /// do we have a navalias
+    pub fn has_navalias(&self) -> bool {
+        self.navalias().is_some()
+    }
+
+    /// Set the navalias for Metadata
+    pub fn set_navalias(&mut self, navalias: Option<Navalias>) -> &mut Self {
+        log::info!("Metadata.set_navalias({:?})", navalias);
+        self.navalias = navalias;
+        self
+    }
+
+    /// Get the navalias
+    pub fn navalias(&self) -> &Option<Navalias> {
+       &self.navalias
+    }
+
+    /// Get the navalias
+    pub fn navalias_ref(&self) -> Option<&Navalias> {
+       match self.navalias {
+           Some(ref name) => Some(&name),
+           _ => None
+       }
+    }
+
+    /// Get a mutable navalias
+    pub fn navalias_mut(&mut self) -> &mut Option<Navalias> {
+        &mut self.navalias
+    }
+
+
 
     /// given a mutable reference to self, create a 
     /// concrete copy
