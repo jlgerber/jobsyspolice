@@ -246,6 +246,14 @@ impl<'a> NodePath<'a> {
         }
     }
 
+    /// Retrieve a reference to the root node
+    pub fn leaf(&self) -> Option<&Node> {
+        if let Some(idx) = self.index() {
+            Some(&self.graph[idx])
+        } else {
+            None
+        }
+    }
     /// Return the number of nodes in the NodePath.
     pub fn len(&self) -> usize {
         self.nodes.len()
