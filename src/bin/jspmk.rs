@@ -2,7 +2,7 @@ use chrono;
 use dotenv::dotenv;
 //use failure;
 use fern::{ colors::{Color, ColoredLevelConfig}, self} ;
-use jsp::{get_graph_from_fn,parse_show_from_arg,  DiskType, cli, JSPError, report, MetadataTerm, find_rel, ValidPath};
+use jsp::{get_graph_from_fn,parse_show_from_arg, Navalias, NIndex, JGraph, DiskType, cli, JSPError, report, MetadataTerm, find_rel, ValidPath};
 use log::{ LevelFilter, self };
 use std::{path::PathBuf, convert::AsRef};
 use structopt::StructOpt;
@@ -79,58 +79,115 @@ fn doit(args: Opt, level: LevelFilter) -> Result<(), /*failure::Error*/ JSPError
     
     let validpath = cli::mk(validpath, &graph, DiskType::Local, sticky, novolume, verbose)?;             
     if let report::Success::Mk(validpath) = validpath {
-        if autocreate {
+        
             // find relative
-            if let Some(idx) = validpath.nodepath().index() {
-                match find_rel( idx, MetadataTerm::Autocreate, &graph) {
-                    Err(e) => {eprintln!("Error: unable to find autocreate nodes: {}", e.to_string());}
-                    Ok(nodepaths) => {
-                        // now we create them
-                        for nodepath in nodepaths {
-                            // generate a Pathbuf from the current nodepath
-                            let cur_pathbuf = match nodepath.to_pathbuf() {
-                                Ok(v) => v,
-                                Err(e) => {
-                                    //eprintln!("Error: unable to convert nodepath to pathbuf. skipping nodepath {}",
-                                    //    e.to_string());
-                                    report::jsperror("Unable to convert nodepath to pathbuf. skipping nodepath.", e, verbose);
-                                    continue
-                                } 
-                            };
-                            // the full pathbuf 
-                            let full_pathbuf = validpath.pathbuf().join(cur_pathbuf);
-                            // a copy of the cufrent nodepath
-                            let mut cur_nodepath_clone = nodepath.clone();
-                            // combine the full_pathbuf and the cur_nodepath_clone
-                            let mut full_nodepath = validpath.nodepath().clone();
-                            full_nodepath.append_unchecked(&mut cur_nodepath_clone.nodes);
-                            // build a new validpath from the full pathbuf and fullnodepath
-                            let new_validpath = match ValidPath::new_unchecked(full_pathbuf, full_nodepath, true) {
-                                Ok(v) => v,
-                                Err(e) => {
-                                    //eprintln!("Error: Unable to create ValidPath. Err: {}",e.to_string());
-                                    report::jsperror("Unable to create ValidPath", e, verbose);
-                                    continue
-                                }
-                            };
-                            // it doesnt matter whether otp.sticky is true. for the sudbirs we set sticky to false
-                            let _ = match cli::mk(new_validpath, &graph, DiskType::Local, false, novolume,  verbose) {
-                                Ok(v) => v,
-                                Err(e) => {
-                                    //eprintln!("Error making new subdirectory: {}", e.to_string());
-                                    report::jsperror("Problem making automake subdirectory", e, verbose);
-                                    continue
-                                }
-                            };
-                        }
-                    }
-                }
+        if let Some(idx) = validpath.nodepath().index() {
+            if autocreate {
+                process_autocreate(idx, &validpath, &graph, novolume, verbose);
+                
             }
-        }
+            // now we process any navaliases
+            process_navalias(idx, &validpath, &graph, verbose);
 
+        }
+         
         report::mk_success(validpath.path(), verbose);
     }
     Ok(())
+}
+
+#[inline]
+fn process_autocreate(idx: NIndex, validpath: &ValidPath,  graph: &JGraph, novolume:bool, verbose: bool) {
+    match find_rel( idx, MetadataTerm::Autocreate, &graph) {
+        Err(e) => {eprintln!("Error: unable to find autocreate nodes: {}", e.to_string());}
+        Ok(nodepaths) => {
+            // now we create them
+            for nodepath in nodepaths {
+                // generate a Pathbuf from the current nodepath
+                let cur_pathbuf = match nodepath.to_pathbuf() {
+                    Ok(v) => v,
+                    Err(e) => {
+                        //eprintln!("Error: unable to convert nodepath to pathbuf. skipping nodepath {}",
+                        //    e.to_string());
+                        report::jsperror("Unable to convert nodepath to pathbuf. skipping nodepath.", e, verbose);
+                        continue
+                    } 
+                };
+                // the full pathbuf 
+                let full_pathbuf = validpath.pathbuf().join(cur_pathbuf);
+                // a copy of the cufrent nodepath
+                let mut cur_nodepath_clone = nodepath.clone();
+                // combine the full_pathbuf and the cur_nodepath_clone
+                let mut full_nodepath = validpath.nodepath().clone();
+                full_nodepath.append_unchecked(&mut cur_nodepath_clone.nodes);
+                // build a new validpath from the full pathbuf and fullnodepath
+                let new_validpath = match ValidPath::new_unchecked(full_pathbuf, full_nodepath, true) {
+                    Ok(v) => v,
+                    Err(e) => {
+                        //eprintln!("Error: Unable to create ValidPath. Err: {}",e.to_string());
+                        report::jsperror("Unable to create ValidPath", e, verbose);
+                        continue
+                    }
+                };
+                // it doesnt matter whether otp.sticky is true. for the sudbirs we set sticky to false
+                let _ = match cli::mk(new_validpath, &graph, DiskType::Local, false, novolume,  verbose) {
+                    Ok(v) => v,
+                    Err(e) => {
+                        //eprintln!("Error making new subdirectory: {}", e.to_string());
+                        report::jsperror("Problem making automake subdirectory", e, verbose);
+                        continue
+                    }
+                };
+            }
+        }
+    }
+}
+
+#[inline]
+fn process_navalias(idx: NIndex, validpath: &ValidPath, graph: &JGraph, verbose: bool) {
+    match find_rel( idx, MetadataTerm::Navalias, &graph) {
+        Err(e) => {eprintln!("Error: unable to find autocreate nodes: {}", e.to_string());}
+        Ok(nodepaths) => {
+            // now we create them
+            for nodepath in nodepaths {
+                // generate a Pathbuf from the current nodepath
+                let cur_pathbuf = match nodepath.to_pathbuf() {
+                    Ok(v) => v,
+                    Err(e) => {
+                        //eprintln!("Error: unable to convert nodepath to pathbuf. skipping nodepath {}",
+                        //    e.to_string());
+                        report::jsperror("Unable to convert nodepath to pathbuf. skipping nodepath.", e, verbose);
+                        continue
+                    } 
+                };
+                // the full pathbuf 
+                let full_pathbuf = validpath.pathbuf().join(cur_pathbuf);
+                // a copy of the cufrent nodepath
+                let mut cur_nodepath_clone = nodepath.clone();
+                // combine the full_pathbuf and the cur_nodepath_clone
+                let mut full_nodepath = validpath.nodepath().clone();
+                full_nodepath.append_unchecked(&mut cur_nodepath_clone.nodes);
+                // build a new validpath from the full pathbuf and fullnodepath
+                let new_validpath = match ValidPath::new_unchecked(full_pathbuf, full_nodepath, true) {
+                    Ok(v) => v,
+                    Err(e) => {
+                        //eprintln!("Error: Unable to create ValidPath. Err: {}",e.to_string());
+                        report::jsperror("Unable to create ValidPath", e, verbose);
+                        continue
+                    }
+                };
+                // // it doesnt matter whether otp.sticky is true. for the sudbirs we set sticky to false
+                // let _ = match cli::mk(new_validpath, &graph, DiskType::Local, false, novolume,  verbose) {
+                //     Ok(v) => v,
+                //     Err(e) => {
+                //         //eprintln!("Error making new subdirectory: {}", e.to_string());
+                //         report::jsperror("Problem making automake subdirectory", e, verbose);
+                //         continue
+                //     }
+                // };
+            }
+        }
+    } 
 }
 
 fn main() {
