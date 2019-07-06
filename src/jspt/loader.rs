@@ -7,9 +7,9 @@ use crate::jspt::{
     JsptRegex,
     Node as SNode,
     Edge,
-    JsptMetadata
+    JsptMetadata,
 };
-use crate::{JGraph, NIndex, User, Node, Regexp, EntryType, NodeType, Metadata as JspMetadata };
+use crate::{JGraph, Navalias, NIndex, User, Node, Regexp, EntryType, NodeType, Metadata as JspMetadata };
 use log;
 use std::{io::BufRead, collections::HashMap};
 
@@ -366,6 +366,18 @@ fn new_jsp_metadata( meta: &Option<JsptMetadata> ) -> JspMetadata {
 
         jspmeta.set_autocreate(meta.is_autocreate());
         
+        if meta.navalias().is_some() {
+            let navalias =  meta.navalias().unwrap();
+            let navalias = match navalias.1 {
+                None => {
+                    Navalias::new_simple(navalias.0)
+                }
+                Some(ref value) => {
+                    Navalias::new_complex(navalias.0,value)
+                }
+            };
+           jspmeta.set_navalias(Some(navalias));
+        }
     }
     jspmeta
 }
