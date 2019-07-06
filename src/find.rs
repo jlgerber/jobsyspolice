@@ -452,17 +452,27 @@ mod tests {
     }
 }
 
+#[derive(Debug,PartialEq, Eq, Clone)]
+pub enum FindRelStrategy {
+    Deepest,
+    First,
+}
+
 /// Find all of the nodes from the starting index that have metadata matching the criteria
-pub fn find_rel(starting_index: NIndex, criteria: MetadataTerm, graph: &JGraph) 
+pub fn find_rel(starting_index: NIndex, criteria: MetadataTerm, graph: &JGraph, strategy: FindRelStrategy) 
     -> Result<Vec<NodePath>, JSPError> 
 {   
-   let results = find_rel_recurse(starting_index, criteria, Rc::new(RefCell::new(Vec::new())), Vec::new(), graph);
+    let current = Rc::new(RefCell::new(Vec::new()));
+    let results = match strategy {
+        FindRelStrategy::Deepest => find_rel_recurse_deepest(starting_index, criteria, current.clone() , Vec::new(), graph),
+        FindRelStrategy::First => find_rel_recurse_first(starting_index, criteria, current.clone() , Vec::new(), graph)
+    };
     log::trace!("find_rel returning {:?}", results);
     Ok(results)
 }
 
 // recursive worker function
-fn find_rel_recurse<'a>(
+fn find_rel_recurse_deepest<'a>(
     // index of the node whose children we wish to iterate over
     parent_idx: NIndex,
     criteria: MetadataTerm,
@@ -488,8 +498,8 @@ fn find_rel_recurse<'a>(
                     log::trace!("SIMPLE loop idx: {} criteria  {:?} matches node: {} index {:?} for parent: {:?}",cnt, criteria, val, nindex, parent);
                    // add idx to current
                    current.borrow_mut().push(nindex);
-                   
-                   find_rel_recurse(nindex, criteria, current.clone(), nodepaths, graph)
+                    
+                   find_rel_recurse_deepest(nindex, criteria, current.clone(), nodepaths, graph)
                 } else {
                     log::trace!("Simple val {} does NOT match criterial {:?}. calling update_and_return_nodepaths()", val, criteria);
                     // do we have any captured current indices which need to be 
@@ -503,7 +513,7 @@ fn find_rel_recurse<'a>(
             NodeType::RegEx{name, ..} => {
                 if criteria == *node.metadata()  {
                     // cant match this currently
-                    log::warn!("matched regex {} with metadata.currently not supported", name);
+                    log::debug!("matched regex {} with metadata.currently not supported", name);
                     update_and_return_nodepaths(nodepaths, current.clone(), graph)
                 } else {
                     nodepaths
@@ -525,6 +535,85 @@ fn find_rel_recurse<'a>(
     update_and_return_nodepaths(nodepaths, current.clone(), graph)
 }
 
+
+
+// recursive worker function
+fn find_rel_recurse_first<'a>(
+    // index of the node whose children we wish to iterate over
+    parent_idx: NIndex,
+    criteria: MetadataTerm,
+    // current vec of indices that form a candidate nodepath
+    current: Rc<RefCell<Vec<NIndex>>>,
+    // vector of confirmed, foud nodepaths
+    //nodepaths: Rc<RefCell<Vec<NodePath>>>,
+    mut nodepaths: Vec<NodePath<'a>>,
+    // reference to the JGraph
+    graph: &'a JGraph
+) -> Vec<NodePath<'a> > {
+    //let mut nodepaths = nodepaths;
+    log::debug!("find_rel_recurse called with current:{:?} nodepaths:{:?}", current.borrow(), nodepaths);
+    let mut cnt = -1;
+    let parent = &graph[parent_idx];
+    for nindex in graph.neighbors_directed(parent_idx, Outgoing)  {
+        let node = &graph[nindex];
+        cnt +=1;
+        nodepaths = match node.identity() {
+            // we either match our search and look deeper or not match and return what we have
+            NodeType::Simple(val) => {
+                log::debug!("NodeType::Simple searching simple node {}", val);
+                if criteria == *node.metadata()  {
+                    log::debug!("SIMPLE loop idx: {} criteria  {:?} matches node: {} index {:?} for parent: {:?}",cnt, criteria, val, nindex, parent);
+                   // add idx to current
+                    log::debug!("calling update_amd_return_nodepaths");
+                    current.borrow_mut().push(nindex);  
+                    update_and_return_nodepaths_2(nodepaths, current.clone(), graph)
+                 
+                } else {
+                    //log::trace!("Simple val {} does NOT match criterial {:?}. calling update_and_return_nodepaths()", val, criteria);
+                    // do we have any captured current indices which need to be 
+                    // turned into nodepaths? update_and_return_nodepaths() returns nodepaths
+                    //update_and_return_nodepaths(nodepaths, current.clone(), graph)
+                   
+                    log::debug!("Nodetype::Simple ({:?}) != node.metadata (metadata.navalias: {:?}). calling find_rel_recurse", criteria, *node.metadata().navalias());
+
+                    // as long this is a simple node, we can dive deeper...
+                    current.borrow_mut().push(nindex);
+                    let nodepathvec = find_rel_recurse_first(nindex, criteria, current.clone(), nodepaths, graph);
+                    current.borrow_mut().pop();
+                    nodepathvec
+                }
+            }
+           
+            NodeType::RegEx{name, ..} => {
+                log::debug!("NodeType::RegEx searching regex node {}", name);
+                if criteria == *node.metadata()  {
+                    log::debug!("criteria == node.metadata");
+                    current.borrow_mut().push(nindex);
+                    update_and_return_nodepaths_2(nodepaths, current.clone(), graph)
+                } else {
+                    log::debug!("Nodetype::regex criteria != node.metadata. returning");
+                    nodepaths
+                }
+            }
+
+            NodeType::Root => {
+                panic!("root cannot be child of node")
+            }
+
+            NodeType::Untracked => {
+                // we check to see if current has anything in it. If it does, we need to 
+                // create a new nodepath from the stuff inside
+                log::debug!("Nodetype::untracked  returning nodepaths");
+                //update_and_return_nodepaths(nodepaths, current.clone(), graph)
+                nodepaths
+            }
+        }
+    }
+    log::debug!("All children searched. returning nodepaths: {:?}", nodepaths);
+
+    nodepaths
+}
+
 // update the nodepaths if the current list of NIndex is not empty. reset the vec, and return the nodepaths
 fn update_and_return_nodepaths<'b>(
     mut nodepaths: Vec<NodePath<'b>>,
@@ -542,7 +631,40 @@ fn update_and_return_nodepaths<'b>(
                 .into_inner();
         let mut np = NodePath::new(&graph);
         np.append_unchecked(&mut npath);
-        log::trace!("update_and_return_nodepath() updating nodepaths with npath {:?} {}", &np, np.path_string().as_str());
+        log::debug!("update_and_return_nodepath() updating nodepaths with npath {:?} {}", &np, np.path_string().as_str());
+        nodepaths.push(np);
+    }
+    nodepaths
+}
+
+// update the nodepaths if the current list of NIndex is not empty. reset the vec, and return the nodepaths
+// Pop off the last item in current if current has indices.
+fn update_and_return_nodepaths_2<'b>(
+    mut nodepaths: Vec<NodePath<'b>>,
+    current: Rc<RefCell<Vec<NIndex>>>, 
+    graph: &'b JGraph
+) -> Vec<NodePath<'b>> 
+{
+    let current_len = current.borrow().len();
+    if current_len > 0 {
+        let my_current = Rc::new(RefCell::new(Vec::with_capacity(current_len)));
+        {
+            std::mem::swap(&mut *my_current.borrow_mut(), &mut *current.borrow_mut());
+        }
+        let mut npath = Rc::try_unwrap(my_current)
+                .unwrap()
+                .into_inner();
+        
+        // we want to make sure that we have 
+        let one_less = current_len - 1;
+        for (cnt, idx) in npath.iter().enumerate() {
+            if cnt < one_less {
+                current.borrow_mut().push(*idx);
+            }
+        }
+        let mut np = NodePath::new(&graph);
+        np.append_unchecked(&mut npath);
+        log::debug!("update_and_return_nodepath() updating nodepaths with npath {:?} {}", &np, np.path_string().as_str());
         nodepaths.push(np);
     }
     nodepaths
@@ -561,7 +683,7 @@ mod find_rel_tests {
 
     #[test]
     fn can_find_autocreate_tagged_nodes_at_show() {
-        env::set_var("RUST_LOG", "error");
+        env::set_var("RUST_LOG", "warn");
         init();
          //
         // NOTE that this test is contingent upon the setup done in graph::testdata::build_graph
@@ -572,8 +694,30 @@ mod find_rel_tests {
         assert_eq!(result.0, PathBuf::from("/dd/shows/DEV01"));
         // now that we have set up the test, we need to do the finding
         if let Some(idx) = result.1.index() {
-            let results = find_rel(idx, MetadataTerm::Autocreate,&graph).unwrap().iter().map(|x| x.path_string()).collect::<Vec<String>>();
+            let results = find_rel(idx, MetadataTerm::Autocreate,&graph, FindRelStrategy::Deepest).unwrap().iter().map(|x| x.path_string()).collect::<Vec<String>>();
             let expect = vec!["docs/", "prod/", "lib/", "etc/", "logs/", "tools/bin/"].iter().map(|x| String::from(*x)).collect::<Vec<String>>();
+            assert_eq!(results, expect);
+        } else {
+            panic!("unable to get idx")
+        }
+    }
+
+
+    #[test]
+    fn can_find_navalias_tagged_nodes_at_show() {
+        env::set_var("RUST_LOG", "warn");
+        init();
+         //
+        // NOTE that this test is contingent upon the setup done in graph::testdata::build_graph
+        //
+        let graph = build_graph();
+       
+        let result = find_path_from_terms(vec![SearchTerm::new("show", "DEV01")], &graph).unwrap();
+        assert_eq!(result.0, PathBuf::from("/dd/shows/DEV01"));
+        // now that we have set up the test, we need to do the finding
+        if let Some(idx) = result.1.index() {
+            let results = find_rel(idx, MetadataTerm::Navalias, &graph, FindRelStrategy::First).unwrap().iter().map(|x| x.path_string()).collect::<Vec<String>>();
+            let expect = vec!["CONFORM/prod/", "CONFORM/user/*work/", "prod/", "user/*work/"].iter().map(|x| String::from(*x)).collect::<Vec<String>>();
             assert_eq!(results, expect);
         } else {
             panic!("unable to get idx")
