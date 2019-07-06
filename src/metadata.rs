@@ -31,7 +31,6 @@ impl PartialEq<Metadata> for MetadataTerm {
             &MetadataTerm::Varname => other.has_varname(),
             &MetadataTerm::Autocreate => other.autocreate(),
             &MetadataTerm::Navalias => other.has_navalias(),
-
         }
     }
 }
@@ -100,6 +99,11 @@ impl Metadata {
         self
     }
 
+    /// Set the owner for Metadata
+    pub fn set_owned_owner(mut self, user: Option<User>) -> Self {
+        self.owner = user;
+        self
+    }
     /// Get the owner
     pub fn owner(&self) -> &Option<User> {
         &self.owner
@@ -129,6 +133,12 @@ impl Metadata {
         self
     }
 
+    /// Set the perms for Metadata
+    pub fn set_owned_perms(mut self, perms: Option<PermsType>) -> Self  {
+        self.perms = perms;
+        self
+    }
+
     /// Get the perms
     pub fn perms(&self) -> &Option<PermsType> {
        &self.perms
@@ -153,7 +163,12 @@ impl Metadata {
 
     /// Set the varname for Metadata
     pub fn set_varname(&mut self, varname: Option<String>) -> &mut Self {
-        log::info!("Metadata.set_varname({:?})", varname);
+        self.varname = varname;
+        self
+    }
+
+    /// Set the varname for Metadata
+    pub fn set_owned_varname(mut self, varname: Option<String>) -> Self {
         self.varname = varname;
         self
     }
@@ -187,6 +202,12 @@ impl Metadata {
         self
     }
 
+    /// set the autocreate state
+    pub fn set_owned_autocreate(mut self, autocreate: bool) ->  Self {
+        self.autocreate = autocreate;
+        self
+    }
+
     /// do we have a navalias
     pub fn has_navalias(&self) -> bool {
         self.navalias().is_some()
@@ -194,6 +215,13 @@ impl Metadata {
 
     /// Set the navalias for Metadata
     pub fn set_navalias(&mut self, navalias: Option<Navalias>) -> &mut Self {
+        log::info!("Metadata.set_navalias({:?})", navalias);
+        self.navalias = navalias;
+        self
+    }
+
+    /// Set the navalias for Metadata
+    pub fn set_owned_navalias(mut self, navalias: Option<Navalias>) -> Self {
         log::info!("Metadata.set_navalias({:?})", navalias);
         self.navalias = navalias;
         self
@@ -223,5 +251,24 @@ impl Metadata {
     /// concrete copy
     pub fn reify(&mut self) -> Self {
         self.clone()
+    }
+}
+
+#[cfg(test)]
+mod metadata_term_tests {
+    use super::*;
+
+    #[test]
+    fn can_find_navalias() {
+        let na = Some(Navalias::new_simple("cs"));
+        let md = Metadata::new().set_owned_navalias(na);
+        assert_eq!(MetadataTerm::Navalias, md);
+    }
+
+    #[test]
+    fn can_find_navalias_compledx() {
+        let na = Some(Navalias::new_complex("cs", "work.$USER"));
+        let md = Metadata::new().set_owned_navalias(na);
+        assert_eq!(MetadataTerm::Navalias, md);
     }
 }
