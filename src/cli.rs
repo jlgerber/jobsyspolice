@@ -2,9 +2,7 @@ use crate::{
     CachedAliases,
     CachedEnvVars,
     constants,
-    //diskutils,
     DiskType,
-    //find,
     find_rel,
     FindRelStrategy,
     get_disk_service,
@@ -13,17 +11,14 @@ use crate::{
     MetadataTerm,
     Navalias,
     NIndex,
-    //NodePath,
     report,
     SearchTerm,
     SupportedShell,
     ShellEnvManager,
     ValidPath,
-   // validate_path,
     NodeType,
 };
 use chrono::prelude::*;
-//use colored::Colorize;
 use levelspecter::{LevelSpec, LevelName};
 use std::{
     collections::VecDeque,
@@ -32,7 +27,10 @@ use std::{
     str::FromStr
 };
 use std::collections::HashMap;
+
+
 type NavaliasMap = HashMap<String, PathBuf>;
+
 /// Generate a ValidPath from input. This input may either be an absolute or 
 /// relative path, a levelspec and terms,
 /// or a straight vector of terms. In any case, `validpath_from_terms` will 
@@ -369,7 +367,6 @@ fn process_navalias(idx: NIndex, validpath: &ValidPath, graph: &JGraph, verbose:
                                         navaliasmap.insert(name.to_owned(), full_pathbuf);
                                     } 
                                 }
-                                //navaliasmap.insert(name.to_owned(), full_pathbuf);
                             }
                             None => { panic!("lastnode.metadata.navalias is None");}
                         }
