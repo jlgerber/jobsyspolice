@@ -155,4 +155,19 @@ impl<'a> ValidPath<'a> {
     pub fn nodepath(&self) -> &NodePath<'a> {
         &self.nodepath
     }
+
+    /// Pop off a ValidPath<'a> from the validpath
+    pub fn pop(&mut self) -> Result<ValidPath<'a>, JSPError> {
+        // pop off the last NIndex
+        let idx = self.nodepath.pop().expect("no index to pop off");
+        // get the last dirname of the path
+        let dir = self.pathbuf.as_path().file_name().expect("no pathbuf to pop off").to_owned();
+        // pop off the path (weird that i have to do this in two steps. pop()->bool for PathBuf)
+        self.pathbuf.pop();
+        let  graph: &'a JGraph = self.nodepath.graph();
+        let mut nodepath = NodePath::new(graph);
+        let mut idxvec = vec![idx];
+        nodepath.append_unchecked(&mut idxvec);
+        ValidPath::new_unchecked(PathBuf::from(dir), nodepath, false)
+    }
 }
