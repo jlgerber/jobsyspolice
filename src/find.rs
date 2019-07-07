@@ -693,7 +693,7 @@ mod find_rel_tests {
         let result = find_path_from_terms(vec![SearchTerm::new("show", "DEV01")], &graph).unwrap();
         assert_eq!(result.0, PathBuf::from("/dd/shows/DEV01"));
         // now that we have set up the test, we need to do the finding
-        if let Some(idx) = result.1.index() {
+        if let Some(idx) = result.1.nindex() {
             let results = find_rel(idx, MetadataTerm::Autocreate,&graph, FindRelStrategy::Deepest).unwrap().iter().map(|x| x.path_string()).collect::<Vec<String>>();
             let expect = vec!["docs/", "prod/", "lib/", "etc/", "logs/", "tools/bin/"].iter().map(|x| String::from(*x)).collect::<Vec<String>>();
             assert_eq!(results, expect);
@@ -715,7 +715,7 @@ mod find_rel_tests {
         let result = find_path_from_terms(vec![SearchTerm::new("show", "DEV01")], &graph).unwrap();
         assert_eq!(result.0, PathBuf::from("/dd/shows/DEV01"));
         // now that we have set up the test, we need to do the finding
-        if let Some(idx) = result.1.index() {
+        if let Some(idx) = result.1.nindex() {
             let results = find_rel(idx, MetadataTerm::Navalias, &graph, FindRelStrategy::First).unwrap().iter().map(|x| x.path_string()).collect::<Vec<String>>();
             let expect = vec!["CONFORM/prod/", "CONFORM/user/*work/", "prod/", "user/*work/"].iter().map(|x| String::from(*x)).collect::<Vec<String>>();
             assert_eq!(results, expect);
