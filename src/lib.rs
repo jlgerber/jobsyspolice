@@ -57,6 +57,9 @@ pub use metadata::{Metadata,MetadataTerm};
 pub mod cachedenvvars;
 pub use cachedenvvars::CachedEnvVars;
 
+pub mod cachedaliases;
+pub use cachedaliases::CachedAliases;
+
 pub mod shell;
 pub use shell::{bash, tcsh, ShellEnvManager, SupportedShell};
 
