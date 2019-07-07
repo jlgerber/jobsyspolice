@@ -1,9 +1,9 @@
 use crate::{
     CachedEnvVars,
     constants,
-    diskutils,
+    //diskutils,
     DiskType,
-    find,
+    //find,
     find_rel,
     FindRelStrategy,
     get_disk_service,
@@ -12,17 +12,17 @@ use crate::{
     MetadataTerm,
     Navalias,
     NIndex,
-    NodePath,
+    //NodePath,
     report,
     SearchTerm,
     SupportedShell,
     ShellEnvManager,
     ValidPath,
-    validate_path,
+   // validate_path,
     NodeType,
 };
 use chrono::prelude::*;
-use colored::Colorize;
+//use colored::Colorize;
 use levelspecter::{LevelSpec, LevelName};
 use std::{
     collections::VecDeque,
@@ -297,11 +297,11 @@ pub fn go<'a> (
         Ok(validpath) => {
             if let Some(idx) = validpath.nodepath().nindex() {
                 // now we process any navaliases
-                let map = process_navalias(idx, &validpath, &graph, verbose);
-                for (k,v) in map.into_iter() {
-                    println!("{} {:?}", k, v);
-                }
-                process_go_success(&validpath, myshelldyn);
+                let navalias_map = process_navalias(idx, &validpath, &graph, verbose);
+                // for (k,v) in navmap.into_iter() {
+                //     println!("{} {:?}", k, v);
+                // }
+                process_go_success(&validpath, &navalias_map, myshelldyn);
                 Ok(validpath)
             } else {
                 panic!("unable to get index NIndex from nodepath");
@@ -345,7 +345,6 @@ fn process_navalias(idx: NIndex, validpath: &ValidPath, graph: &JGraph, verbose:
                                     NodeType::Simple(n) => v.push(n),
                                     _ => panic!("Illegal combination of non Simple NodeType and Simple Navalias"),
                                 }
-                                //v.push(lastnode.display_name());
                                 let full_pathbuf = validpath.pathbuf().join(v);
                                 navaliasmap.insert(name.to_owned(), full_pathbuf);
                             }
@@ -407,55 +406,9 @@ pub fn gen_terms_from_strings(mut terms: Vec<String>) -> Result<Vec<SearchTerm>,
     
     Ok(terms)
 } 
-/*
-#[inline]
-fn process_go_success(path: PathBuf, nodepath: &NodePath, myshell: Box<dyn ShellEnvManager>) {
-
-    log::info!("process_go_success(...)");
-    
-    let components = path.components().map(|x| {
-        match x {
-            Component::RootDir => String::from("/"),
-            Component::Normal(level) => level.to_str().unwrap().to_string(),
-            Component::CurDir => String::from("."),
-            Component::ParentDir => String::from(".."),
-            Component::Prefix(_) => panic!("prefix in path not supported"),
-        }
-    }).collect::<VecDeque<String>>();
-       
-    let mut varnames: Vec<&str> = Vec::new();
-
-    // generate string to clear previously cached variables
-    let cached = CachedEnvVars::new();
-    print!("{}", cached.clear(&myshell));
-    // generate code to export a variable
-    // TODO: make this part of the trait so that we can abstract over shell
-    for (idx, n) in nodepath.iter().enumerate() {
-        if n.metadata().has_varname() {
-            let varname = n.metadata().varname_ref().unwrap();
-            print!("{}", &myshell.set_env_var(varname, &components[idx]));
-            varnames.push(varname);
-        }
-    }
-    // if we have variable names that we have set, we also need to preserve their names, so that
-    // we can clear them out on subsequent runs. This solves the scenario where you navigate
-    // deep into the tree, and then later navigate to a shallower level; you don't want the 
-    // variables tracking levels deeper than the current depth to be set. 
-    if !varnames.is_empty() {
-        print!("{}", &myshell.set_env_var(constants::JSP_TRACKING_VAR, varnames.join(":").as_str())) ;
-    } else {
-        print!("{}", &myshell.unset_env_var(constants::JSP_TRACKING_VAR));
-    }
-    // Now the final output of where we are actually gong.
-    let target_dir = path.as_os_str().to_str().unwrap();
-    println!("cd {};", target_dir);
-    println!("echo Changed Directory To: {}\n", target_dir);
-}
-*/
-//path: PathBuf, nodepath: &NodePath
 
 #[inline]
-fn process_go_success(validpath: &ValidPath, myshell: Box<dyn ShellEnvManager>) {
+fn process_go_success(validpath: &ValidPath, navalias_map: &NavaliasMap, myshell: Box<dyn ShellEnvManager>) {
 
     log::info!("process_go_success(...)");
     
@@ -491,6 +444,9 @@ fn process_go_success(validpath: &ValidPath, myshell: Box<dyn ShellEnvManager>) 
         print!("{}", &myshell.set_env_var(constants::JSP_TRACKING_VAR, varnames.join(":").as_str())) ;
     } else {
         print!("{}", &myshell.unset_env_var(constants::JSP_TRACKING_VAR));
+    }
+    for (k,v) in navalias_map.into_iter() {
+        print!("{}", &myshell.set_alias(k,v));
     }
     // Now the final output of where we are actually gong.
     let path = validpath.pathbuf();
