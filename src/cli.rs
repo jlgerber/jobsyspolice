@@ -19,6 +19,7 @@ use crate::{
     ShellEnvManager,
     ValidPath,
     validate_path,
+    NodeType,
 };
 use chrono::prelude::*;
 use colored::Colorize;
@@ -29,7 +30,8 @@ use std::{
     path::{Component, PathBuf},
     str::FromStr
 };
-
+use std::collections::HashMap;
+type NavaliasMap = HashMap<String, PathBuf>;
 /// Generate a ValidPath from input. This input may either be an absolute or 
 /// relative path, a levelspec and terms,
 /// or a straight vector of terms. In any case, `validpath_from_terms` will 
@@ -356,15 +358,17 @@ pub fn go<'a> (
 
     match validpath_from_terms(terms, &graph, false, full_path) {
         Ok(validpath) => {
-            if let Some(idx) = validpath.nodepath().index() {
+            if let Some(idx) = validpath.nodepath().nindex() {
                 // now we process any navaliases
-                process_navalias(idx, &validpath, &graph, verbose);
+                let map = process_navalias(idx, &validpath, &graph, verbose);
+                for (k,v) in map.into_iter() {
+                    println!("{} {:?}", k, v);
+                }
+                process_go_success(&validpath, myshelldyn);
+                Ok(validpath)
             } else {
                 panic!("unable to get index NIndex from nodepath");
             }
-            //process_go_success(validpath.pathbuf(), validpath.nodepath(), myshelldyn);
-            process_go_success(&validpath, myshelldyn);
-            Ok(validpath)
         },
         
         Err(e) => {
@@ -375,7 +379,9 @@ pub fn go<'a> (
 }
 
 #[inline]
-fn process_navalias(idx: NIndex, validpath: &ValidPath, graph: &JGraph, verbose: bool) {
+fn process_navalias(idx: NIndex, validpath: &ValidPath, graph: &JGraph, verbose: bool) -> NavaliasMap {
+    let mut navaliasmap = NavaliasMap::new();
+
     match find_rel( idx, MetadataTerm::Navalias, &graph, FindRelStrategy::First) {
         Err(e) => { report::shellerror(
             format!("Error: unable to find navalias nodes: {}", e.to_string()).as_str(),
@@ -384,10 +390,39 @@ fn process_navalias(idx: NIndex, validpath: &ValidPath, graph: &JGraph, verbose:
         }
         Ok(nodepaths) => {
             // now we create them
-            for nodepath in nodepaths {
+            for mut nodepath in nodepaths {
                 // generate a Pathbuf from the current nodepath
-                let cur_pathbuf = match nodepath.to_pathbuf() {
-                    Ok(v) => v,
+                // todo: pop off last directory in nodepath before converting
+                // if last node's metadata is Navalias::Complex. Handle speparately and put back together 
+                //let mut lastnode = None;
+                // should we bother checking?
+                let last = nodepath.pop().unwrap();
+                let lastnode = &graph[last];
+                // if let Some(Navalias::Complex{name, value}) = nodepath.leaf().metadata().nodepath() {
+                //     nodepath.pop();
+                //     lastnode = Some(Navalias::Complex{name,value});
+                // }
+                match nodepath.to_pathbuf() {
+                    Ok(mut v) => {
+                        match lastnode.metadata().navalias() {
+                            Some(Navalias::Complex{name, value}) => {
+                                v.push(value);
+                                let full_pathbuf = validpath.pathbuf().join(v);
+                                navaliasmap.insert(name.to_owned(), full_pathbuf);
+                            }
+                            Some(Navalias::Simple(name)) => {
+                                match lastnode.identity() {
+                                    NodeType::Simple(n) => v.push(n),
+                                    _ => panic!("Illegal combination of non Simple NodeType and Simple Navalias"),
+                                }
+                                //v.push(lastnode.display_name());
+                                let full_pathbuf = validpath.pathbuf().join(v);
+                                navaliasmap.insert(name.to_owned(), full_pathbuf);
+                            }
+                            None => { panic!("lastnode.metadata.navalias is None");}
+                        }
+
+                    },
                     Err(e) => {
                         //eprintln!("Error: unable to convert nodepath to pathbuf. skipping nodepath {}",
                         //    e.to_string());
@@ -395,38 +430,39 @@ fn process_navalias(idx: NIndex, validpath: &ValidPath, graph: &JGraph, verbose:
                         continue
                     } 
                 };
-                // the full pathbuf 
-                let full_pathbuf = validpath.pathbuf().join(cur_pathbuf);
-                // a copy of the cufrent nodepath
-                let mut cur_nodepath_clone = nodepath.clone();
-                // combine the full_pathbuf and the cur_nodepath_clone
-                let mut full_nodepath = validpath.nodepath().clone();
-                full_nodepath.append_unchecked(&mut cur_nodepath_clone.nodes);
-                // build a new validpath from the full pathbuf and fullnodepath
-                let new_validpath = match ValidPath::new_unchecked(full_pathbuf, full_nodepath, true) {
-                    Ok(v) => v,
-                    Err(e) => {
-                        //eprintln!("Error: Unable to create ValidPath. Err: {}",e.to_string());
-                        report::shellerror("Unable to create ValidPath", Some(e), verbose);
-                        continue
-                    }
-                };
-                if let Some(node) = nodepath.leaf() {
-                    if let Some(navalias) = node.metadata().navalias() {
-                        match navalias {
-                            Navalias::Simple(name) => report::shellinfo(format!("I Founds a navalias {}", name), verbose),
-                            Navalias::Complex{name,value} => report::shellinfo(format!("I found {} {}", name, value), verbose),
-                        }
-                    } else {
-                        report::shellerror("In process_navalias, unable to retrieve navalias from Node", None, verbose);
-                        continue;    
-                    }
-                } else {
-                    report::shellerror("In process_navalias, unable to retrieve leaf node from nodepath", None, verbose)
-                }
+                // // the full pathbuf 
+                // let full_pathbuf = validpath.pathbuf().join(cur_pathbuf);
+                // // a copy of the cufrent nodepath
+                // let mut cur_nodepath_clone = nodepath.clone();
+                // // combine the full_pathbuf and the cur_nodepath_clone
+                // let mut full_nodepath = validpath.nodepath().clone();
+                // full_nodepath.append_unchecked(&mut cur_nodepath_clone.nodes);
+                // // build a new validpath from the full pathbuf and fullnodepath
+                // let new_validpath = match ValidPath::new_unchecked(full_pathbuf, full_nodepath, true) {
+                //     Ok(v) => v,
+                //     Err(e) => {
+                //         //eprintln!("Error: Unable to create ValidPath. Err: {}",e.to_string());
+                //         report::shellerror("Unable to create ValidPath", Some(e), verbose);
+                //         continue
+                //     }
+                // };
+                // if let Some(node) = nodepath.leaf() {
+                //     if let Some(navalias) = node.metadata().navalias() {
+                //         match navalias {
+                //             Navalias::Simple(name) => report::shellinfo(format!("I Founds a navalias {}", name), verbose),
+                //             Navalias::Complex{name,value} => report::shellinfo(format!("I found {} {}", name, value), verbose),
+                //         }
+                //     } else {
+                //         report::shellerror("In process_navalias, unable to retrieve navalias from Node", None, verbose);
+                //         continue;    
+                //     }
+                // } else {
+                //     report::shellerror("In process_navalias, unable to retrieve leaf node from nodepath", None, verbose)
+                // }
             }
         }
     } 
+    navaliasmap
 }
 
 pub fn gen_terms_from_strings(mut terms: Vec<String>) -> Result<Vec<SearchTerm>, JSPError> {
