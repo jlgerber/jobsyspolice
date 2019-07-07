@@ -1,0 +1,14 @@
+[regex]
+# the regex section comes first and defines named regular expressions
+
+[nodes]
+
+dd = $$DD_ROOT
+shows
+show = "[A-Z]+[A-Z0-9]*" "(REF|SHARED|OUTSOURCE|LOCATIONS|DAILIES)" [owner: jobsys, perms: 751, varname: DD_SHOW]
+etc                  [autocreate, owner: jobsys, perms: 0751, navalias: etc]
+
+[edges] 
+// edges must start with root
+root -> dd -> shows -> show -> etcs
+
