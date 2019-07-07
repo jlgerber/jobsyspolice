@@ -95,7 +95,7 @@ fn doit(args: Opt, level: LevelFilter) -> Result<(), /*failure::Error*/ JSPError
     if let report::Success::Mk(validpath) = validpath {
         
             // find relative
-        if let Some(idx) = validpath.nodepath().index() {
+        if let Some(idx) = validpath.nodepath().nindex() {
             if autocreate {
                 process_autocreate(idx, &validpath, &graph, novolume, verbose);
                 

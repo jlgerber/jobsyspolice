@@ -236,9 +236,9 @@ impl<'a> NodePath<'a> {
         self.nodes.pop()
     }
 
-    /// Retrieve the index of the NodeGraph, which is defined as the 
+    /// Retrieve the nindex of the NodeGraph, which is defined as the 
     /// NIndex of the last node in the nodepath
-    pub fn index(&self) -> Option<NIndex> {
+    pub fn nindex(&self) -> Option<NIndex> {
         if self.nodes.len() == 0 {
             None
         } else {
@@ -246,9 +246,9 @@ impl<'a> NodePath<'a> {
         }
     }
 
-    /// Retrieve a reference to the root node
+    /// Retrieve a reference to the leaf node
     pub fn leaf(&self) -> Option<&Node> {
-        if let Some(idx) = self.index() {
+        if let Some(idx) = self.nindex() {
             Some(&self.graph[idx])
         } else {
             None
@@ -544,7 +544,7 @@ mod tests {
         let ids = niv.drain(0..niv.len()).map(|x| graph.add_node(x)).collect::<Vec<NIndex>>();
         let last = ids[ids.len()-1];
         let np = NodePath::new(&graph).replace_nodes_unchecked(ids);
-        let index = np.index();
+        let index = np.nindex();
         assert_eq!(Some(last), index);
     }
 
