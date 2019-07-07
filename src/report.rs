@@ -4,12 +4,24 @@ use log;
 use std::path::{PathBuf, Path};
 use std::ffi::{OsString, OsStr};
 
+/// Enum to facilitate providing context to successful 
+/// execution of code. Returned by cli::mk. 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Success<'a> {
     Mk(ValidPath<'a>),
     General,
 }
 
+
+/// Report successful execution of cli::mk to user. 
+/// 
+/// # Parameters
+/// 
+/// * `path`    - Path successfully created 
+/// * `verbose` - Report the success with more verbosity
+/// 
+/// # Returns
+/// None
 pub fn mk_success(path: &Path, verbose:bool ) {
     let cr = if verbose {"\n"} else {""};
     log::info!("mk_success. Created {}", path.display());
@@ -30,11 +42,22 @@ pub fn validate_success(nodepath: NodePath) {
     for n in nodepath.iter() {
         eprintln!("{:?}", n.display_name());
     }
-    
     println!();
 }
 
 /// Report failed task to user, given context
+/// 
+/// # Parameters
+/// 
+/// * `input` - OsStr reference
+/// * `entry` - OsString reference to entry
+/// * `node`  - NIndex of node
+/// * `depth` - number of directories deep the failure occured at
+/// * `graph` - JGraph reference
+/// * `verbose` - Whether to report verbosely or not
+/// 
+/// # Returns
+/// None
 pub fn failure(input: &OsStr, entry: &OsString, node: NIndex, depth: u8, graph: &JGraph, verbose: bool ) {
     let path = Path::new(input)
                 .iter()
@@ -50,11 +73,23 @@ pub fn failure(input: &OsStr, entry: &OsString, node: NIndex, depth: u8, graph: 
         eprintln!("{}", graph[n].display_name().bright_red());
     }
     if verbose { eprintln!(""); }
-    //std::process::exit(1);
 }
 
 /// Report simple failure to the user given an error str and a verbose bool
-pub fn simple_failure(error: &str, verbose: bool ) {
+/// 
+/// # Parameters
+/// 
+/// * `error` - Custom error message provided by any type which implements AsRef<str>
+///             and the Display trait. 
+/// *`verbose` - Whether to display verbose information or not
+/// 
+/// # Returns
+/// None
+pub fn simple_failure<F>(error: F, verbose: bool ) 
+where 
+    F: AsRef<str> + std::fmt::Display 
+{
+    let error = error.as_ref();
     log::error!("{}", error);
     if verbose { 
         eprintln!("\n{}\n", "Error".bright_red()); 
@@ -87,6 +122,15 @@ pub fn jsperror(info: &str, error: JSPError, verbose: bool) {
 }
 
 /// Use to print out message that works with our bash script wrapper
+/// 
+/// # Parameters
+/// 
+/// * `info` - Arbitrary error string reported by user
+/// * `error` - JSPError that may be optionally supplied to complement info
+/// * `verbose` - Whether to output verbose error information or not.
+/// 
+/// # Returns
+/// None
 pub fn shellerror(info: &str, error: Option<JSPError>, verbose: bool) {
     let error_str = match error {
         Some(e) => format!(" '{}'",e.to_string()),
@@ -103,6 +147,15 @@ pub fn shellerror(info: &str, error: Option<JSPError>, verbose: bool) {
 }
 
 /// Use to print out message that works with our bash script wrapper
+/// 
+/// # Parameters
+/// 
+/// * `info` - Information, provided by any time which may be converted to a &str
+///            via as_ref(), and which implements the Display trait. 
+/// * `verbose` - Whether to print out verbose info or not 
+/// 
+/// # Returns
+/// None
 pub fn shellinfo<T>(info: T,verbose: bool) where T: AsRef<str> + std::fmt::Display {
     if verbose { 
         eprintln!("\n{}\n", "Info".bright_green()); 
@@ -113,6 +166,7 @@ pub fn shellinfo<T>(info: T,verbose: bool) where T: AsRef<str> + std::fmt::Displ
     }
 }
 
+/*
 pub(crate) fn go_failure(path_str: &str, myshell: bool, verbose: bool) {
     let cr = if verbose { "\n" } else {""};
     if !myshell {
@@ -121,3 +175,4 @@ pub(crate) fn go_failure(path_str: &str, myshell: bool, verbose: bool) {
         shellerror(format!("Path does not exist: '{}'", path_str.bright_blue()).as_str(), None, verbose);
     }
 }
+*/
