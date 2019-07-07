@@ -11,6 +11,8 @@ use crate::{
     MetadataTerm,
     Navalias,
     NIndex,
+    Node,
+    NodePath,
     report,
     SearchTerm,
     SupportedShell,
@@ -293,22 +295,20 @@ pub fn go<'a> (
     let myshelldyn = SupportedShell::from_str(myshell.as_str())?.get();
 
     match validpath_from_terms(terms, &graph, false, full_path) {
-        Ok(validpath) => {
+        Ok(mut validpath) => {
             if let Some(idx) = validpath.nodepath().nindex() {
                 // now we process any navaliases
-                let navalias_map = process_navalias(idx, &validpath, &graph, verbose);
-                // for (k,v) in navmap.into_iter() {
-                //     println!("{} {:?}", k, v);
-                // }
-                process_go_success(&validpath, &navalias_map, myshelldyn);
+                let mut navalias_map = process_navalias(idx, &validpath, &graph, verbose);
+                
+                let _ = process_go_success(&mut validpath, &mut navalias_map, myshelldyn, verbose)?;
                 Ok(validpath)
             } else {
-                panic!("unable to get index NIndex from nodepath");
+                panic!("cli::go(...). Unable to get index NIndex from nodepath");
             }
         },
         
         Err(e) => {
-            report::shellerror("Problem converting terms to path", Some(e.clone()), verbose);
+            report::shellerror("cli::go(...). Problem converting terms to path", Some(e.clone()), verbose);
             Err(e)
         },
     }
@@ -320,7 +320,7 @@ fn process_navalias(idx: NIndex, validpath: &ValidPath, graph: &JGraph, verbose:
 
     match find_rel( idx, MetadataTerm::Navalias, &graph, FindRelStrategy::First) {
         Err(e) => { report::shellerror(
-            format!("Error: unable to find navalias nodes: {}", e.to_string()).as_str(),
+            format!("process_navalias(...). Unable to find navalias nodes: {}", e.to_string()).as_str(),
             None, 
             verbose); 
         }
@@ -328,9 +328,16 @@ fn process_navalias(idx: NIndex, validpath: &ValidPath, graph: &JGraph, verbose:
             // now we create them
             for mut nodepath in nodepaths {
                 
-                let last = nodepath.pop().unwrap();
+                let last = nodepath.pop().expect("process_navalias(...). Could not unwrap the nindex pop'ed off the nodepath");
                 let lastnode = &graph[last];
-                
+
+                match process_navalias_entry(&validpath, &nodepath, &lastnode, &mut navaliasmap){
+                        Err(e) => {
+                            report::shellerror("process_navalias(...). Unable to convert nodepath to pathbuf. skipping nodepath.", Some(e), verbose);
+                        }
+                        _ => {}
+                    };
+                /*
                 match nodepath.to_pathbuf() {
                     Ok(mut v) => {
                         match lastnode.metadata().navalias() {
@@ -376,11 +383,74 @@ fn process_navalias(idx: NIndex, validpath: &ValidPath, graph: &JGraph, verbose:
                         continue
                     } 
                 };
+                */
             }
         }
     } 
     navaliasmap
 }
+
+// Takes a root validpath, a relative nodepath, and a lastnode. The validpath should come from the primary
+// search, the nodepath from find_rel, with the last node pop'ed off, and the lastnode is that node. Why?
+// This is done to avoid an error when we call nodepath.to_pathbuf() when the last node is a Regex, 
+// which one cannot convert from. We however, have a trick up our sleave, in that in this case, the author
+// of the template must supply a suitable way of identifying the last node via metadata, which should be
+// of type Navlalias::Complex. For example, the work directory would be [ navalias: cs work.$USER ]  
+fn process_navalias_entry(
+    validpath: &ValidPath, 
+    nodepath: &NodePath, 
+    lastnode: &Node, 
+    navaliasmap: &mut NavaliasMap
+) -> Result<(), JSPError> {
+
+    match nodepath.to_pathbuf() {
+        Ok(mut v) => {
+            match lastnode.metadata().navalias() {
+                Some(Navalias::Complex{name, value}) => {
+                    v.push(value);
+                    let full_pathbuf = validpath.pathbuf().join(v);
+                    // we need to account for the posibility that an alias has been found for multiple nodes.
+                    // The strategy we will use is to only replace a k/v pair if the value is shorter
+                    // in length. 
+                    match navaliasmap.get(name) {
+                        Some(value) => {
+                            if full_pathbuf.components().count() < value.components().count() {
+                                navaliasmap.insert(name.to_owned(), full_pathbuf);
+                            }
+                        }
+                        None => {
+                            navaliasmap.insert(name.to_owned(), full_pathbuf);
+                        } 
+                    }
+                }
+                Some(Navalias::Simple(name)) => {
+                    match lastnode.identity() {
+                        NodeType::Simple(n) => v.push(n),
+                        _ => panic!("process_navalias_entry(...). Illegal combination of non Simple NodeType and Simple Navalias"),
+                    }
+                    let full_pathbuf = validpath.pathbuf().join(v);
+                    match navaliasmap.get(name) {
+                        Some(value) => {
+                            if full_pathbuf.components().count() < value.components().count() {
+                                navaliasmap.insert(name.to_owned(), full_pathbuf);
+                            }
+                        }
+                        None => {
+                            navaliasmap.insert(name.to_owned(), full_pathbuf);
+                        } 
+                    }
+                }
+                None => { panic!("process_navalias_entry(...). lastnode.metadata.navalias is None");}
+            }
+        },
+        Err(e) => {
+            return Err(e);
+            //report::shellerror("Unable to convert nodepath to pathbuf. skipping nodepath.", Some(e), verbose);
+        } 
+    };
+    Ok(())
+}
+
 
 pub fn gen_terms_from_strings(mut terms: Vec<String>) -> Result<Vec<SearchTerm>, JSPError> {
 
@@ -428,8 +498,9 @@ pub fn gen_terms_from_strings(mut terms: Vec<String>) -> Result<Vec<SearchTerm>,
 } 
 
 #[inline]
-fn process_go_success(validpath: &ValidPath, navalias_map: &NavaliasMap, myshell: Box<dyn ShellEnvManager>) {
-
+fn process_go_success(validpath: &mut ValidPath, mut navalias_map: &mut NavaliasMap, myshell: Box<dyn ShellEnvManager>, verbose: bool) 
+-> Result<(), JSPError>
+{
     log::info!("process_go_success(...)");
     
     let components = validpath.pathbuf().components().map(|x| {
@@ -438,7 +509,7 @@ fn process_go_success(validpath: &ValidPath, navalias_map: &NavaliasMap, myshell
             Component::Normal(level) => level.to_str().unwrap().to_string(),
             Component::CurDir => String::from("."),
             Component::ParentDir => String::from(".."),
-            Component::Prefix(_) => panic!("prefix in path not supported"),
+            Component::Prefix(_) => panic!("process_go_success(...). Component::Prefix in path not supported"),
         }
     }).collect::<VecDeque<String>>();
     
@@ -450,6 +521,7 @@ fn process_go_success(validpath: &ValidPath, navalias_map: &NavaliasMap, myshell
     print!("{}", cached.clear(&myshell));
     // generate code to export a variable
     // TODO: make this part of the trait so that we can abstract over shell
+    {
     for (idx, n) in validpath.nodepath().iter().enumerate() {
         if n.metadata().has_varname() {
             let varname = n.metadata().varname_ref().unwrap();
@@ -457,6 +529,12 @@ fn process_go_success(validpath: &ValidPath, navalias_map: &NavaliasMap, myshell
             varnames.push(varname);
         }
     }
+    }
+
+    // OUTPUT_PATH
+    // Preserve the original output path before we start manipulating validpath
+    let output_path = validpath.pathbuf();
+
     // if we have variable names that we have set, we also need to preserve their names, so that
     // we can clear them out on subsequent runs. This solves the scenario where you navigate
     // deep into the tree, and then later navigate to a shallower level; you don't want the 
@@ -466,16 +544,34 @@ fn process_go_success(validpath: &ValidPath, navalias_map: &NavaliasMap, myshell
     } else {
         print!("{}", &myshell.unset_env_var(constants::JSP_TRACKING_VAR));
     }
+    // pop off a ValidPath containing just the last node, and shorten the validpath by 1
+    let last_validpath = validpath.pop()?;
+    // extract the last node from the ValidPath
+    let lastnode = last_validpath
+                    .nodepath()
+                    .leaf()
+                    .expect("process_go_success(...). Unable to get the leaf of the last node");
+    let relpath = NodePath::new(validpath.nodepath().graph());
+    if lastnode.metadata().has_navalias() {
+        // the validpath is the root path, the relpath is the path leading up to the last node, 
+        // validpath/relpath/lastnode
+        match process_navalias_entry( &validpath, &relpath, &lastnode, &mut navalias_map) {
+            Err(e) => {
+                report::shellerror("process_go_success(...). Unable to convert nodepath to pathbuf. skipping navalias.", 
+                Some(e), verbose);
+            }
+            _ => {}
+        };
+    }
 
-    // reuse varnanmes variable
-    varnames.clear();
+    let mut varnames = Vec::new();
     // iterate through cached aliases, clearing each alias
     let cached = CachedAliases::new();
     print!("{}", cached.clear(&myshell));
     // iterate trhough the navaliases, setting each one
     for (k,v) in navalias_map.into_iter() {
         print!("{}", &myshell.set_alias(k,v));
-        varnames.push(k);
+        varnames.push(k.as_str());
     }
     // Reset the JSP_ALIAS_NAMES env var which tracks the previously set aliases
     if !varnames.is_empty() {
@@ -484,9 +580,8 @@ fn process_go_success(validpath: &ValidPath, navalias_map: &NavaliasMap, myshell
         print!("{}", &myshell.unset_env_var(constants::JSP_ALIAS_NAMES));
     }
 
-    // Now the final output of where we are actually going.
-    let path = validpath.pathbuf();
-    let target_dir = path.as_os_str().to_str().unwrap();
+    let target_dir = output_path.as_os_str().to_str().unwrap();
     println!("cd {};", target_dir);
     println!("echo Changed Directory To: {}\n", target_dir);
+    Ok(())
 }
