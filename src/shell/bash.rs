@@ -1,4 +1,5 @@
 use crate::ShellEnvManager;
+use std::path::Path;
 
 /// Struct which implements the `ShellEnvManager` trait for Bash.
 pub struct Shell {}
@@ -28,6 +29,16 @@ impl ShellEnvManager for Shell {
 
     fn clear_env_var(&self, varname: &str) -> String {
         let  ret = format!("unset {};", varname); // could also be export {}='';
+        ret
+    }
+
+    fn set_alias(&self, name: &str, value: &Path) -> String {
+        let  ret = format!("alias {}='cd {}';", name, value.display()); 
+        ret
+    }
+
+    fn unset_alias(&self, name: &str) -> String {
+        let  ret = format!("unalias {};", name); 
         ret
     }
 
