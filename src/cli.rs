@@ -1,4 +1,5 @@
 use crate::{
+    CachedAliases,
     CachedEnvVars,
     constants,
     //diskutils,
@@ -421,7 +422,8 @@ fn process_go_success(validpath: &ValidPath, navalias_map: &NavaliasMap, myshell
             Component::Prefix(_) => panic!("prefix in path not supported"),
         }
     }).collect::<VecDeque<String>>();
-       
+    
+    // set env vars 
     let mut varnames: Vec<&str> = Vec::new();
 
     // generate string to clear previously cached variables
@@ -445,10 +447,25 @@ fn process_go_success(validpath: &ValidPath, navalias_map: &NavaliasMap, myshell
     } else {
         print!("{}", &myshell.unset_env_var(constants::JSP_TRACKING_VAR));
     }
+
+    // reuse varnanmes variable
+    varnames.clear();
+    // iterate through cached aliases, clearing each alias
+    let cached = CachedAliases::new();
+    print!("{}", cached.clear(&myshell));
+    // iterate trhough the navaliases, setting each one
     for (k,v) in navalias_map.into_iter() {
         print!("{}", &myshell.set_alias(k,v));
+        varnames.push(k);
     }
-    // Now the final output of where we are actually gong.
+    // Reset the JSP_ALIAS_NAMES env var which tracks the previously set aliases
+    if !varnames.is_empty() {
+        print!("{}", &myshell.set_env_var(constants::JSP_ALIAS_NAMES, varnames.join(":").as_str())) ;
+    } else {
+        print!("{}", &myshell.unset_env_var(constants::JSP_ALIAS_NAMES));
+    }
+
+    // Now the final output of where we are actually going.
     let path = validpath.pathbuf();
     let target_dir = path.as_os_str().to_str().unwrap();
     println!("cd {};", target_dir);
