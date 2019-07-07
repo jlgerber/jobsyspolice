@@ -339,7 +339,19 @@ fn process_navalias(idx: NIndex, validpath: &ValidPath, graph: &JGraph, verbose:
                             Some(Navalias::Complex{name, value}) => {
                                 v.push(value);
                                 let full_pathbuf = validpath.pathbuf().join(v);
-                                navaliasmap.insert(name.to_owned(), full_pathbuf);
+                                // we need to account for the posibility that an alias has been found for multiple nodes.
+                                // The strategy we will use is to only replace a k/v pair if the value is shorter
+                                // in length. 
+                                match navaliasmap.get(name) {
+                                    Some(value) => {
+                                        if full_pathbuf.components().count() < value.components().count() {
+                                            navaliasmap.insert(name.to_owned(), full_pathbuf);
+                                        }
+                                    }
+                                    None => {
+                                        navaliasmap.insert(name.to_owned(), full_pathbuf);
+                                    } 
+                                }
                             }
                             Some(Navalias::Simple(name)) => {
                                 match lastnode.identity() {
@@ -347,7 +359,17 @@ fn process_navalias(idx: NIndex, validpath: &ValidPath, graph: &JGraph, verbose:
                                     _ => panic!("Illegal combination of non Simple NodeType and Simple Navalias"),
                                 }
                                 let full_pathbuf = validpath.pathbuf().join(v);
-                                navaliasmap.insert(name.to_owned(), full_pathbuf);
+                                match navaliasmap.get(name) {
+                                    Some(value) => {
+                                        if full_pathbuf.components().count() < value.components().count() {
+                                            navaliasmap.insert(name.to_owned(), full_pathbuf);
+                                        }
+                                    }
+                                    None => {
+                                        navaliasmap.insert(name.to_owned(), full_pathbuf);
+                                    } 
+                                }
+                                //navaliasmap.insert(name.to_owned(), full_pathbuf);
                             }
                             None => { panic!("lastnode.metadata.navalias is None");}
                         }
