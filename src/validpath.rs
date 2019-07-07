@@ -84,7 +84,7 @@ impl<'a> ValidPath<'a> {
         // if subdirectory has been defined
         if subdir.is_some() {
             // grab the last index from the nodepath (NIndex)
-            let last_idx = nodepath.index();
+            let last_idx = nodepath.nindex();
             if last_idx.is_some() {
                 // 
                 let last_idx = last_idx.unwrap();
