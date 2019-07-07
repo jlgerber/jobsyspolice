@@ -337,6 +337,11 @@ impl<'a> NodePath<'a> {
         })
     }
 
+    /// Retrieve a reference to the JGraph
+    /// 
+    pub fn graph(&self) -> &'a JGraph {
+        self.graph
+    }
     /// Generate a pathbuf from a NodePath. This will fail if, for istance, the 
     /// NodePath contains RegEx nodes that cannot be resolved. This method is used
     /// by find_rel
