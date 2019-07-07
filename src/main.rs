@@ -124,11 +124,8 @@ fn doit(dot: Option<PathBuf>, graph: Option<PathBuf>, input: Vec<String>, subcmd
             graph
         )?;
         
-        // todo: convert cli::go to use ValidPath
-        //let validpath = cli::validpath_from_terms(terms, &graph, false, full_path)?;
-
         match cli::go(terms, myshell, &graph, full_path, verbose) {
-            Ok(validpath) => (),
+            Ok(_validpath) => (),
             Err(e) => {
                 return Err(e);
             }
