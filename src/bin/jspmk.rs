@@ -7,16 +7,19 @@ use jsp::{
     DiskType, 
     find_rel, 
     FindRelStrategy, 
+    get_graph,
     get_graph_from_fn,
     JGraph, 
     JSPError,
     MetadataTerm, 
     //Navalias, 
     NIndex, 
-    parse_show_from_arg, 
+    //parse_show_from_arg, 
     report, 
+    //SearchTerm,
     ValidPath
 };
+use levelspecter::LevelSpec;
 use log::{ LevelFilter, self };
 use std::{path::PathBuf, convert::AsRef};
 use structopt::StructOpt;
@@ -65,6 +68,11 @@ struct Opt {
     #[structopt(short = "f", long = "fullpath")]
     full_path: bool,
 
+    /*
+    /// Use new method for finding show template
+    #[structopt(short = "z", long = "new")]
+    newfind: bool,
+    */
     /// Print Success / Failure information. And in color!
     #[structopt(short = "v", long = "verbose")]
     verbose: bool,
@@ -73,7 +81,7 @@ struct Opt {
 
 fn doit(args: Opt, level: LevelFilter) -> Result<(), /*failure::Error*/ JSPError > {
     
-    let Opt{graph, terms, autocreate, sticky, datetime_dir, novolume, full_path, verbose,..} = args;
+    let Opt{graph, terms, autocreate, sticky, datetime_dir, novolume, full_path, /*newfind,*/ verbose,..} = args;
     if terms.len() == 0 {
         eprintln!("Must supply at least one term as input. See help");
         Opt::clap().print_help().unwrap();
@@ -81,13 +89,34 @@ fn doit(args: Opt, level: LevelFilter) -> Result<(), /*failure::Error*/ JSPError
     }
     setup_logger(level).unwrap();
 
-    let (graph,  _keymap,  _regexmap) =  get_graph_from_fn(graph, &terms.iter().map(AsRef::as_ref).collect::<Vec<&str>>(), |_|{ 
-        let show = parse_show_from_arg(terms[0].as_str())?;
-        let path = format!("/dd/shows/{}/etc/template.jspt", show);
-        Ok( PathBuf::from(path))
-
-     })?;
-    
+    let (graph,  _keymap,  _regexmap) =  {//if newfind {
+        get_graph_from_fn(graph, &terms.iter().map(AsRef::as_ref).collect::<Vec<&str>>(), |_|{ 
+            // get the graph
+            let (graph, _keymap, _regexmap) = get_graph(None)?;
+            //pub fn find<'a>(criteria: VecDeque<String>, graph: &'a JGraph) -> Result<NodePath<'a>, JSPError> {
+            
+            let term = match LevelSpec::new(&terms[0]) {
+                Ok(ls) => ls.show().to_string(),
+                Err(_) => terms[0].to_string(),
+            };
+            let search = vec![term];
+            // todo handle abs path
+            let validpath = cli::validpath_from_terms(search, &graph, false, full_path)?;
+            let mut pathbuf = validpath.pathbuf();
+            pathbuf.push("etc");
+            pathbuf.push("template.jspt");
+            Ok( pathbuf)
+        })?
+    };
+     /*
+    {
+        get_graph_from_fn(graph, &terms.iter().map(AsRef::as_ref).collect::<Vec<&str>>(), |_|{ 
+            let show = parse_show_from_arg(terms[0].as_str())?;
+            let path = format!("/dd/shows/{}/etc/template.jspt", show);
+            Ok( PathBuf::from(path))
+        })?
+    };
+    */
   
     let validpath = cli::validpath_from_terms(terms, &graph, datetime_dir, full_path)?;
     

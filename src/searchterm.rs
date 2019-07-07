@@ -23,9 +23,10 @@ impl SearchTerm {
     /// 
     /// # Returns
     /// A new instance of SearchTerm
-    pub fn new<I>(key: I, value: I) -> Self 
+    pub fn new<I,J>(key: I, value: J) -> Self 
     where
-        I: Into<String> + std::fmt::Debug 
+        I: Into<String> + std::fmt::Debug,
+        J: Into<String> + std::fmt::Debug 
     {
         Self {
             key: key.into(),

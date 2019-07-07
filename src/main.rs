@@ -13,6 +13,7 @@ use jsp::{
     diskutils, 
     validate_path, 
     JSPError, 
+    get_graph,
     get_graph_from_fn,
     parse_show_from_arg,
     gen_terms_from_strings,
@@ -20,6 +21,7 @@ use jsp::{
     JGraph, 
     jspt::{JGraphKeyMap, RegexMap},
 };
+use levelspecter::LevelSpec;
 use log::{ LevelFilter, self };
 use petgraph;
 use std::path::PathBuf ;
@@ -119,11 +121,30 @@ fn doit(dot: Option<PathBuf>, graph: Option<PathBuf>, input: Vec<String>, subcmd
     if let Some(Subcommand::Go{terms, myshell, full_path, verbose}) = subcmd {
         if terms.is_empty() { return Err(JSPError::EmptyArgumentListError);}
 
+        let (graph,  _keymap,  _regexmap) =  {//if newfind {
+            get_graph_from_fn(graph, &terms.iter().map(AsRef::as_ref).collect::<Vec<&str>>(), |_|{ 
+                // get the graph
+                let (graph, _keymap, _regexmap) = get_graph(None)?;
+                
+                let term = match LevelSpec::new(&terms[0]) {
+                    Ok(ls) => ls.show().to_string(),
+                    Err(_) => terms[0].to_string(),
+                };
+                let search = vec![term];
+                // todo handle abs path
+                let validpath = cli::validpath_from_terms(search, &graph, false, full_path)?;
+                let mut pathbuf = validpath.pathbuf();
+                pathbuf.push("etc");
+                pathbuf.push("template.jspt");
+                Ok( pathbuf)
+            })?
+        };
+        /*
         let (graph,  _keymap,  _regexmap) =  get_graph_main(
             terms.iter().map(AsRef::as_ref).collect::<Vec<&str>>(),
             graph
         )?;
-        
+        */
         match cli::go(terms, myshell, &graph, full_path, verbose) {
             Ok(_validpath) => (),
             Err(e) => {
