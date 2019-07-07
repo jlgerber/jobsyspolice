@@ -281,69 +281,6 @@ pub fn mk<'a>(
 /// # Returns
 /// A Result wrapping a ValidPath if successful, or a JSPError if unable to navigate 
 /// to the supplied directory.
-/*
-pub fn go (
-    mut terms: Vec<String>, 
-    myshell: Option<String>, 
-    graph: &JGraph, 
-    full_path: bool, 
-    verbose: bool
-) -> Result<(),JSPError> {
-    if terms.is_empty() {
-        return Err(JSPError::EmptyArgumentListError);
-    }
-
-    let myshell = myshell.unwrap_or_else(|| "bash".to_string());
-    let myshelldyn = SupportedShell::from_str(myshell.as_str())?.get();
-
-    let cr = if verbose {"\n"} else {""};
-    if full_path || ( !terms.is_empty() && terms[0].contains('/') ) {
-        
-        // Parse the full path, as opposed to SearchTerms
-        let mut input = PathBuf::from(terms.pop().expect("uanble to unwrap"));
-        input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
-        
-        match validate_path(&input, graph) {
-            Ok(ref nodepath) => {
-                if !input.exists() {
-                    return Err(JSPError::NonExtantPathError(input));
-                } else {
-                    process_go_success(input, nodepath, myshelldyn);
-                }
-            },
-            Err(JSPError::ValidationFailure{entry, node, depth}) => {
-                
-                return Err(JSPError::ValidationFailureAt{
-                    path:  input.into_os_string(), 
-                    entry: entry.clone(), 
-                     node ,
-                    depth});
-            }
-            // todo, make more explicit
-            Err(_) => panic!("JSPError type returned invalid")
-        }
-    // Parse SearchTerms 
-    } else {
-        
-        let terms = gen_terms_from_strings(terms)?;
-
-        match find::find_path_from_terms(terms, &graph) {
-            Ok(( path,  nodepath)) => { 
-                let path_str = path.to_str().expect("unable to convert path to str. Does it contain non-ascii chars?");
-                if path.is_dir() {
-                    process_go_success(path, &nodepath, myshelldyn);
-                } else {
-                    report::go_failure(path_str, true, verbose);
-                }
-            },
-            Err(e) => {
-                eprintln!("{}{}{}", cr, e.to_string().as_str().bright_red(), cr)
-            },
-        };
-    }
-    Ok(())
-}
-*/
 pub fn go<'a> (
     terms: Vec<String>, 
     myshell: Option<String>, 
@@ -391,17 +328,10 @@ fn process_navalias(idx: NIndex, validpath: &ValidPath, graph: &JGraph, verbose:
         Ok(nodepaths) => {
             // now we create them
             for mut nodepath in nodepaths {
-                // generate a Pathbuf from the current nodepath
-                // todo: pop off last directory in nodepath before converting
-                // if last node's metadata is Navalias::Complex. Handle speparately and put back together 
-                //let mut lastnode = None;
-                // should we bother checking?
+                
                 let last = nodepath.pop().unwrap();
                 let lastnode = &graph[last];
-                // if let Some(Navalias::Complex{name, value}) = nodepath.leaf().metadata().nodepath() {
-                //     nodepath.pop();
-                //     lastnode = Some(Navalias::Complex{name,value});
-                // }
+                
                 match nodepath.to_pathbuf() {
                     Ok(mut v) => {
                         match lastnode.metadata().navalias() {
@@ -421,44 +351,12 @@ fn process_navalias(idx: NIndex, validpath: &ValidPath, graph: &JGraph, verbose:
                             }
                             None => { panic!("lastnode.metadata.navalias is None");}
                         }
-
                     },
                     Err(e) => {
-                        //eprintln!("Error: unable to convert nodepath to pathbuf. skipping nodepath {}",
-                        //    e.to_string());
                         report::shellerror("Unable to convert nodepath to pathbuf. skipping nodepath.", Some(e), verbose);
                         continue
                     } 
                 };
-                // // the full pathbuf 
-                // let full_pathbuf = validpath.pathbuf().join(cur_pathbuf);
-                // // a copy of the cufrent nodepath
-                // let mut cur_nodepath_clone = nodepath.clone();
-                // // combine the full_pathbuf and the cur_nodepath_clone
-                // let mut full_nodepath = validpath.nodepath().clone();
-                // full_nodepath.append_unchecked(&mut cur_nodepath_clone.nodes);
-                // // build a new validpath from the full pathbuf and fullnodepath
-                // let new_validpath = match ValidPath::new_unchecked(full_pathbuf, full_nodepath, true) {
-                //     Ok(v) => v,
-                //     Err(e) => {
-                //         //eprintln!("Error: Unable to create ValidPath. Err: {}",e.to_string());
-                //         report::shellerror("Unable to create ValidPath", Some(e), verbose);
-                //         continue
-                //     }
-                // };
-                // if let Some(node) = nodepath.leaf() {
-                //     if let Some(navalias) = node.metadata().navalias() {
-                //         match navalias {
-                //             Navalias::Simple(name) => report::shellinfo(format!("I Founds a navalias {}", name), verbose),
-                //             Navalias::Complex{name,value} => report::shellinfo(format!("I found {} {}", name, value), verbose),
-                //         }
-                //     } else {
-                //         report::shellerror("In process_navalias, unable to retrieve navalias from Node", None, verbose);
-                //         continue;    
-                //     }
-                // } else {
-                //     report::shellerror("In process_navalias, unable to retrieve leaf node from nodepath", None, verbose)
-                // }
             }
         }
     } 
