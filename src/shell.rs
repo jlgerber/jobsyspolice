@@ -1,4 +1,5 @@
 use std::str::FromStr;
+use std::path::Path;
 use crate::JSPError;
 
 pub mod bash;
@@ -47,5 +48,11 @@ pub trait ShellEnvManager {
     /// Generate a string which clears out the variable named `varname` for a given
     /// Shell as dictated by the trait's concrete implementation. 
     fn clear_env_var(&self, varname: &str) -> String;
+
+    /// Generate a string which sets alias
+    fn set_alias(&self, name: &str, value: &Path) -> String;
+
+    /// Generate a string which unsets an alias
+    fn unset_alias(&self, name: &str) -> String;
 
 }
