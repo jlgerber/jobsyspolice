@@ -254,11 +254,22 @@ impl<'a> NodePath<'a> {
             None
         }
     }
+
     /// Return the number of nodes in the NodePath.
     pub fn len(&self) -> usize {
         self.nodes.len()
     }
-
+    
+    /// Given an index, find its depth in the nodepath.
+    pub fn find_nindex_depth(&self, search_idx: NIndex) -> Option<usize> {
+        for (depth, node) in self.nodes.iter().enumerate() {
+            if *node == search_idx {
+                log::debug!("find_idex(...). returning {:}", depth);
+                return Some(depth);
+            }
+        }
+        None
+    }
     /// Return the number of nodes in the NodePath. Sure there is len, but
     /// why choose?
     pub fn count(&self) -> usize {
@@ -371,6 +382,7 @@ impl<'a> NodePath<'a> {
     
     }
 }
+
 
 /// Retrieve a &Node by index from the NodePath
 ///
