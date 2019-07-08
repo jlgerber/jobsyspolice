@@ -173,13 +173,16 @@ impl<'a> ValidPath<'a> {
 
 
     /// Givn an NIndex, drop every entyry past it
-    pub fn remove_past(&mut self, index: NIndex) -> Result<(), JSPError> {
-        let total_depth = self.nodepath().len();
+    pub fn remove_past(&mut self, index: &NIndex) -> Result<(), JSPError> {
+        let total_depth = self.pathbuf().components().count();
         let mut cnt: i64 = -1;
         if let Some(depth) = self.nodepath().find_nindex_depth(index) {
             // technically could overflow but no chance that graph will reach
             // this depth. could make it an i8 for that matter
             cnt = (total_depth - depth - 1) as i64;
+            log::debug!("remove_past(...) found depth: {}. cnt: {}", depth, cnt);
+        } else {
+            log::warn!("remove_past(...) did not find nindex");
         }
         if cnt > 0 {
             log::info!("remove_past(...). dropping {} nodes", cnt);
@@ -211,7 +214,7 @@ mod tests {
         let path = PathBuf::from("/dd/shows/DEV01");
         let mut validpath = ValidPath::new(path, &graph, false).unwrap();
         let idx = NIndex::new(2);
-        let result = validpath.remove_past(idx);
+        let result = validpath.remove_past(&idx);
 
         assert_eq!(result, Ok(()) );
         let last = NIndex::new(2);
