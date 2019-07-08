@@ -124,7 +124,7 @@ fn doit(dot: Option<PathBuf>, graph: Option<PathBuf>, input: Vec<String>, subcmd
         let (graph,  _keymap,  _regexmap) =  {//if newfind {
             get_graph_from_fn(graph, &terms.iter().map(AsRef::as_ref).collect::<Vec<&str>>(), |_|{ 
                 // get the graph
-                let (graph, _keymap, _regexmap) = get_graph(None)?;
+                let (graph, keymap, _regexmap) = get_graph(None)?;
                 
                 let term = match LevelSpec::new(&terms[0]) {
                     Ok(ls) => ls.show().to_string(),
@@ -132,10 +132,15 @@ fn doit(dot: Option<PathBuf>, graph: Option<PathBuf>, input: Vec<String>, subcmd
                 };
                 let search = vec![term];
                 // todo handle abs path
-                let validpath = cli::validpath_from_terms(search, &graph, false, full_path)?;
+                let mut validpath = cli::validpath_from_terms(search, &graph, false, full_path)?;
+                let idx = keymap.get("show").unwrap();
+                log::trace!("got index {:?}",idx );
+                validpath.remove_past(idx)?;
+                
                 let mut pathbuf = validpath.pathbuf();
                 pathbuf.push("etc");
                 pathbuf.push("template.jspt");
+                log::info!("Returning template {:?}", pathbuf);
                 Ok( pathbuf)
             })?
         };

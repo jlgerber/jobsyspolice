@@ -92,8 +92,7 @@ fn doit(args: Opt, level: LevelFilter) -> Result<(), /*failure::Error*/ JSPError
     let (graph,  _keymap,  _regexmap) =  {//if newfind {
         get_graph_from_fn(graph, &terms.iter().map(AsRef::as_ref).collect::<Vec<&str>>(), |_|{ 
             // get the graph
-            let (graph, _keymap, _regexmap) = get_graph(None)?;
-            //pub fn find<'a>(criteria: VecDeque<String>, graph: &'a JGraph) -> Result<NodePath<'a>, JSPError> {
+            let (graph, keymap, _regexmap) = get_graph(None)?;
             
             let term = match LevelSpec::new(&terms[0]) {
                 Ok(ls) => ls.show().to_string(),
@@ -101,10 +100,16 @@ fn doit(args: Opt, level: LevelFilter) -> Result<(), /*failure::Error*/ JSPError
             };
             let search = vec![term];
             // todo handle abs path
-            let validpath = cli::validpath_from_terms(search, &graph, false, full_path)?;
+            let mut validpath = cli::validpath_from_terms(search, &graph, false, full_path)?;
+        
+            let idx = keymap.get("show").unwrap();
+            log::trace!("got index {:?}",idx );
+            validpath.remove_past(idx)?;
+
             let mut pathbuf = validpath.pathbuf();
             pathbuf.push("etc");
             pathbuf.push("template.jspt");
+            log::info!("Returning template {:?}", pathbuf);
             Ok( pathbuf)
         })?
     };
