@@ -105,7 +105,10 @@ where
 
 fn get_template_from_env_or_exit() -> Result<PathBuf,JSPError> {
     match get_template_from_env() {
-        Ok(p) => Ok(p),
+        Ok(p) => {
+            log::info!("get_template_From_env_or_exit() found template {:?}", p);
+            Ok(p)
+        },
         Err(e) => {
             eprintln!("Unable to get template from environment: {}", e.to_string());
             std::process::exit(1);
