@@ -261,9 +261,9 @@ impl<'a> NodePath<'a> {
     }
     
     /// Given an index, find its depth in the nodepath.
-    pub fn find_nindex_depth(&self, search_idx: NIndex) -> Option<usize> {
+    pub fn find_nindex_depth(&self, search_idx: &NIndex) -> Option<usize> {
         for (depth, node) in self.nodes.iter().enumerate() {
-            if *node == search_idx {
+            if node == search_idx {
                 log::debug!("find_idex(...). returning {:}", depth);
                 return Some(depth);
             }
