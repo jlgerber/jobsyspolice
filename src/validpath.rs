@@ -1,5 +1,5 @@
 use std::{fmt, path::{Path, PathBuf}};
-use crate::{diskutils, NodePath, JGraph, JSPError, validate_path, find_path, find_path_from_terms, SearchTerm, Search};
+use crate::{diskutils, NIndex, NodePath, JGraph, JSPError, validate_path, find_path, find_path_from_terms, SearchTerm, Search};
 use std::fmt::Debug;
 
 /// A ValidPath provides a pairing of a PathBuf and a NodePath, representing a path that 
@@ -170,4 +170,53 @@ impl<'a> ValidPath<'a> {
         nodepath.append_unchecked(&mut idxvec);
         ValidPath::new_unchecked(PathBuf::from(dir), nodepath, false)
     }
+
+
+    /// Givn an NIndex, drop every entyry past it
+    pub fn remove_past(&mut self, index: NIndex) -> Result<(), JSPError> {
+        let total_depth = self.nodepath().len();
+        let mut cnt: i64 = -1;
+        if let Some(depth) = self.nodepath().find_nindex_depth(index) {
+            // technically could overflow but no chance that graph will reach
+            // this depth. could make it an i8 for that matter
+            cnt = (total_depth - depth - 1) as i64;
+        }
+        if cnt > 0 {
+            log::info!("remove_past(...). dropping {} nodes", cnt);
+            for _ in 0..cnt {
+                log::debug!("remove_past() poping");
+                let _ = self.pop()?;
+            }
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::graph::testdata::build_graph;
+    use env_logger;
+    use std::env;
+
+    fn init() {
+        let _ = env_logger::builder().is_test(true).try_init();
+    }
+
+    #[test]
+    fn can_remove_past() {
+        env::set_var("RUST_LOG", "debug");
+        init();
+        let graph = build_graph();
+        let path = PathBuf::from("/dd/shows/DEV01");
+        let mut validpath = ValidPath::new(path, &graph, false).unwrap();
+        let idx = NIndex::new(2);
+        let result = validpath.remove_past(idx);
+
+        assert_eq!(result, Ok(()) );
+        let last = NIndex::new(2);
+        assert_eq!(validpath.nodepath().nindex().unwrap(), last);
+        
+    }
+
 }
