@@ -99,7 +99,11 @@ fn doit(args: Opt, level: LevelFilter) -> Result<(), /*failure::Error*/ JSPError
                     let show = ls.show();
                     if show == &LevelType::Relative { std::env::var("DD_SHOW")? } else { show.to_str().to_owned() } 
                 },
-                Err(_) => return Err(JSPError::GeneralError(format!("unable to process first term of user input: '{}'",terms[0]))),
+                //Err(_) => return Err(JSPError::GeneralError(format!("unable to process first term of user input: '{}'",terms[0]))),
+                // we assume that a path was passed in as opposed to a levelspec. We will deal with
+                // possibility of malformed input farther down.
+                Err(_) => terms[0].to_string(),
+
             };
             let search = vec![term];
             // todo handle abs path
