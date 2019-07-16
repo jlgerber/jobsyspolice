@@ -6,16 +6,16 @@ edition = "2018"
 
 [dependencies]
 petgraph = { version = "0.4.13", features = ["serde-1"] }
-log = "0.4.6"
+log = "0.4.7"
 fern = { version = "0.5.8", features = ["colored"] }
 structopt = "0.2.18"
 chrono = "0.4.7"
 serde = { version = "1.0.94", features = ["derive"] }
-serde_json = "1.0.39"
+serde_json = "1.0.40"
 serde_regex = "0.4.0"
 dotenv = "0.14.1"
 shellexpand = "1.0.0"
-ascii = "0.9.1"
+ascii = "0.9.2"
 xnixperms = { git = "https://github.com/jlgerber/xnixperms.git" }
 failure = "0.1.5"
 lazy_static = "1.3.0"
@@ -29,7 +29,7 @@ libc = "0.2.60"
 
 [dependencies.levelspecter]
 git = "https://github.com/jlgerber/levelspecter.git"
-#tag = "0.11.0"
+#tag = "1.1.0"
 features = ["case-insensitive"]
 
 [dev-dependencies]
