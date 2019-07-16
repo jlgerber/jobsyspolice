@@ -19,7 +19,7 @@ use jsp::{
     //SearchTerm,
     ValidPath
 };
-use levelspecter::LevelSpec;
+use levelspecter::{LevelSpec, LevelType};
 use log::{ LevelFilter, self };
 use std::{path::PathBuf, convert::AsRef};
 use structopt::StructOpt;
@@ -96,10 +96,10 @@ fn doit(args: Opt, level: LevelFilter) -> Result<(), /*failure::Error*/ JSPError
             
             let term = match LevelSpec::new(&terms[0]) {
                 Ok(ls) => {
-                    let show = ls.show().to_string();
-                    if show == "" { std::env::var("DD_SHOW").expect("Unable to get DD_SHOW") } else { show } 
+                    let show = ls.show();
+                    if show == &LevelType::Relative { std::env::var("DD_SHOW")? } else { show.to_str().to_owned() } 
                 },
-                Err(_) => format!("unable to process first term of user input: '{}'",terms[0]),
+                Err(_) => return Err(JSPError::GeneralError(format!("unable to process first term of user input: '{}'",terms[0]))),
             };
             let search = vec![term];
             // todo handle abs path
