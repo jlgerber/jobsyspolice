@@ -125,7 +125,6 @@ fn doit(dot: Option<PathBuf>, graph: Option<PathBuf>, input: Vec<String>, subcmd
             get_graph_from_fn(graph, &terms.iter().map(AsRef::as_ref).collect::<Vec<&str>>(), |_|{ 
                 // get the graph
                 let (graph, keymap, _regexmap) = get_graph(None)?;
-                log::info!( "terms[0] {:?}", &terms[0]);
                 let term = match LevelSpec::new(&terms[0]) {
                     Ok(ls) => {
                         let show = ls.show().to_string();
@@ -133,7 +132,6 @@ fn doit(dot: Option<PathBuf>, graph: Option<PathBuf>, input: Vec<String>, subcmd
                     },
                     Err(_) => format!("unable to process first term of user input: '{}'",terms[0]),
                 };
-                log::info!("HERE term: {:?}", &term);
                 let search = vec![term];
                 // todo handle abs path
                 let mut validpath = cli::validpath_from_terms(search, &graph, false, full_path)?;
