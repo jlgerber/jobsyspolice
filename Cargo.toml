@@ -1,6 +1,6 @@
 [package]
 name = "jsp"
-version = "0.54.0"
+version = "0.55.0"
 authors = ["jonathan gerber <jlgerber@gmail.com>"]
 edition = "2018"
 
@@ -24,8 +24,8 @@ users = "0.9.1"
 #shellfn = "0.1.1"
 colored = "1.8.0"
 nom = "5.0.0"
-ext_regex = {package = "regex", version = "1.1.7"}
-libc = "0.2.58"
+ext_regex = {package = "regex", version = "1.1.9"}
+libc = "0.2.60"
 
 [dependencies.levelspecter]
 git = "https://github.com/jlgerber/levelspecter.git"

@@ -95,8 +95,11 @@ fn doit(args: Opt, level: LevelFilter) -> Result<(), /*failure::Error*/ JSPError
             let (graph, keymap, _regexmap) = get_graph(None)?;
             
             let term = match LevelSpec::new(&terms[0]) {
-                Ok(ls) => ls.show().to_string(),
-                Err(_) => terms[0].to_string(),
+                Ok(ls) => {
+                    let show = ls.show().to_string();
+                    if show == "" { std::env::var("DD_SHOW").expect("Unable to get DD_SHOW") } else { show } 
+                },
+                Err(_) => format!("unable to process first term of user input: '{}'",terms[0]),
             };
             let search = vec![term];
             // todo handle abs path
