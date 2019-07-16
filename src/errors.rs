@@ -96,6 +96,9 @@ pub enum JSPError {
 
     #[fail(display = "{}", _0)]
     VarError(#[cause] std::env::VarError),
+
+    #[fail(display = "JSPError '{}'", _0)]
+    GeneralError(String),
 }
 
 impl From<std::env::VarError> for JSPError {
