@@ -13,7 +13,7 @@ use std::{
     path::{Component, Path, PathBuf},
 };
 
-use users::{ get_user_by_name };
+use users::{ get_user_by_name, get_group_by_name };
 
 lazy_static! {
     static ref ROOT_PATH: PathBuf = Path::new("/").to_path_buf();
@@ -27,21 +27,49 @@ lazy_static! {
 /// # Parameters
 /// * `path` A reference to a std::path::Path
 /// * `owner_id` A u32 representing the path owner's id
+/// * `group_id` A u43 representing the path oner's group id
 /// * `perms` A u32 representing file permissions
 ///
 /// # Returns
 /// A Unit or JSPError
-pub fn create_dir(path: &Path, owner_id: u32, perms: u32) -> Result<(), JSPError> {
+pub fn create_dir(path: &Path, owner_id: u32, group_id: u32, perms: u32) -> Result<(), JSPError> {
     log::info!("create_dir(path:{:?}, owner_id:{}, perms:{}) called", path, owner_id, perms);
     fs::create_dir(path)?;
+    // todo set perms
     chown(
         path,
         Some(Uid::from_raw(owner_id)),
-        Some(Gid::from_raw( perms )),
+        Some(Gid::from_raw( group_id )),
     )?;
     Ok(())
 }
 
+/// Retrieve the gid gor the supplied group name. 
+/// 
+/// # Parameters
+/// 
+/// * `group` A `&str` representing the name of the group
+/// 
+/// # Returns
+/// * A `u32` representing the gid of the group if successful
+/// * A JSPError::NoGroupForName if unsuccessful
+pub fn get_uid_for_group(group: &str) -> Result<u32, JSPError> {
+    let os_group: &std::ffi::OsStr = group.as_ref();
+    match get_group_by_name(os_group) {
+        Some(g) => Ok(g.gid()),
+        None => Err(JSPError::NoGroupForName(group.to_string())),
+    }
+}
+
+/// Retrieve the current process owner's gid
+pub fn get_current_gid() -> u32 {
+    Gid::current().as_raw()
+}
+
+/// Retrieve the current process owner's effective gid
+pub fn get_effective_gid() -> u32 {
+    Gid::effective().as_raw()
+}
 /// Retrieve the user id for the supplied owner. If the owner is of type User::Captured,
 /// this method attempts to extract the user name from the path using the regex supplied
 /// by the node parameter, which is expected to have a named regex capture whose name corresponds
