@@ -62,6 +62,9 @@ pub enum JSPError {
     #[fail(display = "Missing Owner in regex")]
     MissingOwnerInRegex,
 
+    #[fail(display = "No group exists with the provided group name: {}", _0)]
+    NoGroupForName(String),
+
     #[fail(display = "Boxed Error '{}'", _0)]
     BoxedError(String),
 
