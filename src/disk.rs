@@ -35,8 +35,8 @@ pub enum DiskType {
 }
 
 /// Retrieve an instance of a DiksService given a DiskType
-pub fn get_disk_service<'a>(disk_type: DiskType, graph: &'a JGraph) ->  Box<dyn Disk + 'a> {
-    match disk_type {
+pub fn get_disk_service<'a>(disk_type: &'a DiskType, graph: &'a JGraph) ->  Box<dyn Disk + 'a> {
+    match *disk_type {
         DiskType::Local => Box::new(local::DiskService::new(
             &graph,
             String::from("jobsys"),
