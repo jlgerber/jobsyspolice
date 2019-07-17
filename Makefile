@@ -4,12 +4,15 @@ target3 := jspgo.csh
 envfile := ./.env
 # Location of the install target (by default your home dire)
 location ?=~/bin
+disksystem ?=default 
+
+_disksystem :=--features=$(disksystem)
 
 build:
-	cargo build --release
+	cargo build --release $(_disksystem)
 
 build-debug:
-	cargo build
+	cargo build $(_disksystem)
 
 install:
 ifneq (,$(wildcard $(location)/${target}))
@@ -50,11 +53,12 @@ all: build install install-env-file ownership
 all-debug: build-debug install-debug install-env-file ownership
 
 ownership:
-	#sudo chown root $(location)/${target}
 	sudo chown root $(location)/${target2}
-	#sudo chmod u+s $(location)/${target}
 	sudo chmod u+s $(location)/${target2}
-
 
 test:
 	cargo test --release --lib
+
+clean:
+	rm target/release/${target} 
+	rm target/release/${target2} 
