@@ -10,3 +10,4 @@ function jspgo {
     fi
 }
 export JSP_PATH=~/etc/template.jspt
+export DD_ROOT=dd
