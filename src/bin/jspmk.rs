@@ -79,8 +79,16 @@ struct Opt {
 }
 
 
+
 fn doit(args: Opt, level: LevelFilter) -> Result<(), /*failure::Error*/ JSPError > {
-    
+        
+    let disktype: DiskType = 
+    if cfg!(feature= "disk-gx") {
+        DiskType::Gx
+    } else {
+        DiskType::Local
+    };
+
     let Opt{graph, terms, autocreate, sticky, datetime_dir, novolume, full_path, /*newfind,*/ verbose,..} = args;
     if terms.len() == 0 {
         eprintln!("Must supply at least one term as input. See help");
@@ -132,13 +140,13 @@ fn doit(args: Opt, level: LevelFilter) -> Result<(), /*failure::Error*/ JSPError
   
     let validpath = cli::validpath_from_terms(terms, &graph, datetime_dir, full_path)?;
     
-    let validpath = cli::mk(validpath, &graph, DiskType::Local, sticky, novolume, verbose)?;             
+    let validpath = cli::mk(validpath, &graph, &disktype, sticky, novolume, verbose)?;             
     if let report::Success::Mk(validpath) = validpath {
         
             // find relative
         if let Some(idx) = validpath.nodepath().nindex() {
             if autocreate {
-                process_autocreate(idx, &validpath, &graph, novolume, verbose);
+                process_autocreate(&disktype, idx, &validpath, &graph, novolume, verbose);
                 
             }
             // now we process any navaliases
@@ -154,7 +162,7 @@ fn doit(args: Opt, level: LevelFilter) -> Result<(), /*failure::Error*/ JSPError
 }
 
 #[inline]
-fn process_autocreate(idx: NIndex, validpath: &ValidPath,  graph: &JGraph, novolume:bool, verbose: bool) {
+fn process_autocreate(disktype: &DiskType, idx: NIndex, validpath: &ValidPath, graph: &JGraph, novolume:bool, verbose: bool) {
     match find_rel( idx, MetadataTerm::Autocreate, &graph, FindRelStrategy::Deepest) {
         Err(e) => {eprintln!("Error: unable to find autocreate nodes: {}", e.to_string());}
         Ok(nodepaths) => {
@@ -187,7 +195,7 @@ fn process_autocreate(idx: NIndex, validpath: &ValidPath,  graph: &JGraph, novol
                     }
                 };
                 // it doesnt matter whether otp.sticky is true. for the sudbirs we set sticky to false
-                let _ = match cli::mk(new_validpath, &graph, DiskType::Local, false, novolume,  verbose) {
+                let _ = match cli::mk(new_validpath, &graph, disktype, false, novolume,  verbose) {
                     Ok(v) => v,
                     Err(e) => {
                         //eprintln!("Error making new subdirectory: {}", e.to_string());
