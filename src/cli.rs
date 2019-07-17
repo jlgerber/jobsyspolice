@@ -238,12 +238,12 @@ fn gen_datetime_dir() -> String {
 pub fn mk<'a>(
     validpath: ValidPath<'a>, 
     graph: &'a JGraph, 
-    disktype: DiskType,
+    disktype: &'a DiskType,
     set_stickybit: bool,
     ignore_volume: bool,
     verbose: bool
 ) -> Result<report::Success<'a>, JSPError> {
-    let diskservice = get_disk_service(disktype, graph);
+    let diskservice = get_disk_service(&disktype, graph);
     match diskservice.mk(validpath.path(), set_stickybit, ignore_volume) {
         Ok(_) => { 
             Ok(report::Success::Mk(validpath))
