@@ -34,7 +34,7 @@ impl<'a> DiskService<'a> {
 impl<'a> Disk for DiskService<'a> {
 
     fn mk(&self, path: &Path, sticky: bool, ignore_volume: bool ) -> Result<(), JSPError> {
-        log::info!("local::Disk.mk(path: {:?}, ignore_volume: {})", path, ignore_volume);
+        log::info!("gx::Disk.mk(path: {:?}, ignore_volume: {})", path, ignore_volume);
 
         let nodepath = validate_path(path, self.graph)?;
         // we need to stash information when we reach the last node
