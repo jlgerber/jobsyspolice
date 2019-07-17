@@ -57,7 +57,7 @@ struct Opt {
     /// one or more search terms of the form key:value , or a 
     /// fullpath, depending upon other field
     #[structopt(name="TERMS")]
-    input: Vec<String>,
+    terms: Vec<String>,
 
     #[structopt(subcommand)]
     subcmd: Option<Subcommand>,
@@ -97,8 +97,8 @@ fn main() {
     let (args, level) = setup_cli();
     setup_logger(level).unwrap();
     
-    let Opt{verbose, dot, graph, input, subcmd, ..} = args;
-    match doit(dot, graph, input, subcmd) {
+    let Opt{verbose, dot, graph, terms, subcmd, ..} = args;
+    match doit(dot, graph, terms, subcmd) {
         Ok(_) => (),
         Err(JSPError::EmptyArgumentListError) => {
             report::shellerror("Error: No arguments supplied to command", None, verbose);
@@ -114,14 +114,14 @@ fn main() {
     }
 }
 
-fn doit(dot: Option<PathBuf>, graph: Option<PathBuf>, input: Vec<String>, subcmd: Option<Subcommand>) 
+fn doit(dot: Option<PathBuf>, graph: Option<PathBuf>, terms: Vec<String>, subcmd: Option<Subcommand>) 
 -> Result<(), JSPError> {
 
 
     if let Some(Subcommand::Go{terms, myshell, full_path, verbose}) = subcmd {
         if terms.is_empty() { return Err(JSPError::EmptyArgumentListError);}
 
-        let (graph,  _keymap,  _regexmap) =  {//if newfind {
+        let (graph,  _keymap,  _regexmap) =  {
             get_graph_from_fn(graph, &terms.iter().map(AsRef::as_ref).collect::<Vec<&str>>(), |_|{ 
                 // get the graph
                 let (graph, keymap, _regexmap) = get_graph(None)?;
@@ -167,12 +167,12 @@ fn doit(dot: Option<PathBuf>, graph: Option<PathBuf>, input: Vec<String>, subcmd
 
         if dot.is_some() {
             let (graph,  _keymap,  _regexmap) =  get_graph_main(
-                input.iter().map(AsRef::as_ref).collect::<Vec<&str>>(),
+                terms.iter().map(AsRef::as_ref).collect::<Vec<&str>>(),
                 graph
             )?;
             
             if let Some(mut output) = dot {
-                if !input.is_empty(){
+                if !terms.is_empty(){
                     log::warn!("INPUT not compatible with --dot argument. It will be ignored");
                 }
                 output = diskutils::convert_relative_pathbuf_to_absolute(output)?;
@@ -181,28 +181,51 @@ fn doit(dot: Option<PathBuf>, graph: Option<PathBuf>, input: Vec<String>, subcmd
             } else {
                 println!("{:#?}",  petgraph::dot::Dot::with_config(&graph, &[petgraph::dot::Config::EdgeNoLabel]));
             }
-        } else if !input.is_empty() {
+        } else if !terms.is_empty() {
 
-            let (graph,  _keymap,  _regexmap) =  get_graph_main(
-                input.iter().map(AsRef::as_ref).collect::<Vec<&str>>(),
-                graph
-            )?;
+            let (graph,  _keymap,  _regexmap) =  {
+                get_graph_from_fn(graph, &terms.iter().map(AsRef::as_ref).collect::<Vec<&str>>(), |_|{ 
+                    // get the graph
+                    let (graph, keymap, _regexmap) = get_graph(None)?;
+                    let term = match LevelSpec::new(&terms[0]) {
+                        Ok(ls) => {
+                            let show = ls.show();
+                            if show == &LevelType::Relative { std::env::var("DD_SHOW")? } else { show.to_str().to_owned() } 
+                        },
+                        // we assume that a path was passed in as opposed to a levelspec
+                        Err(_) => terms[0].to_string(),
 
-            if !input.is_empty() && input[0].contains('/')  {
-                let mut input = PathBuf::from(&input[0]);
-                input = diskutils::convert_relative_pathbuf_to_absolute(input)?;
-                match validate_path(&input, &graph) {
+                    };
+                    let search = vec![term];
+                    // todo handle abs path
+                    let mut validpath = cli::validpath_from_terms(search, &graph, false, false)?;
+                    let idx = keymap.get("show").unwrap();
+                    log::trace!("got index {:?}",idx );
+                    validpath.remove_past(idx)?;
+                    
+                    let mut pathbuf = validpath.pathbuf();
+                    pathbuf.push("etc");
+                    pathbuf.push("template.jspt");
+                    log::info!("Returning template {:?}", pathbuf);
+                    Ok( pathbuf)
+                })?
+            };
+
+            if !terms.is_empty() && terms[0].contains('/')  {
+                let mut terms = PathBuf::from(&terms[0]);
+                terms = diskutils::convert_relative_pathbuf_to_absolute(terms)?;
+                match validate_path(&terms, &graph) {
                     Ok(nodepath) => {
                         report::validate_success(nodepath);
                     },
                     Err(JSPError::ValidationFailure{entry, node, depth}) => {
-                        report::failure(input.as_os_str(), &entry, node, depth, &graph, true );
+                        report::failure(terms.as_os_str(), &entry, node, depth, &graph, true );
                     }
                     Err(_) => panic!("JSPError type returned invalid")
                 }
             } else {
 
-                let terms = gen_terms_from_strings(input)?;
+                let terms = gen_terms_from_strings(terms)?;
 
                 match find::find_path_from_terms(terms, &graph) {
                     Ok(( _path,  nodepath)) => { 
@@ -224,10 +247,10 @@ fn doit(dot: Option<PathBuf>, graph: Option<PathBuf>, input: Vec<String>, subcmd
 }
 
 // retrieve the graph, keymap, and regexp
-fn get_graph_main(input: Vec<&str>, graph: Option<PathBuf>) 
+fn get_graph_main(terms: Vec<&str>, graph: Option<PathBuf>) 
 -> Result<(JGraph, JGraphKeyMap, RegexMap), JSPError> {
 
-    let input_cpy = vec![input[0]];
+    let input_cpy = vec![terms[0]];
     get_graph_from_fn(graph.clone(), &input_cpy, |_|{ 
         let show = parse_show_from_arg(input_cpy[0])?;
         let path = format!("/dd/shows/{}/etc/template.jspt", show);
