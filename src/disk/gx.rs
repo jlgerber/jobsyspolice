@@ -3,6 +3,13 @@ use crate::{ diskutils, JGraph, validate_path, JSPError, EntryType, User, consta
 use super::{ Disk, Path };
 use std::{ path::PathBuf };
 use log;
+
+#[cfg(target_os="macos")]
+use std::os::macos::fs::MetadataExt;
+
+#[cfg(target_os="linux")]
+use std::os::linux::fs::MetadataExt;
+
 /// gx::DiskService is, as it sounds, an implementation of Disk that
 /// works for local filesystems.
 #[derive(Debug)]
@@ -36,8 +43,9 @@ impl<'a> Disk for DiskService<'a> {
         // loop count later, when we are looping over the supplied path.
         let last_managed_node = nodepath.len() - 1; 
         log::trace!("last managed node {}", last_managed_node);
-        let mut gperms: &str = &self.perms;
-        let mut uperms = u32::from_str_radix(&gperms,8).expect("couldnt convert gperms to perms");
+        let mut perms_str: &str = &self.perms;
+        let mut perms_u32 = u32::from_str_radix(&perms_str,8).expect("couldnt convert perms_str to perms");
+        let mut gid = diskutils::get_uid_for_group(constants::DEFAULT_GROUP)?;
         let mut owner = User::from(constants::DEFAULT_USER);
 
         // step 2: iterate: create, assign ownership, set perms
@@ -53,8 +61,13 @@ impl<'a> Disk for DiskService<'a> {
 
             // update permissions if they have changed
             if let Some(perms) = node.metadata().perms() {
-                gperms = perms;
-                uperms = u32::from_str_radix(&gperms,8).expect("couldnt convert gperms to perms");
+                perms_str = perms;
+                perms_u32 = u32::from_str_radix(&perms_str,8).expect("couldnt convert perms_str to perms");
+            }
+
+            // get the group id
+            if create_path.exists() {
+                gid = create_path.metadata()?.st_gid();
             }
 
             match *node.entry_type() {
@@ -86,7 +99,8 @@ impl<'a> Disk for DiskService<'a> {
                         // setuid takes a Uid so we must costruct one from the user
                         if let User::Uid(id) = parent_uid {
                             nix::unistd::setuid(nix::unistd::Uid::from_raw(id))?;
-                            diskutils::create_dir(&create_path, uid, uperms)?
+                            //let gid = diskutils::get_current_gid();
+                            diskutils::create_dir(&create_path, uid, gid, perms_u32)?
                         } else {
                             panic!("unable to unwrap user id from parent_id");
                         }
@@ -111,7 +125,8 @@ impl<'a> Disk for DiskService<'a> {
                     if !create_path.exists() {
                         log::debug!(" gx::DiskService.mk(...) {:?} does not exist. attempting to create", &create_path);
                         if let User::Uid(id) = owner {
-                            diskutils::create_dir(&create_path, id, uperms)?;
+                            //let gid = diskutils::get_current_gid();
+                            diskutils::create_dir(&create_path, id, gid, perms_u32)?;
                         } else {
                             log::error!( " gx::DiskService.mk(...) unexpected. Unable to get Uid from owner {:?} in EntryType::Untracked",
                                     owner);

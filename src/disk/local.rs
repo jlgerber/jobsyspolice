@@ -4,6 +4,12 @@ use super::{ Disk, Path };
 use std::{ path::PathBuf };
 use log;
 
+#[cfg(target_os="macos")]
+use std::os::macos::fs::MetadataExt;
+
+#[cfg(target_os="linux")]
+use std::os::linux::fs::MetadataExt;
+
 /// local::DiskService is, as it sounds, an implementation of Disk that
 /// works for local filesystems.
 #[derive(Debug)]
@@ -26,7 +32,6 @@ impl<'a> DiskService<'a> {
 
 // TODO: requires coreutils be installed. mac only right now. sudo port install coreutils
 impl<'a> Disk for DiskService<'a> {
-
     fn mk(&self, path: &Path, sticky:bool, ignore_volume: bool) -> Result<(), JSPError> {
         log::info!("local::Disk.mk(path: {:?}, ignore_volume: {})", path, ignore_volume);
 
@@ -37,8 +42,9 @@ impl<'a> Disk for DiskService<'a> {
         // loop count later, when we are looping over the supplied path.
         let last_managed_node = nodepath.len() - 1; 
         log::trace!("last managed node {}", last_managed_node);
-        let mut gperms: &str = &self.perms;
-        let mut uperms = u32::from_str_radix(&gperms,8).expect("couldnt convert gperms to perms");
+        let mut perms_str: &str = &self.perms;
+        let mut perms_u32 = u32::from_str_radix(&perms_str,8).expect("couldnt convert perms_str to perms");
+        let mut gid = diskutils::get_uid_for_group(constants::DEFAULT_GROUP)?;
         let mut owner = User::from(constants::DEFAULT_USER);
 
         // step 2: iterate: create, assign ownership, set perms
@@ -54,13 +60,33 @@ impl<'a> Disk for DiskService<'a> {
 
             // update permissions if they have changed
             if let Some(perms) = node.metadata().perms() {
-                gperms = perms;
-                uperms = u32::from_str_radix(&gperms,8).expect("couldnt convert gperms to perms");
+                perms_str = perms;
+                perms_u32 = u32::from_str_radix(&perms_str,8).expect("couldnt convert perms_str to perms");
             }
+            
+            // NOT IMPLEMENTED
+            // if let Some(grp) = node.metadata().group() {
+            //     group = grp;
+            // } else {
+            //      if create_path.exists() {
+            //          gid = create_path.metadata()?.st_gid();
+            //      }
+            //}
 
+            // get the group id
+            if create_path.exists() {
+                gid = create_path.metadata()?.st_gid();
+            }
             match *node.entry_type() {
                 EntryType::Directory | EntryType::Volume => {
                     log::debug!("local::DiskService.mk(...) EntryType::Directory or Volume");
+
+                    // If we only want to update the gid when we are 
+                    // in a tracked node, we would do it here instead of outside
+                    // get the group id
+                    // if create_path.exists() {
+                    //     gid = create_path.metadata()?.st_gid();
+                    // }
 
                     // we need the owner to look up the uid
                     let tmp_owner = node.metadata().owner().clone();
@@ -77,7 +103,8 @@ impl<'a> Disk for DiskService<'a> {
                     log::trace!("local::DiskService.mk(...) testing if create_path.exists {:?} {}", &create_path, create_path.exists()) ;
                     if !create_path.exists() {
                         log::trace!("local::DiskService.mk(...) calling diksutils::create_dir()");
-                        diskutils::create_dir(&create_path, uid, uperms)?
+                        //let gid = diskutils::get_current_gid();
+                        diskutils::create_dir(&create_path, uid, gid, perms_u32)?
 
                     } 
                     // now cache uid.
@@ -100,7 +127,8 @@ impl<'a> Disk for DiskService<'a> {
                     if !create_path.exists() {
                         log::debug!("local::DiskService.mk(...) {:?} does not exist. attempting to create", &create_path);
                         if let User::Uid(id) = owner {
-                            diskutils::create_dir(&create_path, id, uperms)?;
+                            //let gid = diskutils::get_current_gid();
+                            diskutils::create_dir(&create_path, id, gid, perms_u32)?;
                         } else {
                             log::error!( "local::DiskService.mk(...) unexpected. Unable to get Uid from owner {:?} in EntryType::Untracked",
                                     owner);
