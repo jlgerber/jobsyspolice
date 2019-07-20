@@ -8,6 +8,7 @@ pub type PermsType = String;
 #[derive(Debug, Clone, Copy)]
 pub enum MetadataTerm {
     Owner,
+    Group,
     Perms,
     Varname,
     Autocreate,
@@ -24,9 +25,8 @@ impl PartialEq<MetadataTerm> for MetadataTerm {
 impl PartialEq<Metadata> for MetadataTerm {
     fn eq(&self, other: &Metadata) -> bool {
         match self {
-            &MetadataTerm::Owner => {
-                other.has_owner()
-            }
+            &MetadataTerm::Owner => other.has_owner(),
+            &MetadataTerm::Group => other.has_group(),
             &MetadataTerm::Perms => other.has_perms(),
             &MetadataTerm::Varname => other.has_varname(),
             &MetadataTerm::Autocreate => other.autocreate(),
@@ -44,6 +44,8 @@ pub struct Metadata {
     #[serde(skip_serializing_if = "Option::is_none")]
     owner: Option<User>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    group: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     perms: Option<PermsType>, //todo: change rep
     #[serde(skip_serializing_if = "Option::is_none")]
     varname: Option<String>,
@@ -56,6 +58,7 @@ impl std::default::Default for Metadata {
     fn default() -> Metadata {
         Self {  
             owner: None,
+            group: None,
             perms: None,
             varname: None,
             autocreate: false,
@@ -73,6 +76,7 @@ impl Metadata {
     /// Alternate constructor
     pub fn from_components(
         owner: Option<User>, 
+        group: Option<String>,
         perms: Option<PermsType>, 
         varname: Option<String>, 
         autocreate: bool, 
@@ -81,6 +85,7 @@ impl Metadata {
     {
         Self {
             owner, 
+            group,
             perms,
             varname,
             autocreate,
@@ -120,6 +125,40 @@ impl Metadata {
     /// Get a mutable owner
     pub fn owner_mut(&mut self) -> &mut Option<User> {
         &mut self.owner
+    }
+
+    /// Check to see if the metadata instance has group
+    pub fn has_group(&self) -> bool {
+        self.group.is_some()
+    }
+
+    /// Set the group for Metadata
+    pub fn set_group(&mut self, group: Option<String>) -> &Self {
+        self.group = group;
+        self
+    }
+
+    /// Set the group for Metadata
+    pub fn set_owned_group(mut self, group: Option<String>) -> Self {
+        self.group = group;
+        self
+    }
+    /// Get the group
+    pub fn group(&self) -> &Option<String> {
+        &self.group
+    }
+
+    /// Get the group
+    pub fn group_ref(&self) -> Option<&str> {
+        match self.group {
+            Some(ref group) => Some(&group),
+            _ => None,
+        }
+    }
+
+    /// Get a mutable group
+    pub fn group_mut(&mut self) -> &mut Option<String> {
+        &mut self.group
     }
 
     /// Check to see of the Metadata instance has perms
@@ -244,8 +283,6 @@ impl Metadata {
     pub fn navalias_mut(&mut self) -> &mut Option<Navalias> {
         &mut self.navalias
     }
-
-
 
     /// given a mutable reference to self, create a 
     /// concrete copy
