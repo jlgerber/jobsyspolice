@@ -354,6 +354,11 @@ fn new_jsp_metadata( meta: &Option<JsptMetadata> ) -> JspMetadata {
             );
         }
 
+        if meta.group().is_some() {
+            let group = meta.group().unwrap();
+            jspmeta.set_group(Some(group.to_string()));
+        }
+
         if meta.permissions().is_some() {
             let perms = meta.permissions().unwrap();
             jspmeta.set_perms(Some(perms.to_string()));
