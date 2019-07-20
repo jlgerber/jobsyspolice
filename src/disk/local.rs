@@ -64,19 +64,23 @@ impl<'a> Disk for DiskService<'a> {
                 perms_u32 = u32::from_str_radix(&perms_str,8).expect("couldnt convert perms_str to perms");
             }
             
-            // NOT IMPLEMENTED
-            // if let Some(grp) = node.metadata().group() {
-            //     group = grp;
-            // } else {
-            //      if create_path.exists() {
-            //          gid = create_path.metadata()?.st_gid();
-            //      }
-            //}
-
-            // get the group id
-            if create_path.exists() {
-                gid = create_path.metadata()?.st_gid();
-            }
+            // retrieve the group info from metadata. If it does not exist, get it
+            // from the path. We may want to move this down into the match 
+            // statement below to differentiate between untracked nodes and the rest of
+            // the nodes. 
+            match node.metadata().group() {
+                Some(ref grp) => {
+                    // get the group id
+                    gid = diskutils::get_uid_for_group(grp)?;
+                    log::debug!("local::DiskService.mk(...) retrieved gid {} for group {}", gid, grp);
+                },
+                None => {
+                    if create_path.exists() {
+                        gid = create_path.metadata()?.st_gid();
+                    }
+                },
+            }           
+        
             match *node.entry_type() {
                 EntryType::Directory | EntryType::Volume => {
                     log::debug!("local::DiskService.mk(...) EntryType::Directory or Volume");
@@ -87,7 +91,8 @@ impl<'a> Disk for DiskService<'a> {
                     // if create_path.exists() {
                     //     gid = create_path.metadata()?.st_gid();
                     // }
-
+                    // lets get group
+                    
                     // we need the owner to look up the uid
                     let tmp_owner = node.metadata().owner().clone();
                     log::trace!("node: {} type:{:?}", &node, &node.entry_type());

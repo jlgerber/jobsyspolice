@@ -65,14 +65,22 @@ impl<'a> Disk for DiskService<'a> {
                 perms_u32 = u32::from_str_radix(&perms_str,8).expect("couldnt convert perms_str to perms");
             }
 
-            // get the group id
-            if create_path.exists() {
-                gid = create_path.metadata()?.st_gid();
-            }
-
+            match node.metadata().group() {
+                Some(ref grp) => {
+                    // get the group id
+                    gid = diskutils::get_uid_for_group(grp)?;
+                    log::debug!("gx::DiskService.mk(...) retrieved gid {} for group {}", gid, grp);
+                },
+                None => {
+                    if create_path.exists() {
+                        gid = create_path.metadata()?.st_gid();
+                    }
+                },
+            }   
+        
             match *node.entry_type() {
                 EntryType::Directory | EntryType::Volume => {
-                    log::debug!(" gx::DiskService.mk(...) EntryType::Directory or Volume");
+                    log::debug!("gx::DiskService.mk(...) EntryType::Directory or Volume");
 
                     // we need the owner to look up the uid
                     let tmp_owner = node.metadata().owner().clone();
