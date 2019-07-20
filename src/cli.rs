@@ -1,3 +1,5 @@
+//! Command line oriented utility functions for making and navigating through the 
+//! job system
 use crate::{
     CachedAliases,
     CachedEnvVars,

@@ -1,3 +1,5 @@
+//! Define a trait for interfacing with disk, and implement said trait for local
+//! and GX systems. 
 use std::path::{Path};
 use crate::{ JGraph, JSPError };
 
@@ -5,10 +7,20 @@ use crate::{ JGraph, JSPError };
 /// For instance, Netapp has a specific call to make a volume that involves
 /// a RESTful call (with ontap 6.4). This is unique, obviously, to Netapp.
 pub trait Disk {
-    /// Make the directory or volume.
-    fn mk(&self, path: &Path, sitcky: bool, ignore_volume: bool ) -> Result<(), JSPError>;
 
-    /// Retrieve the default owner if none is supplied
+    /// Make the directory or volume.
+    /// 
+    /// # Parameters
+    /// * `path`: Reference to Path that we wish to make
+    /// * `sticky`: Bool, if true, we add teh sticky to the group
+    /// * `ignore_volume`: Bool, if true, we treat volumes like normal directories
+    /// 
+    /// # Returns
+    /// * Ok wrapped unit, if successful
+    /// * JSPError if unsuccessful
+    fn mk(&self, path: &Path, sticky: bool, ignore_volume: bool ) -> Result<(), JSPError>;
+
+    /// Retrieve the default owner if none is supplied. 
     fn default_owner(&self) -> &str;
 
     /// Retrieve the default permissions as a &str if non is supplied

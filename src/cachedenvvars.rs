@@ -1,3 +1,5 @@
+//! Record previously set Environment Variables so that we may mutate them
+//! as we navigate around.
 use crate::{constants};
 use std::env;
 use crate::ShellEnvManager;

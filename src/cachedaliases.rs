@@ -1,9 +1,12 @@
+//! Record previously set Aliases so that we may mutate aliases
+//! as we navigate around
 use crate::{constants};
 use std::env;
 use crate::ShellEnvManager;
 use log;
+
 /// CachedAliases provides a means of looking up and iterating over the previously 
-/// set JSPVars in the environment.
+/// set JSPAliases in the environment.
 #[derive(Debug)]
 pub struct CachedAliases(Vec<String>);
 

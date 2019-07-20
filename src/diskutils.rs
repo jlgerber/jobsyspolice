@@ -1,3 +1,4 @@
+//! Provide utility functions for interacting with disk.
 use crate::{JSPError, User, constants, get_default_user, Node, NodeType, JGraph};
 use log;
 use lazy_static::lazy_static;
@@ -62,14 +63,21 @@ pub fn get_uid_for_group(group: &str) -> Result<u32, JSPError> {
 }
 
 /// Retrieve the current process owner's gid
+/// 
+/// # Returns
+/// u32 - The raw group id
 pub fn get_current_gid() -> u32 {
     Gid::current().as_raw()
 }
 
 /// Retrieve the current process owner's effective gid
+/// 
+/// # Returns
+/// u32 - The raw group id
 pub fn get_effective_gid() -> u32 {
     Gid::effective().as_raw()
 }
+
 /// Retrieve the user id for the supplied owner. If the owner is of type User::Captured,
 /// this method attempts to extract the user name from the path using the regex supplied
 /// by the node parameter, which is expected to have a named regex capture whose name corresponds
@@ -130,36 +138,12 @@ pub fn get_uid_for_owner(owner: &User, node: &Node, dir: &str) -> Result<u32, JS
 ///
 /// # Returns
 ///
-/// A User::Uid or a JSPError
+/// An Ok of User::Uid if successfule
+/// or an Err of JSPError if unsuccessful
 pub fn get_owner_for_path(path: &Path) -> Result<User, JSPError> {
     let metadata = std::fs::metadata(path)?;
     Ok(User::Uid(metadata.uid()))
 }
-/*
-/// Given a relative pathbuf, convert it to an absolute pathbuf.
-pub fn convert_relative_pathbuf_to_absolute(path: PathBuf) -> Result<PathBuf, JSPError> {
-    let mut curdir = std::env::current_dir()?;
-    if path.starts_with(".") || !path.starts_with("/") {
-        let doit = path.starts_with("..");
-        
-        curdir = curdir.join(path);
-        if doit {
-            curdir = curdir.iter().fold(PathBuf::new(), |mut acc, x| {
-                if x == DOUBLEDOT.as_os_str() ||  x == DOT.as_os_str() {
-                    acc.pop();
-                } else {
-                    acc.push(x);
-                }
-                    acc
-                } 
-            );
-        }
-        log::info!("curdir {:?}", curdir);
-        return Ok(curdir);
-    }
-    Ok(path)
-}
-*/
 
 /// Converts from relative path to absolute, removing relative path nonsense
 pub fn convert_relative_pathbuf_to_absolute<I>(path: I) -> Result<PathBuf, JSPError> 
@@ -190,33 +174,6 @@ where
     }
     Ok(return_pathbuf)
 }
-/* Nothing should be relying on this code. Given jspt, we no longer serialize the 
-graph to json. 
-
-/// Write the template out to disk.
-pub fn write_template(output: &mut PathBuf, graph: &JGraph) {
-
-    // if we are writing out the template, we use the internal definition
-    //let graph = graph::testdata::build_graph();
-
-    // test to see if buffer is a directory. if it is apply the standard name
-    if output.is_dir() {
-        output.push(constants::JSP_NAME);
-    }
-    let j = serde_json::to_string_pretty(&graph).unwrap();
-    let file = match File::create(output) {
-        Ok(out) => {
-            log::debug!("attempting to write to {:?}", out);
-            out},
-        Err(e) => {
-            eprintln!("{}", e);
-            std::process::exit(1);
-        }
-    };
-    let mut f = BufWriter::new(file);
-    f.write_all(j.as_bytes()).expect("Unable to write data");
-}
-*/
 
 /// Given an output path and a reference to a JGraph, write 
 /// the graph out to disk.
