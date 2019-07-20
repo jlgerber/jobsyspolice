@@ -84,6 +84,7 @@ macro_rules!  jspnode {
         Node::new(
             NodeType::Simple(String::from($name)),
             EntryType::Directory,
+            None, 
             None,
             None,
             None,
@@ -96,6 +97,7 @@ macro_rules!  jspnode {
         let mut n = Node::new(
             NodeType::Simple(String::from($name)),
             EntryType::Directory,
+            None, 
             None,
             None,
             None,
@@ -105,6 +107,7 @@ macro_rules!  jspnode {
         $(
             match $key {
                 "owner" => {n.metadata_mut().set_owner(Some(crate::User::from($val)));}
+                "group" => {n.metadata_mut().set_group(Some(String::from($val)));}
                 "perms" | "permissions" => {
                     let conv = $val.parse::<u32>();
                     if conv.is_ok(){
@@ -135,6 +138,7 @@ macro_rules!  jspnode {
             exclude: None,
         },
         EntryType::Directory,
+        None, 
         None,
         None, 
         None,
@@ -149,6 +153,7 @@ macro_rules!  jspnode {
             exclude: None,
         },
         EntryType::Directory,
+        None, 
         None,
         None,
         None,
@@ -158,6 +163,7 @@ macro_rules!  jspnode {
         $(
             match $key {
                 "owner" => {n.metadata_mut().set_owner(Some(crate::User::from($val)));}
+                "group" => {n.metadata_mut().set_group(Some(String::from($val)));}
                 "perms" | "permissions" => {
                     let conv = $val.parse::<u32>();
                     if conv.is_ok(){
@@ -188,6 +194,7 @@ macro_rules!  jspnode {
                 exclude: Some(Regexp::new($exclude).unwrap()),
             },
             EntryType::Directory,
+            None, 
             None,
             None,
             None,
@@ -203,6 +210,7 @@ macro_rules!  jspnode {
                 exclude: Some(Regexp::new($exclude).unwrap()),
             },
             EntryType::Directory,
+            None, 
             None,
             None,
             None, 
@@ -212,6 +220,7 @@ macro_rules!  jspnode {
         $(
             match $key {
                 "owner" => {n.metadata_mut().set_owner(Some(crate::User::from($val)));}
+                "group" => {n.metadata_mut().set_group(Some(String::from($val)));}
                 "perms" | "permissions" => {
                     let conv = $val.parse::<u32>();
                     if conv.is_ok(){
