@@ -23,6 +23,7 @@ pub fn parse_metadata(input: &str) -> IResult<&str, JsptMetadata> {
                     MetadataComponent::Permissions(perm) => metadata = metadata.set_permissions(Some(perm)),
                     MetadataComponent::EnvVarName(name) => metadata = metadata.set_varname(Some(name)),
                     MetadataComponent::Owner(name) => metadata = metadata.set_owner(Some(name)),
+                    MetadataComponent::Group(group) => metadata = metadata.set_group(Some(group)),
                     MetadataComponent::Volume => metadata = metadata.set_volume(true),
                     MetadataComponent::Autocreate => metadata = metadata.set_autocreate(true),
                     MetadataComponent::NavAlias(name, None) => metadata = metadata.set_navalias( Some((name, None)) ),
@@ -48,6 +49,7 @@ pub fn parse_components(input: &str) -> IResult<&str, Vec<MetadataComponent>> {
                 parse_volume,
                 parse_permissions,
                 parse_owner,
+                parse_group,
                 parse_varname,
             ))
         ), 
@@ -99,6 +101,20 @@ mod parse_components_tests {
         );
     }
 
+    #[test]
+    fn can_parse_owner_and_group() {
+        let owner = parse_components("[ group: cgi , owner : jgerber] ");
+        assert_eq!(
+           owner,
+            Ok((
+                "",
+                vec![
+                     MetadataComponent::Group("cgi".to_string()), 
+                     MetadataComponent::Owner("jgerber".to_string())
+                ]
+            ))
+        );
+    }
     #[test]
     fn can_parse_volume_and_owner_and_perms() {
         let cmp = parse_components("  [ volume , owner : jgerber, perms: 751 ]");
@@ -308,6 +324,46 @@ mod owner_tests {
     fn can_parse_owner_more_spaces() {
        let owner = parse_owner("  owner : fred  ");
        assert_eq!(owner, Ok(("", MetadataComponent::Owner("fred".to_string())))) ;
+    }
+}
+
+// convert permissions
+fn parse_group(input: &str) -> IResult<&str, MetadataComponent> {
+    map(
+        delimited(
+            space0,
+            separated_pair(
+                tag("group"),
+                 preceded(space0,tag(":")), 
+                 preceded(space0, variable),
+            ),
+            space0
+        ),
+        |item| {
+            let (_,item) = item;
+            MetadataComponent::Group(item.to_string())
+        }
+    )(input)
+}
+
+#[cfg(test)]
+mod group_tests {
+    use super::*;
+
+    #[test]
+    fn can_parse_group_no_spaces() {
+        let p = parse_group("group:cgi");
+        assert_eq!(p, Ok(("", MetadataComponent::Group("cgi".to_string()))));
+    }
+
+    #[test]
+    fn can_parse_group_spaces() {
+        let p = parse_group(" group :  cgi ");
+        assert_eq!(p, Ok(("", MetadataComponent::Group("cgi".to_string()))));
+        let p = parse_group(" group:  cgi ");
+        assert_eq!(p, Ok(("", MetadataComponent::Group("cgi".to_string()))));
+        let p = parse_group(" group :cgi ");
+        assert_eq!(p, Ok(("", MetadataComponent::Group("cgi".to_string()))));
     }
 }
 
