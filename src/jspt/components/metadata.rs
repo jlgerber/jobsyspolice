@@ -7,6 +7,7 @@ pub enum MetadataComponent {
     Permissions(String),
     EnvVarName(String),
     Owner(String),
+    Group(String),
     /// Navalias takes the key, and optionally, a value
     NavAlias(String, Option<String>), 
     // Nom requires that all branches of certain 
@@ -28,6 +29,7 @@ pub struct JsptMetadata {
     permissions: Option<String>,
     varname: Option<String>,
     owner: Option<String>,
+    group: Option<String>,
     /// tuple of Keyname, and optionally, a value. Only necessary 
     /// if we need to define runtime variables (eg work.$user)
     navalias: Option<(String, Option<String>)>
@@ -41,6 +43,7 @@ impl std::default::Default for JsptMetadata {
             permissions: None,
             varname: None,
             owner: None,
+            group: None, 
             navalias: None,
         }
     }
@@ -60,6 +63,7 @@ impl JsptMetadata {
         self.permissions.is_none() && 
         self.varname.is_none() && 
         self.owner.is_none() &&
+        self.group.is_none() &&
         self.navalias.is_none()
     }
 
@@ -285,6 +289,29 @@ impl JsptMetadata {
         self.owner.take()
     }
 
+    /// Set `group` given an Option wrapped type which implements `Into<String>`.
+    /// 
+    /// # Parameters
+    /// 
+    /// * `group` - An 
+    pub fn set_group<T>(mut self, group: Option<T>) -> Self 
+    where
+        T: Into<String>
+    {
+        self.group = group.map(|x| x.into());
+        self
+    }
+
+    /// Retrieve a reference to `group` as an Option wrapped `&str`.
+    pub fn group(&self) -> Option<&str> {
+        self.group.as_ref().map(|x| &**x)
+    }
+
+    /// Retrieve the `group` as an Option wrapped String, leaving 
+    /// None in its place. 
+    pub fn take_group(&mut self) -> Option<String> {
+        self.group.take()
+    }
 
     /// Set `navalias` given an Option wrapped type which implements `Into<String>`.
     /// 
@@ -336,6 +363,7 @@ mod tests {
             permissions: None,
             varname: None,
             owner: None,
+            group: None,
             navalias: None,
         };
         assert_eq!(md, expect);
@@ -350,12 +378,13 @@ mod tests {
             permissions: None,
             varname: None,
             owner: None,
+            group: None, 
             navalias: None,
         };
         assert_eq!(md, expect);
     }
 
-     #[test]
+    #[test]
     fn can_create_metadata_and_set_owner() {
         let md = JsptMetadata::new().set_volume(true).set_owner(Some("jgerber"));
         let expect = JsptMetadata {
@@ -364,6 +393,23 @@ mod tests {
             permissions: None,
             varname: None,
             owner: Some("jgerber".to_string()),
+            group: None,
+            navalias: None,
+
+        };
+        assert_eq!(md, expect);
+    }
+
+    #[test]
+    fn can_create_metadata_and_set_group() {
+        let md = JsptMetadata::new().set_volume(true).set_group(Some("cgi"));
+        let expect = JsptMetadata {
+            autocreate: false,
+            volume: true,
+            permissions: None,
+            varname: None,
+            owner:None,
+            group: Some("cgi".to_string()),
             navalias: None,
 
         };
@@ -379,6 +425,7 @@ mod tests {
             permissions: None,
             varname: Some("jg_show".to_string()),
             owner: Some("jgerber".to_string()),
+            group: None,
             navalias: None,
 
         };
@@ -399,6 +446,7 @@ mod tests {
             permissions: Some("777".to_string()),
             varname: Some("jg_show".to_string()),
             owner: Some("jgerber".to_string()),
+            group: None,
             navalias: None,
 
         };
@@ -421,6 +469,7 @@ mod tests {
             permissions: Some("777".to_string()),
             varname: Some("jg_show".to_string()),
             owner: Some("jgerber".to_string()),
+            group: None,
             navalias: None,
 
         };
@@ -443,6 +492,19 @@ mod tests {
     fn can_take_owner() {
         let mut md = JsptMetadata::new().set_volume(true).set_owner(Some("jgerber"));
         assert_eq!(md.take_owner(), Some("jgerber".to_string()));
+    }
+
+
+    #[test]
+    fn can_get_group() {
+        let md = JsptMetadata::new().set_volume(true).set_group(Some("cgi"));
+        assert_eq!(md.group(), Some("cgi"));
+    }
+
+    #[test]
+    fn can_take_group() {
+        let mut md = JsptMetadata::new().set_volume(true).set_group(Some("cgi"));
+        assert_eq!(md.take_group(), Some("cgi".to_string()));
     }
 
     #[test]
