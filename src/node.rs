@@ -47,6 +47,7 @@ impl Node {
         identity: NodeType, 
         entry_type: EntryType,
         owner: Option<User>, 
+        group: Option<String>,
         perms: Option<String>, 
         varname: Option<String>, 
         autocreate: bool, 
@@ -55,7 +56,7 @@ impl Node {
         Self { 
             identity, 
             entry_type,
-            metadata:  Metadata::from_components(owner, perms, varname, autocreate, navalias)
+            metadata:  Metadata::from_components(owner, group, perms, varname, autocreate, navalias)
         }
     }
 
@@ -220,7 +221,7 @@ impl PartialEq<std::ffi::OsStr> for Node {
 
 impl std::default::Default for Node {
     fn default() -> Node {
-        Node::new(NodeType::Simple(s!("NONE")), EntryType::Directory, None, None, None, false, None)
+        Node::new(NodeType::Simple(s!("NONE")), EntryType::Directory, None, None, None, None, false, None)
     }
 }
 
@@ -262,7 +263,7 @@ mod node_tests {
         let simple = Node::new(
             NodeType::Simple(s!("foobar")),
             EntryType::Directory,
-            None, None, None, false, None
+            None, None, None, None, false, None
         );
 
         let osstr = OsStr::new("foobar");
@@ -278,7 +279,7 @@ mod node_tests {
                 exclude: None,
             },
             EntryType::Directory,
-            None, None, None, false, None
+            None, None, None, None, false, None
         );
         let osstr = OsStr::new("AD1A");
         assert_eq!(re, *osstr);
@@ -293,7 +294,7 @@ mod node_tests {
                 exclude: Some(Regexp::new(r"^(SHARED|etc)$").unwrap()),
             },
             EntryType::Directory,
-            None, None, None, false, None
+            None, None, None, None, false, None
         );
         let osstr = OsStr::new("SHARE");
         assert_eq!(re, *osstr);
@@ -308,7 +309,7 @@ mod node_tests {
                 exclude: Some(Regexp::new(r"^(SHARED|etc)$").unwrap()),
             },
             EntryType::Directory,
-            None, None, None, false, None
+            None, None, None, None, false, None
         );
         let osstr = OsStr::new("SHARED");
         assert_ne!(re, *osstr);
@@ -323,7 +324,7 @@ mod node_tests {
                 exclude: None,
             },
             EntryType::Directory,
-            None, None, None, false, None
+            None, None, None, None, false, None
         );
         // the 1 on the front should make the pattern match fail
         let osstr = OsStr::new("1AD1A");
@@ -335,7 +336,7 @@ mod node_tests {
         let re = Node::new(
             NodeType::Root,
             EntryType::Root,
-            None, None, None, false, None
+            None, None, None, None, false, None
         );
         assert_eq!(re.display_name(), s!("Root()"));
     }
@@ -349,7 +350,7 @@ mod node_tests {
                 exclude: None,
             },
             EntryType::Directory,
-            None, None, None, false, None
+            None, None, None, None, false, None
         );
         assert_eq!(re.display_name(), s!("sequence regex: '^[A-Z]+[A-Z 0-9]*$'"));
     }
@@ -363,7 +364,7 @@ mod node_tests {
                 exclude: None,
             },
             EntryType::Volume,
-            None, None, None, false, None
+            None, None, None, None, false, None
         );
         assert_eq!(re.display_name(), s!("sequence regex: '^[A-Z]+[A-Z 0-9]*$'"));
     }
@@ -377,7 +378,7 @@ mod node_tests {
                 exclude: Some(Regexp::new(r"^(SHARED|etc)$").unwrap()),
             },
             EntryType::Volume,
-            None, None, None, false, None
+            None, None, None, None, false, None
         );
         assert_eq!(re.display_name(), s!("sequence regex: '^[A-Z]+[A-Z 0-9]*$' exclude: '^(SHARED|etc)$'"));
     }
@@ -387,7 +388,7 @@ mod node_tests {
         let re = Node::new(
             NodeType::Simple(s!("DEV01")),
             EntryType::Directory,
-            None, None, None, false, None
+            None, None, None, None, false, None
         );
         assert_eq!(re.display_name(), s!("DEV01"));
     }
@@ -397,7 +398,7 @@ mod node_tests {
         let re = Node::new(
             NodeType::Simple(s!("DEV01")),
             EntryType::Volume,
-            None, None, None, false, None 
+            None, None, None, None, false, None 
         );
         assert_eq!(re.display_name(), s!("DEV01"));
     }
