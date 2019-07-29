@@ -1,66 +1,48 @@
-//! Command line oriented utility functions for making and navigating through the 
+//! Command line oriented utility functions for making and navigating through the
 //! job system
 use crate::{
-    CachedAliases,
-    CachedEnvVars,
-    constants,
-    DiskType,
-    find_rel,
-    FindRelStrategy,
-    get_disk_service,
-    JGraph,
-    JSPError,
-    MetadataTerm,
-    Navalias,
-    NIndex,
-    Node,
-    NodePath,
-    report,
-    SearchTerm,
-    SupportedShell,
-    ShellEnvManager,
-    ValidPath,
-    NodeType,
+    constants, find_rel, get_disk_service, report, CachedAliases, CachedEnvVars, DiskType,
+    FindRelStrategy, JGraph, JSPError, MetadataTerm, NIndex, Navalias, Node, NodePath, NodeType,
+    SearchTerm, ShellEnvManager, SupportedShell, ValidPath,
 };
 use chrono::prelude::*;
-use levelspecter::{LevelSpec, LevelName};
+use levelspecter::{LevelName, LevelSpec};
+use std::collections::HashMap;
 use std::{
     collections::VecDeque,
     env,
     path::{Component, PathBuf},
-    str::FromStr
+    str::FromStr,
 };
-use std::collections::HashMap;
-
 
 type NavaliasMap = HashMap<String, PathBuf>;
 
-/// Generate a ValidPath from input. This input may either be an absolute or 
+/// Generate a ValidPath from input. This input may either be an absolute or
 /// relative path, a levelspec and terms,
-/// or a straight vector of terms. In any case, `validpath_from_terms` will 
+/// or a straight vector of terms. In any case, `validpath_from_terms` will
 /// attempt to do the right thing.
-/// 
+///
 /// # Parameters
-/// *`terms` - Vec<String> representing a relative or abslolute path 
+/// *`terms` - Vec<String> representing a relative or abslolute path
 ///            (terms.len() should be 1), or a vec of SearchTerms
 /// * `graph` - a reference to the `JGraph` instance
-/// * `force_fullpath` - A bool indicating that we wish to force terms[0] to be 
-///                      interpreted as a fullpath. Under normal circumstances, 
-///                      this should not be necessary, as `validpath_from_terms` 
-///                      will already attempt to ascertain the nature of the 
+/// * `force_fullpath` - A bool indicating that we wish to force terms[0] to be
+///                      interpreted as a fullpath. Under normal circumstances,
+///                      this should not be necessary, as `validpath_from_terms`
+///                      will already attempt to ascertain the nature of the
 ///                      input. However, there are certain ambiguous scenarios
 ///                      where this is necessary.
-/// 
+///
 /// # Returns
-/// An Ok wrapped ValidPath instance when successful 
+/// An Ok wrapped ValidPath instance when successful
 /// An Error wrapped JSPError when unsuccessful
 pub fn validpath_from_terms<'a>(
-    mut terms: Vec<String>, 
-    graph: &'a JGraph, 
-    datetime_dir: bool, 
-    force_fullpath: bool
+    mut terms: Vec<String>,
+    graph: &'a JGraph,
+    datetime_dir: bool,
+    force_fullpath: bool,
 ) -> Result<ValidPath<'a>, JSPError> {
-    if force_fullpath || ( !terms.is_empty() && terms[0].contains('/') ) {
+    if force_fullpath || (!terms.is_empty() && terms[0].contains('/')) {
         let mut pathbuf = PathBuf::from(terms.pop().expect("unable to unwrap"));
         if datetime_dir {
             // construct datetime dir
@@ -75,7 +57,7 @@ pub fn validpath_from_terms<'a>(
             ValidPath::new_from_searchterms(terms, graph, Some(dt.as_str()), force_fullpath)
         } else {
             ValidPath::new_from_searchterms(terms, graph, None, force_fullpath)
-        }  
+        }
     }
 }
 
@@ -83,10 +65,10 @@ pub fn validpath_from_terms<'a>(
 mod validpath_from_terms_test {
     use super::*;
     use crate::graph;
+    use crate::{jspnode, EntryType, Node, NodeType};
     use std::path::Path;
-    use crate::{ Node, jspnode, NodeType, EntryType };
 
-    fn setup_curdir_graph(dirs: Vec<&str> ) -> JGraph {
+    fn setup_curdir_graph(dirs: Vec<&str>) -> JGraph {
         let cwd = std::env::current_dir().unwrap();
         let mut graph = JGraph::new();
 
@@ -100,7 +82,7 @@ mod validpath_from_terms_test {
         graph
     }
 
-    fn setup_curdir_up_graph(dirs: Vec<&str> ) -> JGraph {
+    fn setup_curdir_up_graph(dirs: Vec<&str>) -> JGraph {
         let mut cwd = std::env::current_dir().unwrap();
         cwd.pop();
         let mut graph = JGraph::new();
@@ -118,7 +100,8 @@ mod validpath_from_terms_test {
     #[test]
     fn fullpath() {
         let graph = graph::testdata::build_graph();
-        let vp = validpath_from_terms(vec!["/dd/shows/FOOBAR".to_string()], &graph, false, false).unwrap();
+        let vp = validpath_from_terms(vec!["/dd/shows/FOOBAR".to_string()], &graph, false, false)
+            .unwrap();
         assert_eq!(vp.path(), Path::new("/dd/shows/FOOBAR"));
     }
 
@@ -134,13 +117,13 @@ mod validpath_from_terms_test {
         let graph = graph::testdata::build_graph();
         let vp = validpath_from_terms(vec!["FOOBAR.RD".to_string()], &graph, false, false).unwrap();
         assert_eq!(vp.path(), Path::new("/dd/shows/FOOBAR/RD"));
-
     }
 
     #[test]
     fn levelspec_shot() {
         let graph = graph::testdata::build_graph();
-        let vp = validpath_from_terms(vec!["FOOBAR.RD.9999".to_string()], &graph, false, false).unwrap();
+        let vp =
+            validpath_from_terms(vec!["FOOBAR.RD.9999".to_string()], &graph, false, false).unwrap();
         assert_eq!(vp.path(), Path::new("/dd/shows/FOOBAR/RD/9999"));
     }
 
@@ -156,8 +139,8 @@ mod validpath_from_terms_test {
         let vp = validpath_from_terms(vec!["./AA/9999".to_string()], &graph, false, false).unwrap();
         assert_eq!(vp.path(), expected.as_path());
     }
-    
-    // we go up one directory 
+
+    // we go up one directory
     #[test]
     fn levelspec_relpath_shot() {
         std::env::set_var("DD_SEQUENCE", "RD");
@@ -168,10 +151,10 @@ mod validpath_from_terms_test {
         expected.pop();
         expected.push("AA");
         expected.push("9999");
-        let vp = validpath_from_terms(vec!["../AA/9999".to_string()], &graph, false, false).unwrap();
+        let vp =
+            validpath_from_terms(vec!["../AA/9999".to_string()], &graph, false, false).unwrap();
         assert_eq!(vp.path(), expected.as_path());
     }
-    
     #[test]
     fn levelspec_rel_show() {
         let graph = graph::testdata::build_graph();
@@ -216,82 +199,89 @@ mod validpath_from_terms_test {
 // Generate a datetime directory
 fn gen_datetime_dir() -> String {
     let dt: DateTime<Local> = Local::now();
-    format!("{}_{}_{}",dt.year(), dt.month(), dt.day())
+    format!("{}_{}_{}", dt.year(), dt.month(), dt.day())
 }
 
-/// Make a series of directories if they do not already exist. 
-/// 
+/// Make a series of directories if they do not already exist.
+///
 /// # Parameters
-/// 
+///
 /// * `validpath`     - ValidPath instance representing the path we wish to create,
-///                     or as a single absolute path. 
+///                     or as a single absolute path.
 /// * `graph`         - Reference to the JGraph which describes the jobsytem template
-/// * `full_path`     - Indicates that the first term provided is a regular 
+/// * `full_path`     - Indicates that the first term provided is a regular
 ///                     path, as opposed to a levelspec
-///                     Normally, Mk detects this using the path separator as an 
+///                     Normally, Mk detects this using the path separator as an
 ///                     indicator. However this may be explicitly set.
 /// * `ingore_volume` - If true, treat all Volume nodes as Directory nodes when
 ///                     creating them
 /// * `verbose`   - Output is more extensive, colored, etc.
-/// 
+///
 /// # Returns
-/// An Ok wrapped report::Success::Mk(ValidPath) if successful, 
+/// An Ok wrapped report::Success::Mk(ValidPath) if successful,
 ///An Err wrapped JSPError if unable to make the  provided directory.
 pub fn mk<'a>(
-    validpath: ValidPath<'a>, 
-    graph: &'a JGraph, 
+    validpath: ValidPath<'a>,
+    graph: &'a JGraph,
     disktype: &'a DiskType,
     set_stickybit: bool,
     ignore_volume: bool,
-    verbose: bool
+    verbose: bool,
 ) -> Result<report::Success<'a>, JSPError> {
     let diskservice = get_disk_service(&disktype, graph);
     match diskservice.mk(validpath.path(), set_stickybit, ignore_volume) {
-        Ok(_) => { 
-            Ok(report::Success::Mk(validpath))
-        },
-        Err(JSPError::ValidationFailure{entry, node, depth}) => {
+        Ok(_) => Ok(report::Success::Mk(validpath)),
+        Err(JSPError::ValidationFailure { entry, node, depth }) => {
             // TODO: think i can remove report here as i should be reporting this higher up the call chain
-            report::failure(validpath.path().as_os_str(), &entry, node, depth, &graph, verbose );
-            Err(JSPError::ValidationFailureFor{path: validpath.path().to_path_buf(), entry,node,depth})
-        },
-        Err(e) => {
-            Err(e)
-        },
+            report::failure(
+                validpath.path().as_os_str(),
+                &entry,
+                node,
+                depth,
+                &graph,
+                verbose,
+            );
+            Err(JSPError::ValidationFailureFor {
+                path: validpath.path().to_path_buf(),
+                entry,
+                node,
+                depth,
+            })
+        }
+        Err(e) => Err(e),
     }
 }
 
-/// Return shell commands that, wnen evaluated, result in a change of location 
-/// in the job system and initialization of environment variables defined in 
-/// the template in relation to the path, providing either a levelspec and 
-/// optional key:value terms additionally,vor an absolute path to a location. 
-/// 
+/// Return shell commands that, wnen evaluated, result in a change of location
+/// in the job system and initialization of environment variables defined in
+/// the template in relation to the path, providing either a levelspec and
+/// optional key:value terms additionally,vor an absolute path to a location.
+///
 /// # Parameters
-/// 
-/// * `terms`     - vector of terms representing the navigation request. The 
-///                 first item in the vector may either be an absolute path 
-///                 or a levelspec. Subsequent values should adhehere to 
-///                 `key:value` form. 
-/// * `myshell`   - Optionally, the name of the shell that one wishes the 
-///                 commands returned to target. bash is the default shell. 
-/// * `graph`     - an reference to the JGraph describing the jobsystem template 
-/// * `full_path` - explicitly declare that the input is a full path. Under 
-///                 usual circumstances,  the command will automatically 
-///                 determine this based on the presence of a  path separator 
+///
+/// * `terms`     - vector of terms representing the navigation request. The
+///                 first item in the vector may either be an absolute path
+///                 or a levelspec. Subsequent values should adhehere to
+///                 `key:value` form.
+/// * `myshell`   - Optionally, the name of the shell that one wishes the
+///                 commands returned to target. bash is the default shell.
+/// * `graph`     - an reference to the JGraph describing the jobsystem template
+/// * `full_path` - explicitly declare that the input is a full path. Under
+///                 usual circumstances,  the command will automatically
+///                 determine this based on the presence of a  path separator
 ///                 in the input.
 /// * `verbose`   - Output is more extensive, colored, etc.
-/// 
+///
 /// # Returns
-/// A Result wrapping a ValidPath if successful, or a JSPError if unable to navigate 
+/// A Result wrapping a ValidPath if successful, or a JSPError if unable to navigate
 /// to the supplied directory.
-pub fn go<'a> (
-    terms: Vec<String>, 
-    myshell: Option<String>, 
+pub fn go<'a>(
+    terms: Vec<String>,
+    myshell: Option<String>,
     graph: &'a JGraph,
-    full_path: bool, 
-    verbose: bool
+    full_path: bool,
+    verbose: bool,
 ) -> Result<ValidPath<'a>, JSPError> {
-
     let myshell = myshell.unwrap_or_else(|| "bash".to_string());
 
     let myshelldyn = SupportedShell::from_str(myshell.as_str())?.get();
@@ -301,44 +291,58 @@ pub fn go<'a> (
             if let Some(idx) = validpath.nodepath().nindex() {
                 // now we process any navaliases
                 let mut navalias_map = process_navalias(idx, &validpath, &graph, verbose);
-                
                 let _ = process_go_success(&mut validpath, &mut navalias_map, myshelldyn, verbose)?;
                 Ok(validpath)
             } else {
                 panic!("cli::go(...). Unable to get index NIndex from nodepath");
             }
-        },
-        
+        }
         Err(e) => {
-            report::shellerror("cli::go(...). Problem converting terms to path", Some(e.clone()), verbose);
+            report::shellerror(
+                "cli::go(...). Problem converting terms to path",
+                Some(e.clone()),
+                verbose,
+            );
             Err(e)
-        },
+        }
     }
 }
 
 #[inline]
-fn process_navalias(idx: NIndex, validpath: &ValidPath, graph: &JGraph, verbose: bool) -> NavaliasMap {
+fn process_navalias(
+    idx: NIndex,
+    validpath: &ValidPath,
+    graph: &JGraph,
+    verbose: bool,
+) -> NavaliasMap {
     let mut navaliasmap = NavaliasMap::new();
 
-    match find_rel( idx, MetadataTerm::Navalias, &graph, FindRelStrategy::First) {
-        Err(e) => { report::shellerror(
-            format!("process_navalias(...). Unable to find navalias nodes: {}", e.to_string()).as_str(),
-            None, 
-            verbose); 
+    match find_rel(idx, MetadataTerm::Navalias, &graph, FindRelStrategy::First) {
+        Err(e) => {
+            report::shellerror(
+                format!(
+                    "process_navalias(...). Unable to find navalias nodes: {}",
+                    e.to_string()
+                )
+                .as_str(),
+                None,
+                verbose,
+            );
         }
         Ok(nodepaths) => {
             // now we create them
             for mut nodepath in nodepaths {
-                
-                let last = nodepath.pop().expect("process_navalias(...). Could not unwrap the nindex pop'ed off the nodepath");
+                let last = nodepath.pop().expect(
+                    "process_navalias(...). Could not unwrap the nindex pop'ed off the nodepath",
+                );
                 let lastnode = &graph[last];
 
-                match process_navalias_entry(&validpath, &nodepath, &lastnode, &mut navaliasmap){
-                        Err(e) => {
-                            report::shellerror("process_navalias(...). Unable to convert nodepath to pathbuf. skipping nodepath.", Some(e), verbose);
-                        }
-                        _ => {}
-                    };
+                match process_navalias_entry(&validpath, &nodepath, &lastnode, &mut navaliasmap) {
+                    Err(e) => {
+                        report::shellerror("process_navalias(...). Unable to convert nodepath to pathbuf. skipping nodepath.", Some(e), verbose);
+                    }
+                    _ => {}
+                };
                 /*
                 match nodepath.to_pathbuf() {
                     Ok(mut v) => {
@@ -348,7 +352,7 @@ fn process_navalias(idx: NIndex, validpath: &ValidPath, graph: &JGraph, verbose:
                                 let full_pathbuf = validpath.pathbuf().join(v);
                                 // we need to account for the posibility that an alias has been found for multiple nodes.
                                 // The strategy we will use is to only replace a k/v pair if the value is shorter
-                                // in length. 
+                                // in length.
                                 match navaliasmap.get(name) {
                                     Some(value) => {
                                         if full_pathbuf.components().count() < value.components().count() {
@@ -357,7 +361,7 @@ fn process_navalias(idx: NIndex, validpath: &ValidPath, graph: &JGraph, verbose:
                                     }
                                     None => {
                                         navaliasmap.insert(name.to_owned(), full_pathbuf);
-                                    } 
+                                    }
                                 }
                             }
                             Some(Navalias::Simple(name)) => {
@@ -374,7 +378,7 @@ fn process_navalias(idx: NIndex, validpath: &ValidPath, graph: &JGraph, verbose:
                                     }
                                     None => {
                                         navaliasmap.insert(name.to_owned(), full_pathbuf);
-                                    } 
+                                    }
                                 }
                             }
                             None => { panic!("lastnode.metadata.navalias is None");}
@@ -383,37 +387,36 @@ fn process_navalias(idx: NIndex, validpath: &ValidPath, graph: &JGraph, verbose:
                     Err(e) => {
                         report::shellerror("Unable to convert nodepath to pathbuf. skipping nodepath.", Some(e), verbose);
                         continue
-                    } 
+                    }
                 };
                 */
             }
         }
-    } 
+    }
     navaliasmap
 }
 
 // Takes a root validpath, a relative nodepath, and a lastnode. The validpath should come from the primary
 // search, the nodepath from find_rel, with the last node pop'ed off, and the lastnode is that node. Why?
-// This is done to avoid an error when we call nodepath.to_pathbuf() when the last node is a Regex, 
+// This is done to avoid an error when we call nodepath.to_pathbuf() when the last node is a Regex,
 // which one cannot convert from. We however, have a trick up our sleave, in that in this case, the author
 // of the template must supply a suitable way of identifying the last node via metadata, which should be
-// of type Navlalias::Complex. For example, the work directory would be [ navalias: cs work.$USER ]  
+// of type Navlalias::Complex. For example, the work directory would be [ navalias: cs work.$USER ]
 fn process_navalias_entry(
-    validpath: &ValidPath, 
-    nodepath: &NodePath, 
-    lastnode: &Node, 
-    navaliasmap: &mut NavaliasMap
+    validpath: &ValidPath,
+    nodepath: &NodePath,
+    lastnode: &Node,
+    navaliasmap: &mut NavaliasMap,
 ) -> Result<(), JSPError> {
-
     match nodepath.to_pathbuf() {
         Ok(mut v) => {
             match lastnode.metadata().navalias() {
-                Some(Navalias::Complex{name, value}) => {
+                Some(Navalias::Complex { name, value }) => {
                     v.push(value);
                     let full_pathbuf = validpath.pathbuf().join(v);
                     // we need to account for the posibility that an alias has been found for multiple nodes.
                     // The strategy we will use is to only replace a k/v pair if the value is shorter
-                    // in length. 
+                    // in length.
                     match navaliasmap.get(name) {
                         Some(value) => {
                             if full_pathbuf.components().count() < value.components().count() {
@@ -422,7 +425,7 @@ fn process_navalias_entry(
                         }
                         None => {
                             navaliasmap.insert(name.to_owned(), full_pathbuf);
-                        } 
+                        }
                     }
                 }
                 Some(Navalias::Simple(name)) => {
@@ -439,25 +442,29 @@ fn process_navalias_entry(
                         }
                         None => {
                             navaliasmap.insert(name.to_owned(), full_pathbuf);
-                        } 
+                        }
                     }
                 }
-                None => { panic!("process_navalias_entry(...). lastnode.metadata.navalias is None");}
+                None => {
+                    panic!("process_navalias_entry(...). lastnode.metadata.navalias is None");
+                }
             }
-        },
+        }
         Err(e) => {
             return Err(e);
             //report::shellerror("Unable to convert nodepath to pathbuf. skipping nodepath.", Some(e), verbose);
-        } 
+        }
     };
     Ok(())
 }
 
-
+/// Generate SearchTerms from input vector of strings. This method accounts for the
+/// possibility that the first term is a levelspec, and handles it accordingly.
 pub fn gen_terms_from_strings(mut terms: Vec<String>) -> Result<Vec<SearchTerm>, JSPError> {
-
     let lspec_term;
-    if terms.is_empty() {
+    let mut levelspec_terms = Vec::new();
+    //                     what if it is a term already?
+    if terms.is_empty() || terms[0].contains(":") {
         lspec_term = Vec::new();
     } else if terms.len() == 1 {
         lspec_term = vec![terms.pop().unwrap()];
@@ -466,24 +473,24 @@ pub fn gen_terms_from_strings(mut terms: Vec<String>) -> Result<Vec<SearchTerm>,
         lspec_term = terms;
         terms = tmp;
     }
-    // convert spec term to searchterms
-    let ls = LevelSpec::new(&lspec_term[0])?;
+    if lspec_term.len() > 0 {
+        // convert spec term to searchterms
+        let ls = LevelSpec::new(&lspec_term[0])?;
 
-    let mut ls = ls.rel_to_abs(|level|{
-        match level {
+        let mut ls = ls.rel_to_abs(|level| match level {
             LevelName::Show => env::var("DD_SHOW").ok(),
             LevelName::Sequence => env::var("DD_SEQUENCE").ok(),
             LevelName::Shot => env::var("DD_SHOT").ok(),
-        }
-    })?;
+        })?;
 
-    ls.set_upper();
-    let mut levelspec_terms = 
-        ls.to_vec_str()
-        .into_iter()
-        .enumerate()
-        .map(|(idx,x)| format!("{}:{}", constants::LEVELS[idx], x))
-        .collect::<Vec<String>>();
+        ls.set_upper();
+        levelspec_terms = ls
+            .to_vec_str()
+            .into_iter()
+            .enumerate()
+            .map(|(idx, x)| format!("{}:{}", constants::LEVELS[idx], x))
+            .collect::<Vec<String>>();
+    }
     levelspec_terms.append(&mut terms);
 
     // fold over the input vector of Strings, discarding any Strings which cannot
@@ -493,29 +500,35 @@ pub fn gen_terms_from_strings(mut terms: Vec<String>) -> Result<Vec<SearchTerm>,
             Ok(term) => acc.push(term),
             Err(e) => log::error!("{}", e.to_string()),
         };
-        acc 
+        acc
     });
-    
     Ok(terms)
-} 
+}
 
 #[inline]
-fn process_go_success(validpath: &mut ValidPath, mut navalias_map: &mut NavaliasMap, myshell: Box<dyn ShellEnvManager>, verbose: bool) 
--> Result<(), JSPError>
-{
+fn process_go_success(
+    validpath: &mut ValidPath,
+    mut navalias_map: &mut NavaliasMap,
+    myshell: Box<dyn ShellEnvManager>,
+    verbose: bool,
+) -> Result<(), JSPError> {
     log::info!("process_go_success(...)");
-    
-    let components = validpath.pathbuf().components().map(|x| {
-        match x {
+
+    let components = validpath
+        .pathbuf()
+        .components()
+        .map(|x| match x {
             Component::RootDir => String::from("/"),
             Component::Normal(level) => level.to_str().unwrap().to_string(),
             Component::CurDir => String::from("."),
             Component::ParentDir => String::from(".."),
-            Component::Prefix(_) => panic!("process_go_success(...). Component::Prefix in path not supported"),
-        }
-    }).collect::<VecDeque<String>>();
-    
-    // set env vars 
+            Component::Prefix(_) => {
+                panic!("process_go_success(...). Component::Prefix in path not supported")
+            }
+        })
+        .collect::<VecDeque<String>>();
+
+    // set env vars
     let mut varnames: Vec<&str> = Vec::new();
 
     // generate string to clear previously cached variables
@@ -524,13 +537,13 @@ fn process_go_success(validpath: &mut ValidPath, mut navalias_map: &mut Navalias
     // generate code to export a variable
     // TODO: make this part of the trait so that we can abstract over shell
     {
-    for (idx, n) in validpath.nodepath().iter().enumerate() {
-        if n.metadata().has_varname() {
-            let varname = n.metadata().varname_ref().unwrap();
-            print!("{}", &myshell.set_env_var(varname, &components[idx]));
-            varnames.push(varname);
+        for (idx, n) in validpath.nodepath().iter().enumerate() {
+            if n.metadata().has_varname() {
+                let varname = n.metadata().varname_ref().unwrap();
+                print!("{}", &myshell.set_env_var(varname, &components[idx]));
+                varnames.push(varname);
+            }
         }
-    }
     }
 
     // OUTPUT_PATH
@@ -539,10 +552,13 @@ fn process_go_success(validpath: &mut ValidPath, mut navalias_map: &mut Navalias
 
     // if we have variable names that we have set, we also need to preserve their names, so that
     // we can clear them out on subsequent runs. This solves the scenario where you navigate
-    // deep into the tree, and then later navigate to a shallower level; you don't want the 
-    // variables tracking levels deeper than the current depth to be set. 
+    // deep into the tree, and then later navigate to a shallower level; you don't want the
+    // variables tracking levels deeper than the current depth to be set.
     if !varnames.is_empty() {
-        print!("{}", &myshell.set_env_var(constants::JSP_TRACKING_VAR, varnames.join(":").as_str())) ;
+        print!(
+            "{}",
+            &myshell.set_env_var(constants::JSP_TRACKING_VAR, varnames.join(":").as_str())
+        );
     } else {
         print!("{}", &myshell.unset_env_var(constants::JSP_TRACKING_VAR));
     }
@@ -550,14 +566,14 @@ fn process_go_success(validpath: &mut ValidPath, mut navalias_map: &mut Navalias
     let last_validpath = validpath.pop()?;
     // extract the last node from the ValidPath
     let lastnode = last_validpath
-                    .nodepath()
-                    .leaf()
-                    .expect("process_go_success(...). Unable to get the leaf of the last node");
+        .nodepath()
+        .leaf()
+        .expect("process_go_success(...). Unable to get the leaf of the last node");
     let relpath = NodePath::new(validpath.nodepath().graph());
     if lastnode.metadata().has_navalias() {
-        // the validpath is the root path, the relpath is the path leading up to the last node, 
+        // the validpath is the root path, the relpath is the path leading up to the last node,
         // validpath/relpath/lastnode
-        match process_navalias_entry( &validpath, &relpath, &lastnode, &mut navalias_map) {
+        match process_navalias_entry(&validpath, &relpath, &lastnode, &mut navalias_map) {
             Err(e) => {
                 report::shellerror("process_go_success(...). Unable to convert nodepath to pathbuf. skipping navalias.", 
                 Some(e), verbose);
@@ -571,13 +587,16 @@ fn process_go_success(validpath: &mut ValidPath, mut navalias_map: &mut Navalias
     let cached = CachedAliases::new();
     print!("{}", cached.clear(&myshell));
     // iterate trhough the navaliases, setting each one
-    for (k,v) in navalias_map.into_iter() {
-        print!("{}", &myshell.set_alias(k,v));
+    for (k, v) in navalias_map.into_iter() {
+        print!("{}", &myshell.set_alias(k, v));
         varnames.push(k.as_str());
     }
     // Reset the JSP_ALIAS_NAMES env var which tracks the previously set aliases
     if !varnames.is_empty() {
-        print!("{}", &myshell.set_env_var(constants::JSP_ALIAS_NAMES, varnames.join(":").as_str())) ;
+        print!(
+            "{}",
+            &myshell.set_env_var(constants::JSP_ALIAS_NAMES, varnames.join(":").as_str())
+        );
     } else {
         print!("{}", &myshell.unset_env_var(constants::JSP_ALIAS_NAMES));
     }
