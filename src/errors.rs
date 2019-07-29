@@ -4,6 +4,7 @@ use nix;
 use std::{ffi::OsString, io, num, path::PathBuf };
 use ext_regex;
 use levelspecter;
+use serde_json;
 
 /// Error enum implementing Fail trait
 #[derive(Debug, Fail, PartialEq, Clone)]
@@ -88,6 +89,9 @@ pub enum JSPError {
     #[fail(display = "{}", _0)]
     LevelSpecError(#[cause] levelspecter::LevelSpecterError),
 
+    #[fail(display = "SerdeJson Error: {}", _0)]
+    SerdeError(String),
+
     #[fail(display = "Empty argument list")]
     EmptyArgumentListError,
 
@@ -102,6 +106,13 @@ pub enum JSPError {
 
     #[fail(display = "JSPError '{}'", _0)]
     GeneralError(String),
+}
+//serde_json::error::Error>
+
+impl From<serde_json::error::Error> for JSPError {
+    fn from(error: serde_json::error::Error) -> Self {
+        JSPError::SerdeError(error.to_string())
+    }
 }
 
 impl From<std::env::VarError> for JSPError {
